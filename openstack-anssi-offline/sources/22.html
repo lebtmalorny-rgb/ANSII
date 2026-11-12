@@ -1,0 +1,457 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenStack Docs: Integrate Identity with LDAP</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-22">Каталог источников</a> · [22] · <a href="https://docs.openstack.org/keystone/pike/admin/identity-integrate-with-ldap.html">Страница издателя</a></header><main><div class="docs-body">
+
+  <div class="section" id="integrate-identity-with-ldap">
+<span id="id1"></span><h1>Integrate Identity with LDAP<a class="headerlink" href="#integrate-identity-with-ldap" title="Permalink to this headline">¶</a></h1>
+<p>The OpenStack Identity service supports integration with existing LDAP
+directories for authentication and authorization services. LDAP back
+ends require initialization before configuring the OpenStack Identity
+service to work with it. For more information, see <a class="reference external" href="https://wiki.openstack.org/wiki/OpenLDAP">Setting up LDAP
+for use with Keystone</a>.</p>
+<p>When the OpenStack Identity service is configured to use LDAP back ends,
+you can split authentication (using the <em>identity</em> feature) and
+authorization (using the <em>assignment</em> feature). OpenStack Identity only
+supports read-only LDAP integration.</p>
+<p>The <em>identity</em> feature enables administrators to manage users and groups
+by each domain or the OpenStack Identity service entirely.</p>
+<p>The <em>assignment</em> feature enables administrators to manage project role
+authorization using the OpenStack Identity service SQL database, while
+providing user authentication through the LDAP directory.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">It is possible to isolate identity related information to LDAP in a
+deployment and keep resource information in a separate datastore. It is not
+possible to do the opposite, where resource information is stored in LDAP
+and identity information is stored in SQL. If the resource or assignment
+back ends are integrated with LDAP, the identity back end must also be
+integrated with LDAP.</p>
+</div>
+<div class="section" id="identity-ldap-server-setup">
+<span id="identity-ldap-server-set-up"></span><h2>Identity LDAP server set up<a class="headerlink" href="#identity-ldap-server-setup" title="Permalink to this headline">¶</a></h2>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p>If you are using SELinux (enabled by default on RHEL derivatives),
+then in order for the OpenStack Identity service to access LDAP servers,
+you must enable the <code class="docutils literal"><span class="pre">authlogin_nsswitch_use_ldap</span></code> boolean value for
+SELinux on the server running the OpenStack Identity service. To enable
+and make the option persistent across reboots, set the following boolean
+value as the root user:</p>
+<div class="last highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span> setsebool -P authlogin_nsswitch_use_ldap on
+</pre></div>
+</div>
+</div>
+<p>The Identity configuration is split into two separate back ends; identity
+(back end for users and groups), and assignments (back end for domains,
+projects, roles, role assignments). To configure Identity, set options
+in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file. See
+<a class="reference internal" href="#integrate-identity-backend-ldap"><span class="std std-ref">Integrate Identity back end with LDAP</span></a> for Identity back end configuration
+examples. Modify these examples as needed.</p>
+<p><strong>To define the destination LDAP server</strong></p>
+<p>Define the destination LDAP server in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file:</p>
+<blockquote>
+<div><div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">url</span> <span class="o">=</span> <span class="s">ldap://localhost</span>
+<span class="na">user</span> <span class="o">=</span> <span class="s">dc=Manager,dc=example,dc=org</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">samplepassword</span>
+<span class="na">suffix</span> <span class="o">=</span> <span class="s">dc=example,dc=org</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Multiple LDAP servers can be supplied to <code class="docutils literal"><span class="pre">url</span></code> to provide high-availability
+support for a single LDAP backend. To specify multiple LDAP servers, simply
+change the <code class="docutils literal"><span class="pre">url</span></code> option in the <code class="docutils literal"><span class="pre">[ldap]</span></code> section to be a list, separated by
+commas:</p>
+<blockquote>
+<div><div class="highlight-ini"><div class="highlight"><pre><span></span><span class="na">url</span> <span class="o">=</span> <span class="s">"ldap://localhost,ldap://backup.localhost"</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Additional LDAP integration settings</strong></p>
+<p>Set these options in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file for a
+single LDAP server, or <code class="docutils literal"><span class="pre">/etc/keystone/domains/keystone.DOMAIN_NAME.conf</span></code>
+files for multiple back ends. Example configurations appear below each
+setting summary:</p>
+<p><strong>Query option</strong></p>
+<table class="hlist"><tr><td><ul class="simple">
+<li>Use <code class="docutils literal"><span class="pre">query_scope</span></code> to control the scope level of data presented
+(search only the first level or search an entire sub-tree)
+through LDAP.</li>
+<li>Use <code class="docutils literal"><span class="pre">page_size</span></code> to control the maximum results per page. A value
+of zero disables paging.</li>
+<li>Use <code class="docutils literal"><span class="pre">alias_dereferencing</span></code> to control the LDAP dereferencing
+option for queries.</li>
+</ul>
+</td></tr></table>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">query_scope</span> <span class="o">=</span> <span class="s">sub</span>
+<span class="na">page_size</span> <span class="o">=</span> <span class="s">0</span>
+<span class="na">alias_dereferencing</span> <span class="o">=</span> <span class="s">default</span>
+<span class="na">chase_referrals</span> <span class="o">=</span>
+</pre></div>
+</div>
+<p><strong>Debug</strong></p>
+<p>Use <code class="docutils literal"><span class="pre">debug_level</span></code> to set the LDAP debugging level for LDAP calls.
+A value of zero means that debugging is not enabled.</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">debug_level</span> <span class="o">=</span> <span class="s">4095</span>
+</pre></div>
+</div>
+<p>This setting sets <code class="docutils literal"><span class="pre">OPT_DEBUG_LEVEL</span></code> in the underlying python library. This
+field is a bit mask (integer), and the possible flags are documented in the
+OpenLDAP manpages. Commonly used values include 255 and 4095, with 4095 being
+more verbose and 0 being disabled. We recommend consulting the documentation
+for your LDAP back end when using this option.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Enabling <code class="docutils literal"><span class="pre">debug_level</span></code> will negatively impact performance.</p>
+</div>
+<p><strong>Connection pooling</strong></p>
+<p>Various LDAP back ends use a common LDAP module to interact with LDAP data. By
+default, a new connection is established for each LDAP operation. This is
+expensive when TLS support is enabled, which is a likely configuration in an
+enterprise setup. Reusing connections from a connection pool drastically
+reduces overhead of initiating a new connection for every LDAP operation.</p>
+<p>Use <code class="docutils literal"><span class="pre">use_pool</span></code> to enable LDAP connection pooling. Configure the
+connection pool size, maximum retry, reconnect trials, timeout (-1
+indicates indefinite wait) and lifetime in seconds.</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">use_pool</span> <span class="o">=</span> <span class="s">true</span>
+<span class="na">pool_size</span> <span class="o">=</span> <span class="s">10</span>
+<span class="na">pool_retry_max</span> <span class="o">=</span> <span class="s">3</span>
+<span class="na">pool_retry_delay</span> <span class="o">=</span> <span class="s">0.1</span>
+<span class="na">pool_connection_timeout</span> <span class="o">=</span> <span class="s">-1</span>
+<span class="na">pool_connection_lifetime</span> <span class="o">=</span> <span class="s">600</span>
+</pre></div>
+</div>
+<p><strong>Connection pooling for end user authentication</strong></p>
+<p>LDAP user authentication is performed via an LDAP bind operation. In large
+deployments, user authentication can use up all available connections in a
+connection pool. OpenStack Identity provides a separate connection pool
+specifically for user authentication.</p>
+<p>Use <code class="docutils literal"><span class="pre">use_auth_pool</span></code> to enable LDAP connection pooling for end user
+authentication. Configure the connection pool size and lifetime in seconds.
+Both <code class="docutils literal"><span class="pre">use_pool</span></code> and <code class="docutils literal"><span class="pre">use_auth_pool</span></code> must be enabled to pool connections for
+user authentication.</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">use_auth_pool</span> <span class="o">=</span> <span class="s">false</span>
+<span class="na">auth_pool_size</span> <span class="o">=</span> <span class="s">100</span>
+<span class="na">auth_pool_connection_lifetime</span> <span class="o">=</span> <span class="s">60</span>
+</pre></div>
+</div>
+<p>When you have finished the configuration, restart the OpenStack Identity
+service.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">During the service restart, authentication and authorization are
+unavailable.</p>
+</div>
+</div>
+<div class="section" id="integrate-identity-back-end-with-ldap">
+<span id="integrate-identity-backend-ldap"></span><h2>Integrate Identity back end with LDAP<a class="headerlink" href="#integrate-identity-back-end-with-ldap" title="Permalink to this headline">¶</a></h2>
+<p>The Identity back end contains information for users, groups, and group
+member lists. Integrating the Identity back end with LDAP allows
+administrators to use users and groups in LDAP.</p>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">For OpenStack Identity service to access LDAP servers, you must
+define the destination LDAP server in the
+<code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file. For more information,
+see <a class="reference internal" href="#identity-ldap-server-setup"><span class="std std-ref">Identity LDAP server set up</span></a>.</p>
+</div>
+<p><strong>To integrate one Identity back end with LDAP</strong></p>
+<ol class="arabic">
+<li><p class="first">Enable the LDAP Identity driver in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code>
+file. This allows LDAP as an identity back end:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[identity]</span>
+<span class="c1">#driver = sql</span>
+<span class="na">driver</span> <span class="o">=</span> <span class="s">ldap</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create the organizational units (OU) in the LDAP directory, and define
+the corresponding location in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code>
+file:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_tree_dn</span> <span class="o">=</span> <span class="s">ou=Users,dc=example,dc=org</span>
+<span class="na">user_objectclass</span> <span class="o">=</span> <span class="s">inetOrgPerson</span>
+
+<span class="na">group_tree_dn</span> <span class="o">=</span> <span class="s">ou=Groups,dc=example,dc=org</span>
+<span class="na">group_objectclass</span> <span class="o">=</span> <span class="s">groupOfNames</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>These schema attributes are extensible for compatibility with
+various schemas. For example, this entry maps to the person
+attribute in Active Directory:</p>
+<div class="last highlight-ini"><div class="highlight"><pre><span></span><span class="na">user_objectclass</span> <span class="o">=</span> <span class="s">person</span>
+</pre></div>
+</div>
+</div>
+<p>Restart the OpenStack Identity service.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">During service restart, authentication and authorization are
+unavailable.</p>
+</div>
+</li>
+</ol>
+<p><strong>To integrate multiple Identity back ends with LDAP</strong></p>
+<ol class="arabic">
+<li><p class="first">Set the following options in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code>
+file:</p>
+<ol class="arabic">
+<li><p class="first">Enable the LDAP driver:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[identity]</span>
+<span class="c1">#driver = sql</span>
+<span class="na">driver</span> <span class="o">=</span> <span class="s">ldap</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Enable domain-specific drivers:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[identity]</span>
+<span class="na">domain_specific_drivers_enabled</span> <span class="o">=</span> <span class="s">True</span>
+<span class="na">domain_config_dir</span> <span class="o">=</span> <span class="s">/etc/keystone/domains</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</li>
+<li><p class="first">Restart the OpenStack Identity service.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">During service restart, authentication and authorization are
+unavailable.</p>
+</div>
+</li>
+<li><p class="first">List the domains using the dashboard, or the OpenStackClient CLI. Refer
+to the <a class="reference external" href="https://docs.openstack.org/developer/python-openstackclient/command-list.html">Command List</a>
+for a list of OpenStackClient commands.</p>
+</li>
+<li><p class="first">Create domains using OpenStack dashboard, or the OpenStackClient CLI.</p>
+</li>
+<li><p class="first">For each domain, create a domain-specific configuration file in the
+<code class="docutils literal"><span class="pre">/etc/keystone/domains</span></code> directory. Use the file naming convention
+<code class="docutils literal"><span class="pre">keystone.DOMAIN_NAME.conf</span></code>, where DOMAIN_NAME is the domain name
+assigned in the previous step.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The options set in the
+<code class="docutils literal"><span class="pre">/etc/keystone/domains/keystone.DOMAIN_NAME.conf</span></code> file will
+override options in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file.</p>
+</div>
+</li>
+<li><p class="first">Define the destination LDAP server in the
+<code class="docutils literal"><span class="pre">/etc/keystone/domains/keystone.DOMAIN_NAME.conf</span></code> file. For example:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">url</span> <span class="o">=</span> <span class="s">ldap://localhost</span>
+<span class="na">user</span> <span class="o">=</span> <span class="s">dc=Manager,dc=example,dc=org</span>
+<span class="na">password</span> <span class="o">=</span> <span class="s">samplepassword</span>
+<span class="na">suffix</span> <span class="o">=</span> <span class="s">dc=example,dc=org</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Create the organizational units (OU) in the LDAP directories, and define
+their corresponding locations in the
+<code class="docutils literal"><span class="pre">/etc/keystone/domains/keystone.DOMAIN_NAME.conf</span></code> file. For example:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_tree_dn</span> <span class="o">=</span> <span class="s">ou=Users,dc=example,dc=org</span>
+<span class="na">user_objectclass</span> <span class="o">=</span> <span class="s">inetOrgPerson</span>
+
+<span class="na">group_tree_dn</span> <span class="o">=</span> <span class="s">ou=Groups,dc=example,dc=org</span>
+<span class="na">group_objectclass</span> <span class="o">=</span> <span class="s">groupOfNames</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>These schema attributes are extensible for compatibility with
+various schemas. For example, this entry maps to the person
+attribute in Active Directory:</p>
+<div class="last highlight-ini"><div class="highlight"><pre><span></span><span class="na">user_objectclass</span> <span class="o">=</span> <span class="s">person</span>
+</pre></div>
+</div>
+</div>
+</li>
+<li><p class="first">Restart the OpenStack Identity service.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">During service restart, authentication and authorization are
+unavailable.</p>
+</div>
+</li>
+</ol>
+<p><strong>Additional LDAP integration settings</strong></p>
+<p>Set these options in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file for a
+single LDAP server, or <code class="docutils literal"><span class="pre">/etc/keystone/domains/keystone.DOMAIN_NAME.conf</span></code>
+files for multiple back ends. Example configurations appear below each
+setting summary:</p>
+<dl class="docutils">
+<dt>Filters</dt>
+<dd><p class="first">Use filters to control the scope of data presented through LDAP.</p>
+<div class="last highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_filter</span> <span class="o">=</span> <span class="s">(memberof=cn=openstack-users,ou=workgroups,dc=example,dc=org)</span>
+<span class="na">group_filter</span> <span class="o">=</span>
+</pre></div>
+</div>
+</dd>
+<dt>Identity attribute mapping</dt>
+<dd><p class="first">Mask account status values (include any additional attribute
+mappings) for compatibility with various directory services.
+Superfluous accounts are filtered with <code class="docutils literal"><span class="pre">user_filter</span></code>.</p>
+<p>Setting attribute ignore to list of attributes stripped off on
+update.</p>
+<p>For example, you can mask Active Directory account status attributes
+in the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_id_attribute</span>      <span class="o">=</span> <span class="s">cn</span>
+<span class="na">user_name_attribute</span>    <span class="o">=</span> <span class="s">sn</span>
+<span class="na">user_mail_attribute</span>    <span class="o">=</span> <span class="s">mail</span>
+<span class="na">user_pass_attribute</span>    <span class="o">=</span> <span class="s">userPassword</span>
+<span class="na">user_enabled_attribute</span> <span class="o">=</span> <span class="s">userAccountControl</span>
+<span class="na">user_enabled_mask</span>      <span class="o">=</span> <span class="s">2</span>
+<span class="na">user_enabled_invert</span>    <span class="o">=</span> <span class="s">false</span>
+<span class="na">user_enabled_default</span>   <span class="o">=</span> <span class="s">512</span>
+<span class="na">user_default_project_id_attribute</span> <span class="o">=</span>
+<span class="na">user_additional_attribute_mapping</span> <span class="o">=</span>
+
+<span class="na">group_id_attribute</span>     <span class="o">=</span> <span class="s">cn</span>
+<span class="na">group_name_attribute</span>   <span class="o">=</span> <span class="s">ou</span>
+<span class="na">group_member_attribute</span> <span class="o">=</span> <span class="s">member</span>
+<span class="na">group_desc_attribute</span>   <span class="o">=</span> <span class="s">description</span>
+<span class="na">group_additional_attribute_mapping</span> <span class="o">=</span>
+</pre></div>
+</div>
+<p>It is possible to model more complex LDAP schemas. For example, in the user
+object, the objectClass posixAccount from <a class="reference external" href="https://tools.ietf.org/html/rfc2307">RFC2307</a>
+is very common. If this is the underlying objectClass, then the <code class="docutils literal"><span class="pre">uid</span></code>
+field should probably be <code class="docutils literal"><span class="pre">uidNumber</span></code> and the <code class="docutils literal"><span class="pre">username</span></code> field should be
+either <code class="docutils literal"><span class="pre">uid</span></code> or <code class="docutils literal"><span class="pre">cn</span></code>. The following illustrates the configuration:</p>
+<div class="last highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_id_attribute</span> <span class="o">=</span> <span class="s">uidNumber</span>
+<span class="na">user_name_attribute</span> <span class="o">=</span> <span class="s">cn</span>
+</pre></div>
+</div>
+</dd>
+<dt>Enabled emulation</dt>
+<dd><p class="first">OpenStack Identity supports emulation for integrating with LDAP servers that
+do not provide an <code class="docutils literal"><span class="pre">enabled</span></code> attribute for users. This allows OpenStack
+Identity to advertise <code class="docutils literal"><span class="pre">enabled</span></code> attributes when the user entity in LDAP
+does not. The <code class="docutils literal"><span class="pre">user_enabled_emulation</span></code> option must be enabled and the
+<code class="docutils literal"><span class="pre">user_enabled_emulation_dn</span></code> option must be a valid LDAP group. Users in
+the group specified by <code class="docutils literal"><span class="pre">user_enabled_emulation_dn</span></code> will be marked as
+<code class="docutils literal"><span class="pre">enabled</span></code>. For example, the following will mark any user who is a member
+of the <code class="docutils literal"><span class="pre">enabled_users</span></code> group as enabled:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_enabled_emulation</span> <span class="o">=</span> <span class="s">True</span>
+<span class="na">user_enabled_emulation_dn</span> <span class="o">=</span> <span class="s">cn=enabled_users,cn=groups,dc=openstack,dc=org</span>
+</pre></div>
+</div>
+<p>If the directory server has an enabled attribute, but it is not a boolean
+type, a mask can be used to convert it. This is useful when the enabled
+attribute is an integer value. The following configuration highlights the
+usage:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[ldap]</span>
+<span class="na">user_enabled_attribute</span> <span class="o">=</span> <span class="s">userAccountControl</span>
+<span class="na">user_enabled_mask</span> <span class="o">=</span> <span class="s">2</span>
+<span class="na">user_enabled_default</span> <span class="o">=</span> <span class="s">512</span>
+</pre></div>
+</div>
+<p>In this case, the attribute is an integer and the enabled attribute is
+listed in bit 1. If the mask configured <code class="docutils literal"><span class="pre">user_enabled_mask</span></code> is different
+from 0, it retrieves the attribute from <code class="docutils literal"><span class="pre">user_enabled_attribute</span></code> and
+performs an add operation with the <code class="docutils literal"><span class="pre">user_enabled_mask</span></code>. If the sum of the
+operation matches the mask, then the account is disabled.</p>
+<p class="last">The value of <code class="docutils literal"><span class="pre">user_enabled_attribute</span></code> is also saved before applying the
+add operation in <code class="docutils literal"><span class="pre">enabled_nomask</span></code>. This is done in case the user needs to
+be enabled or disabled. Lastly, setting <code class="docutils literal"><span class="pre">user_enabled_default</span></code> is needed
+in order to create a default value on the integer attribute (512 = NORMAL
+ACCOUNT in Active Directory).</p>
+</dd>
+</dl>
+<p>When you have finished configuration, restart the OpenStack Identity
+service.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">During service restart, authentication and authorization are
+unavailable.</p>
+</div>
+</div>
+<div class="section" id="secure-the-openstack-identity-service-connection-to-an-ldap-back-end">
+<h2>Secure the OpenStack Identity service connection to an LDAP back end<a class="headerlink" href="#secure-the-openstack-identity-service-connection-to-an-ldap-back-end" title="Permalink to this headline">¶</a></h2>
+<p>We recommend securing all connections between OpenStack Identity and LDAP. The
+Identity service supports the use of TLS to encrypt LDAP traffic. Before
+configuring this, you must first verify where your certificate authority file
+is located. For more information, see the <a class="reference external" href="46.html">OpenStack Security Guide SSL
+introduction</a>.</p>
+<p>Once you verify the location of your certificate authority file:</p>
+<p><strong>To configure TLS encryption on LDAP traffic</strong></p>
+<ol class="arabic">
+<li><p class="first">Open the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> configuration file.</p>
+</li>
+<li><p class="first">Find the <code class="docutils literal"><span class="pre">[ldap]</span></code> section.</p>
+</li>
+<li><p class="first">In the <code class="docutils literal"><span class="pre">[ldap]</span></code> section, set the <code class="docutils literal"><span class="pre">use_tls</span></code> configuration key to
+<code class="docutils literal"><span class="pre">True</span></code>. Doing so will enable TLS.</p>
+</li>
+<li><p class="first">Configure the Identity service to use your certificate authorities file.
+To do so, set the <code class="docutils literal"><span class="pre">tls_cacertfile</span></code> configuration key in the <code class="docutils literal"><span class="pre">ldap</span></code>
+section to the certificate authorities file’s path.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You can also set the <code class="docutils literal"><span class="pre">tls_cacertdir</span></code> (also in the <code class="docutils literal"><span class="pre">ldap</span></code>
+section) to the directory where all certificate authorities files
+are kept. If both <code class="docutils literal"><span class="pre">tls_cacertfile</span></code> and <code class="docutils literal"><span class="pre">tls_cacertdir</span></code> are set,
+then the latter will be ignored.</p>
+</div>
+</li>
+<li><p class="first">Specify what client certificate checks to perform on incoming TLS
+sessions from the LDAP server. To do so, set the <code class="docutils literal"><span class="pre">tls_req_cert</span></code>
+configuration key in the <code class="docutils literal"><span class="pre">[ldap]</span></code> section to <code class="docutils literal"><span class="pre">demand</span></code>, <code class="docutils literal"><span class="pre">allow</span></code>, or
+<code class="docutils literal"><span class="pre">never</span></code>:</p>
+<table class="hlist"><tr><td><ul class="simple">
+<li><code class="docutils literal"><span class="pre">demand</span></code> - The LDAP server always receives certificate
+requests. The session terminates if no certificate
+is provided, or if the certificate provided cannot be verified
+against the existing certificate authorities file.</li>
+<li><code class="docutils literal"><span class="pre">allow</span></code> - The LDAP server always receives certificate
+requests. The session will proceed as normal even if a certificate
+is not provided. If a certificate is provided but it cannot be
+verified against the existing certificate authorities file, the
+certificate will be ignored and the session will proceed as
+normal.</li>
+<li><code class="docutils literal"><span class="pre">never</span></code> - A certificate will never be requested.</li>
+</ul>
+</td></tr></table>
+</li>
+</ol>
+<p>When you have finished configuration, restart the OpenStack Identity
+service.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are unable to connect to LDAP via OpenStack Identity, or observe a
+<em>SERVER DOWN</em> error, set the <code class="docutils literal"><span class="pre">TLS_CACERT</span></code> in <code class="docutils literal"><span class="pre">/etc/ldap/ldap.conf</span></code> to
+the same value specified in the <code class="docutils literal"><span class="pre">[ldap]</span> <span class="pre">tls_certificate</span></code> section of
+<code class="docutils literal"><span class="pre">keystone.conf</span></code>.</p>
+</div>
+<p>On distributions that include openstack-config, you can configure TLS
+encryption on LDAP traffic by running the following commands instead.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">#</span> openstack-config --set /etc/keystone/keystone.conf <span class="se">\</span>
+  ldap use_tls True
+<span class="gp">#</span> openstack-config --set /etc/keystone/keystone.conf <span class="se">\</span>
+  ldap tls_cacertfile <span class="sb">``</span>CA_FILE<span class="sb">``</span>
+<span class="gp">#</span> openstack-config --set /etc/keystone/keystone.conf <span class="se">\</span>
+  ldap tls_req_cert <span class="sb">``</span>CERT_BEHAVIOR<span class="sb">``</span>
+</pre></div>
+</div>
+<p>Where:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">CA_FILE</span></code> is the absolute path to the certificate authorities file
+that should be used to encrypt LDAP traffic.</li>
+<li><code class="docutils literal"><span class="pre">CERT_BEHAVIOR</span></code> specifies what client certificate checks to perform
+on an incoming TLS session from the LDAP server (<code class="docutils literal"><span class="pre">demand</span></code>,
+<code class="docutils literal"><span class="pre">allow</span></code>, or <code class="docutils literal"><span class="pre">never</span></code>).</li>
+</ul>
+</div>
+</div>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

@@ -1,0 +1,242 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Securing Connections for Client and Server</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-23">Каталог источников</a> · [23] · <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/securing-connections-for-client-and-server">Страница издателя</a></header><main><div><h1 id="securing-connections-for-client-and-server">Securing Connections
+for Client and Server</h1>
+<p>Complete MariaDB security guide. Complete resource for user
+management, access control, SSL/TLS encryption, and audit policies with
+comprehensive examples.</p>
+<p>Starting from 11.4 MariaDB, it encrypts the transmitted data between
+the server and clients by default unless the server and client run on
+the same host.</p>
+<p>Before that the default behavior was to transmit the data unencrypted
+over the network introducing a security concerns as a malicious actor
+could potentially eavesdrop on the traffic as it is sent over the
+network between them.</p>
+<p>The data in transit are encrypted (by default or if enabled manually)
+using the Transport Layer Security (TLS) protocol. TLS was formerly
+known as Secure Socket Layer (SSL), but strictly speaking the SSL
+protocol is a predecessor to TLS and, that version of the protocol is
+now considered insecure. The documentation still uses the term SSL often
+and for compatibility reasons TLS-related server system and status
+variables still use the prefix <code>ssl_</code>, but internally,
+MariaDB only supports its secure successors.</p>
+<h2 id="enabling-tls">Enabling TLS</h2>
+<h3 id="enabling-tls-for-mariadb-server">Enabling TLS for MariaDB
+Server</h3>
+<h4 id="current">Current</h4>
+<p>From MariaDB 11.4:</p>
+<p>MariaDB <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/zero-configuration-ssl.md">enables
+TLS automatically</a>. Certificates are generated on startup and only
+stored in memory. Certificate verification is enabled by default on the
+client side and certificates are verified if the authentication plugin
+itself is MitM safe (<code>mysql_native_password</code>,
+<code>ed25519</code>, <code>parsec</code>).</p>
+<h4 id="before-11.4">before 11.4</h4>
+<p>Before MariaDB 11.4:</p>
+<p>In order to enable TLS in a MariaDB server, you need to generate TLS
+certificates and configure the server to use them.</p>
+<p>To do that there are a number of system variables that you need to
+set, such as:</p>
+<ul>
+<li>You need to set the path to the server’s X509 certificate by setting
+the <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#ssl_cert">ssl_cert</a>
+system variable.</li>
+<li>You need to set the path to the server’s private key by setting the
+<a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#ssl_key">ssl_key</a>
+system variable.</li>
+<li>Unless you use a certificate which was signed by a trusted
+certificate authority (CA) you need to set the path to the certificate
+authority chain that can verify the server’s certificate by setting
+either the <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#ssl_ca">ssl_ca</a>
+or the <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#ssl_capath">ssl_capath</a>
+system variables.</li>
+<li>If you want to restrict the server to certain ciphers, then you also
+need to set the <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#ssl_cipher">ssl_cipher</a>
+system variable.</li>
+</ul>
+<p>For example, to set these variables for the server, add the system
+variables to a relevant server <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md#option-groups">option
+group</a> in an <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md">option
+file</a>:</p>
+<pre><code>[mariadb]
+...
+ssl_cert = /etc/my.cnf.d/certificates/server-cert.pem
+ssl_key = /etc/my.cnf.d/certificates/server-key.pem
+ssl_ca = /etc/my.cnf.d/certificates/ca.pem</code></pre>
+<p>And then restart the server to make the changes persistent.</p>
+<p>Once the server is back up, you can check that TLS is enabled by
+checking the value of the <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/ssltls-system-variables.md#have_ssl">have_ssl</a>
+system variable. For example:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>SHOW VARIABLES <span class="kw">LIKE</span> <span class="st">'have_ssl'</span>;</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+-------+</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>| Variable_name | <span class="fu">Value</span> |</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+-------+</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>| have_ssl      | YES   |</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+-------+</span></span></code></pre></div>
+<h4 id="reloading-the-servers-certificates-and-keys-dynamically">Reloading
+the Server’s Certificates and Keys Dynamically</h4>
+<p>The <code>FLUSH SSL</code> command can be used to dynamically
+reinitialize the server’s <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption.md">TLS</a>
+context.</p>
+<p>See <a href="https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/flush-commands/flush.md#flush-ssl">FLUSH
+SSL</a> for more information.</p>
+<h3 id="enabling-tls-for-mariadb-clients">Enabling TLS for MariaDB
+Clients</h3>
+<p>Different <a href="https://mariadb.com/docs/server/clients-and-utilities.md">clients and
+utilities</a> may use different methods to enable TLS. You can let the
+client to use TLS without specifying client-side certificate — this is
+called a <strong>one-way TLS</strong> below — to have the connection
+encrypted. Or you can additionally provide client-side certificate —
+this is <strong>two-way TLS</strong> — which will allow the server to do
+the certificate based client authentication.</p>
+<h4 id="enabling-one-way-tls-for-mariadb-clients">Enabling One-Way TLS
+for MariaDB Clients</h4>
+<p>One-way TLS means that only the server provides a private key and an
+X509 certificate. When TLS is used without a client certificate, it is
+called “one-way” TLS, because only the server can be authenticated, so
+certificate based authentication is only possible in one direction.
+However, encryption is still possible in both directions. <a href="https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/secure-connections-overview.md#server-certificate-verification">Server
+certificate verification</a> means that the client verifies that the
+certificate belongs to the server.</p>
+<p><strong>MariaDB starting with</strong> <a href="https://mariadb.com/docs/release-notes/community-server/11.4/what-is-mariadb-114.md"><strong>11.4</strong></a></p>
+<p>Starting from <a href="https://mariadb.com/docs/release-notes/community-server/11.4/what-is-mariadb-114.md">MariaDB
+11.4</a> (Connector/C version 3.4) this mode is enabled by default.
+Connector/C will enable TLS automatically on all non-local connections
+and will require a verified server certificate to prevent
+man-in-the-middle attacks.</p>
+<p>To enable one-way TLS manually (for older clients or if you want
+verification with CA certificate) you can specify these options in a
+relevant client <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md#option-groups">option
+group</a> in an <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md">option
+file</a>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[client-mariadb]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl_ca </span><span class="ot">=</span><span class="st"> /etc/my.cnf.d/certificates/ca.pem</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl-verify-server-cert</span></span></code></pre></div>
+<p>Or if you wanted to specify them on the command-line with the <a href="https://mariadb.com/docs/server/clients-and-utilities/mariadb-client/mariadb-command-line-client.md">mariadb</a>
+client, then you could execute something like this:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mariadb <span class="at">-u</span> myuser <span class="at">-p</span> <span class="at">-h</span> myserver.mydomain.com <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-ca</span><span class="op">=</span>/etc/my.cnf.d/certificates/ca.pem <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-verify-server-cert</span></span></code></pre></div>
+<p>You can disable server certificate verification by configuring
+this:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[client-mariadb]</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">disable-ssl-verify-server-cert</span></span></code></pre></div>
+<p>(or a similar command line option), but it creates a risk of a
+man-in-the-middle attack where the connection can be eavesdropped or
+manipulated even if it is being encrypted.</p>
+<h4 id="enabling-two-way-tls-for-mariadb-clients">Enabling Two-Way TLS
+for MariaDB Clients</h4>
+<p>Two-way TLS means that both the client and server provide a private
+key and an X509 certificate. It is called “two-way” TLS because both the
+client and server can be authenticated.</p>
+<p>For example, to specify these options in a relevant client <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md#option-groups">option
+group</a> in an <a href="https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/configuring-mariadb/configuring-mariadb-with-option-files.md">option
+file</a>, you could set the following:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode ini"><code class="sourceCode ini"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[client-mariadb]</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl_cert </span><span class="ot">=</span><span class="st"> /etc/my.cnf.d/certificates/client-cert.pem</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl_key </span><span class="ot">=</span><span class="st"> /etc/my.cnf.d/certificates/client-key.pem</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl_ca </span><span class="ot">=</span><span class="st"> /etc/my.cnf.d/certificates/ca.pem</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="dt">ssl-verify-server-cert</span></span></code></pre></div>
+<p>Or if you wanted to specify them on the command-line with the <a href="https://mariadb.com/docs/server/clients-and-utilities/mariadb-client/mariadb-command-line-client.md">mariadb</a>
+client, then you could execute something like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> mariadb <span class="at">-u</span> myuser <span class="at">-p</span> <span class="at">-h</span> myserver.mydomain.com <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-cert</span><span class="op">=</span>/etc/my.cnf.d/certificates/client-cert.pem <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-key</span><span class="op">=</span>/etc/my.cnf.d/certificates/client-key.pem <span class="dt">\</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-ca</span><span class="op">=</span>/etc/my.cnf.d/certificates/ca.pem <span class="dt">\</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">--ssl-verify-server-cert</span></span></code></pre></div>
+<p>Two-way SSL is required for an account if the
+<code>REQUIRE X509</code>, <code>REQUIRE SUBJECT</code>, and/or
+<code>REQUIRE ISSUER</code> clauses are specified for the account.</p>
+<h3 id="enabling-tls-for-mariadb-connectorc-clients">Enabling TLS for
+MariaDB Connector/C Clients</h3>
+<p>See the documentation on MariaDB Connector/C’s <a href="https://mariadb.com/docs/connectors/mariadb-connector-c/api-functions/mysql_optionsv.md#tls-options">TLS
+Options</a> for information on how to enable TLS for clients that use
+MariaDB Connector/C.</p>
+<h3 id="enabling-tls-for-mariadb-connectorodbc-clients">Enabling TLS for
+MariaDB Connector/ODBC Clients</h3>
+<p>See the documentation on MariaDB Connector/ODBC’s TLS-Related
+Connection Parameters for information on how to enable TLS for clients
+that use MariaDB Connector/ODBC.</p>
+<h3 id="enabling-tls-for-mariadb-connectorj-clients">Enabling TLS for
+MariaDB Connector/J Clients</h3>
+<p>See the documentation on <a href="https://mariadb.com/docs/connectors/mariadb-connector-j/using-tls-ssl-with-mariadb-java-connector.md">Using
+TLS/SSL with MariaDB Connector/J</a> for information on how to enable
+TLS for clients that use MariaDB Connector/J.</p>
+<h2 id="verifying-that-a-connection-is-using-tls">Verifying that a
+Connection is Using TLS</h2>
+<p>You can verify that a connection is using TLS by checking the
+connection’s <a href="https://mariadb.com/docs/server/ha-and-performance/optimization-and-tuning/system-variables/ssltls-status-variables.md">Ssl_version</a>
+status variable. It will either show the TLS version used, or be empty
+when no encryption is in effect. For example:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>SHOW <span class="kw">SESSION</span> STATUS <span class="kw">LIKE</span> <span class="st">'Ssl_version'</span>;</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+---------------------------+</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>| Variable_name | <span class="fu">Value</span>                     |</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+---------------------------+</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>| Ssl_version   | TLSv1<span class="fl">.3</span>                   |</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="op">+</span><span class="co">---------------+---------------------------+</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="kw">row</span> <span class="kw">in</span> <span class="kw">set</span> (<span class="fl">0.00</span> sec)</span></code></pre></div>
+<h3 id="requiring-tls-for-specific-user-accounts">Requiring TLS for
+Specific User Accounts</h3>
+<p>You can set certain TLS-related restrictions for specific user
+accounts. For instance, you might use this with user accounts that
+require access to sensitive data while sending it across networks that
+you do not control. These restrictions can be enabled for a user account
+with the <a href="https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user.md">CREATE
+USER</a>, <a href="https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/alter-user.md">ALTER
+USER</a>, or <a href="https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant.md">GRANT</a>
+statements. For example:</p>
+<ul>
+<li>A user account must connect via TLS if the user account is defined
+with the <code>REQUIRE SSL</code> clause.</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span> </span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE SSL;</span></code></pre></div>
+<ul>
+<li>A user account must connect via TLS with a specific cipher if the
+user account is defined with the <code>REQUIRE CIPHER</code>
+clause.</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span> </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE CIPHER <span class="st">'ECDH-RSA-AES256-SHA384'</span>;</span></code></pre></div>
+<ul>
+<li>A user account must connect via TLS with a valid client certificate
+if the user account is defined with the <code>REQUIRE X509</code>
+clause.</li>
+</ul>
+<div class="sourceCode" id="cb11"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span> </span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE X509;</span></code></pre></div>
+<ul>
+<li>A user account must connect via TLS with a specific client
+certificate if the user account is defined with the
+<code>REQUIRE SUBJECT</code> clause.</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE SUBJECT <span class="st">'/CN=alice/O=My Dom, Inc./C=US/ST=Oregon/L=Portland'</span>;</span></code></pre></div>
+<ul>
+<li>A user account must connect via TLS with a client certificate that
+must be signed by a specific certificate authority if the user account
+is defined with the <code>REQUIRE ISSUER</code> clause.</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE SUBJECT <span class="st">'/CN=alice/O=My Dom, Inc./C=US/ST=Oregon/L=Portland'</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>   <span class="kw">AND</span> ISSUER <span class="st">'/C=FI/ST=Somewhere/L=City/ O=Some Company/CN=Peter Parker/emailAddress=p.parker@marvel.com'</span>;</span></code></pre></div>
+<h3 id="requiring-tls-for-specific-user-accounts-from-specific-hosts">Requiring
+TLS for Specific User Accounts from Specific Hosts</h3>
+<p>A user account can have different definitions depending on what host
+the user account is logging in from. Therefore, it is possible to have
+different TLS requirements for the same username for different hosts.
+For example:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'localhost'</span> </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>   REQUIRE <span class="kw">NONE</span>;</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="fu">USER</span> <span class="st">'alice'</span>@<span class="st">'%'</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>   REQUIRE SUBJECT <span class="st">'/CN=alice/O=My Dom, Inc./C=US/ST=Oregon/L=Portland'</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>   <span class="kw">AND</span> ISSUER <span class="st">'/C=FI/ST=Somewhere/L=City/ O=Some Company/CN=Peter Parker/emailAddress=p.parker@marvel.com'</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>   <span class="kw">AND</span> CIPHER <span class="st">'ECDHE-ECDSA-AES256-SHA384'</span>;</span></code></pre></div>
+<p>In the above example, the <code>alice</code> user account does not
+require TLS when logging in from localhost. However, when the
+<code>alice</code> user account logs in from any other host, they must
+use TLS with the given cipher, and they must provide a valid client
+certificate with the given subject that must have been signed by the
+given issuer.</p>
+<p><sub><em>This page is licensed: CC BY-SA / Gnu FDL</em></sub></p>
+</div></main><footer lang="ru">MariaDB Documentation. <a href="https://mariadb.com/docs/">MariaDB</a>. Лицензия страницы, указанная источником: CC BY-SA / GNU FDL. Содержимое сохранено на языке оригинала; изменено оформление.</footer></body></html>

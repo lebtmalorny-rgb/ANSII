@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Horizon - OpenStack dashboard · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="horizon-openstack-dashboard">
+<span id="horizon-guide"></span><h1>Horizon - OpenStack dashboard<a class="headerlink" href="#horizon-openstack-dashboard" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>Kolla can deploy a full working Horizon dashboard setup in either
+a <strong>all-in-one</strong> or <strong>multinode</strong> setup.</p>
+</section>
+<section id="extending-the-default-local-settings-options">
+<h2>Extending the default local_settings options<a class="headerlink" href="#extending-the-default-local-settings-options" title="Link to this heading">¶</a></h2>
+<p>It is possible to extend the default configuration options for
+Horizon by using a custom python settings file that will override
+the default options set on the local_settings file.</p>
+<p>As an example, for setting a different (material) theme as the default one,
+a file named _9999-custom-settings.py should be created under the directory
+<code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">node_custom_config</span> <span class="pre">}}/horizon/</span></code> with the following contents:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">AVAILABLE_THEMES</span> <span class="o">=</span> <span class="p">[</span>
+             <span class="p">(</span><span class="s1">'material'</span><span class="p">,</span> <span class="s1">'Material'</span><span class="p">,</span> <span class="s1">'themes/material'</span><span class="p">),</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>As a result material theme will be the only one available, and used by default.
+Other way of setting default theme is shown in the next section.</p>
+<section id="adding-custom-themes">
+<h3>Adding custom themes<a class="headerlink" href="#adding-custom-themes" title="Link to this heading">¶</a></h3>
+<p>It is possible to add custom themes to be available for Horizon
+by using <code class="docutils literal notranslate"><span class="pre">horizon_custom_themes</span></code> configuration variable in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code>.
+This entry updates AVAILABLE_THEMES adding the new theme at the list end.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">horizon_custom_themes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_custom_theme</span>
+<span class="w">    </span><span class="nt">label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CustomTheme</span>
+</pre></div>
+</div>
+<p>Theme files have to be copied into:
+<code class="docutils literal notranslate"><span class="pre">{{</span> <span class="pre">node_custom_config</span> <span class="pre">}}/horizon/themes/my_custom_theme</span></code>.
+The new theme can be set as default in _9999-custom-settings.py:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">DEFAULT_THEME</span> <span class="o">=</span> <span class="s1">'my_custom_theme'</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект kolla-ansible. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/shared-services/horizon-guide.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

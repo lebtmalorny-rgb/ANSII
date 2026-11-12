@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>role assignment · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="role-assignment">
+<h1>role assignment<a class="headerlink" href="#role-assignment" title="Link to this heading">¶</a></h1>
+<p>Identity v2, v3</p>
+<section id="role-assignment-list">
+<h2>role assignment list<a class="headerlink" href="#role-assignment-list" title="Link to this heading">¶</a></h2>
+<p>List role assignments</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>list
+<span class="w">    </span><span class="o">[</span>--role<span class="w"> </span>&lt;role&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--role-domain<span class="w"> </span>&lt;role-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--user<span class="w"> </span>&lt;user&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--user-domain<span class="w"> </span>&lt;user-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--group<span class="w"> </span>&lt;group&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--group-domain<span class="w"> </span>&lt;group-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--domain<span class="w"> </span>&lt;domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project<span class="w"> </span>&lt;project&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--effective<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--inherited<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--names<span class="o">]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-role">
+<span class="sig-name descname"><span class="pre">--role</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;role&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-role" title="Link to this definition">¶</a></dt>
+<dd><p>Role to filter (name or ID)</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-role-domain">
+<span class="sig-name descname"><span class="pre">--role-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;role-domain&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-role-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the role belongs to (name or ID).
+This can be used in case collisions between role names exist.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-user">
+<span class="sig-name descname"><span class="pre">--user</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;user&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-user" title="Link to this definition">¶</a></dt>
+<dd><p>User to filter (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-user-domain">
+<span class="sig-name descname"><span class="pre">--user-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;user-domain&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-user-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the user belongs to (name or ID).
+This can be used in case collisions between user names exist.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-group">
+<span class="sig-name descname"><span class="pre">--group</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;group&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-group" title="Link to this definition">¶</a></dt>
+<dd><p>Group to filter (name or ID)</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-group-domain">
+<span class="sig-name descname"><span class="pre">--group-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;group-domain&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-group-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the group belongs to (name or ID).
+This can be used in case collisions between group names exist.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-domain">
+<span class="sig-name descname"><span class="pre">--domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;domain&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain to filter (name or ID)</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-project">
+<span class="sig-name descname"><span class="pre">--project</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-project" title="Link to this definition">¶</a></dt>
+<dd><p>Project to filter (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-role-assignment-list-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID).
+This can be used in case collisions between project names exist.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-effective">
+<span class="sig-name descname"><span class="pre">--effective</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-role-assignment-list-effective" title="Link to this definition">¶</a></dt>
+<dd><p>Returns only effective role assignments (defaults to False)</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-inherited">
+<span class="sig-name descname"><span class="pre">--inherited</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-role-assignment-list-inherited" title="Link to this definition">¶</a></dt>
+<dd><p>Specifies if the role grant is inheritable to the sub projects</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 3.</span></p>
+</div>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-names">
+<span class="sig-name descname"><span class="pre">--names</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-role-assignment-list-names" title="Link to this definition">¶</a></dt>
+<dd><p>Returns role assignments with names instead of IDs</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-auth-user">
+<span class="sig-name descname"><span class="pre">--auth-user</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-role-assignment-list-auth-user" title="Link to this definition">¶</a></dt>
+<dd><p>Returns role assignments for the authenticated user.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-role-assignment-list-auth-project">
+<span class="sig-name descname"><span class="pre">--auth-project</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-role-assignment-list-auth-project" title="Link to this definition">¶</a></dt>
+<dd><p>Returns role assignments for the project to which the authenticated user
+is scoped.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект python-openstackclient. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/role-assignment.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

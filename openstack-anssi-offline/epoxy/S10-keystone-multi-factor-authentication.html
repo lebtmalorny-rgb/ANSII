@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multi-Factor Authentication · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="multi-factor-authentication">
+<span id="id1"></span><h1>Multi-Factor Authentication<a class="headerlink" href="#multi-factor-authentication" title="Link to this heading">¶</a></h1>
+<section id="configuring-mfa">
+<h2>Configuring MFA<a class="headerlink" href="#configuring-mfa" title="Link to this heading">¶</a></h2>
+<p>MFA is configured on a per user basis via the user options
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/resource-options.html#multi-factor-auth-rules"><span class="std std-ref">multi_factor_auth_rules</span></a> and <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/resource-options.html#multi-factor-auth-enabled"><span class="std std-ref">multi_factor_auth_enabled</span></a>. Until
+these are set the user can authenticate with any one of the enabled auth
+methods.</p>
+<section id="mfa-rules">
+<h3>MFA rules<a class="headerlink" href="#mfa-rules" title="Link to this heading">¶</a></h3>
+<p>The MFA rules allow an admin to force a user to use specific forms of
+authentication or combinations of forms of authentication to get a token.</p>
+<p>The rules are specified as follows via the user option
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/resource-options.html#multi-factor-auth-rules"><span class="std std-ref">multi_factor_auth_rules</span></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[[</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">"totp"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"password"</span><span class="p">,</span> <span class="s2">"custom-auth-method"</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>They are a list of lists. The elements of the sub-lists must be strings and are
+intended to mirror the required authentication method names (e.g. <code class="docutils literal notranslate"><span class="pre">password</span></code>,
+<code class="docutils literal notranslate"><span class="pre">totp</span></code>, etc) as defined in the <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code> file in the
+<code class="docutils literal notranslate"><span class="pre">[auth]</span> <span class="pre">methods</span></code> option. Each list of methods specifies a rule.</p>
+<p>If the auth methods provided by a user match (or exceed) the auth methods in
+the list, that rule is used. The first rule found (rules will not be processed
+in a specific order) that matches will be used. If a user has the ruleset
+defined as <code class="docutils literal notranslate"><span class="pre">[["password",</span> <span class="pre">"totp"]]</span></code> the user must provide both password and
+totp auth methods (and both methods must succeed) to receive a token. However,
+if a user has a ruleset defined as <code class="docutils literal notranslate"><span class="pre">[["password"],</span> <span class="pre">["password",</span> <span class="pre">"totp"]]</span></code>
+the user may use the <code class="docutils literal notranslate"><span class="pre">password</span></code> method on it’s own but would be required
+to use both <code class="docutils literal notranslate"><span class="pre">password</span></code> and <code class="docutils literal notranslate"><span class="pre">totp</span></code> if <code class="docutils literal notranslate"><span class="pre">totp</span></code> is specified at all.</p>
+<p>Any auth methods that are not defined in <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code> in the
+<code class="docutils literal notranslate"><span class="pre">[auth]</span> <span class="pre">methods</span></code> option are ignored when the rules are processed. Empty
+rules are not allowed. If a rule is empty due to no-valid auth methods
+existing within it, the rule is discarded at authentication time. If there
+are no rules or no valid rules for the user, authentication occurs in the
+default manner: any single configured auth method is sufficient to receive
+a token.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">token</span></code> auth method typically should not be specified in any MFA
+Rules. The <code class="docutils literal notranslate"><span class="pre">token</span></code> auth method will include all previous auth methods
+for the original auth request and will match the appropriate ruleset. This
+is intentional, as the <code class="docutils literal notranslate"><span class="pre">token</span></code> method is used for rescoping/changing
+active projects.</p>
+</div>
+</section>
+<section id="enabling-mfa">
+<h3>Enabling MFA<a class="headerlink" href="#enabling-mfa" title="Link to this heading">¶</a></h3>
+<p>Before the MFA rules take effect on a user, MFA has to be enabled for that user
+via the user option <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/resource-options.html#multi-factor-auth-enabled"><span class="std std-ref">multi_factor_auth_enabled</span></a>. By default this is unset,
+and the rules will not take effect until configured.</p>
+<p>In the case a user should be exempt from MFA Rules, regardless if they are
+set, the User-Option may be set to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</section>
+</section>
+<section id="using-mfa">
+<h2>Using MFA<a class="headerlink" href="#using-mfa" title="Link to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/user/multi-factor-authentication.html#multi-factor-authentication-user-guide"><span class="std std-ref">Multi-Factor Authentication</span></a> in the user guide for some
+examples.</p>
+</section>
+<section id="supported-multi-factor-authentication-methods">
+<h2>Supported multi-factor authentication methods<a class="headerlink" href="#supported-multi-factor-authentication-methods" title="Link to this heading">¶</a></h2>
+<p>TOTP is the only suggested second factor along with password for now, but there
+are plans to include more in future.</p>
+<section id="totp">
+<h3>TOTP<a class="headerlink" href="#totp" title="Link to this heading">¶</a></h3>
+<p>This is a simple 6 digit passcode generated by both the server and client from
+a known shared secret.</p>
+<p>This used in a multi-step fashion is the most common 2-factor method used these
+days.</p>
+<p>See: <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/auth-totp.html#auth-totp"><span class="std std-ref">Time-based One-time Password (TOTP)</span></a></p>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект keystone. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/keystone/2025.1/admin/multi-factor-authentication.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

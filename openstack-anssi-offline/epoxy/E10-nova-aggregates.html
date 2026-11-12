@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Host aggregates · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="host-aggregates">
+<h1>Host aggregates<a class="headerlink" href="#host-aggregates" title="Link to this heading">¶</a></h1>
+<p>Host aggregates are a mechanism for partitioning hosts in an OpenStack cloud,
+or a region of an OpenStack cloud, based on arbitrary characteristics.
+Examples where an administrator may want to do this include where a group of
+hosts have additional hardware or performance characteristics.</p>
+<p>Host aggregates started out as a way to use Xen hypervisor resource pools, but
+have been generalized to provide a mechanism to allow administrators to assign
+key-value pairs to groups of machines. Each node can have multiple aggregates,
+each aggregate can have multiple key-value pairs, and the same key-value pair
+can be assigned to multiple aggregates. This information can be used in the
+scheduler to enable advanced scheduling, to set up Xen hypervisor resource
+pools or to define logical groups for migration.</p>
+<p>Host aggregates are not explicitly exposed to users. Instead administrators map
+flavors to host aggregates. Administrators do this by setting metadata on a
+host aggregate, and matching flavor extra specifications. The scheduler then
+endeavors to match user requests for instances of the given flavor to a host
+aggregate with the same key-value pair in its metadata. Compute nodes can be in
+more than one host aggregate. Weight multipliers can be controlled on a
+per-aggregate basis by setting the desired <code class="docutils literal notranslate"><span class="pre">xxx_weight_multiplier</span></code> aggregate
+metadata.</p>
+<p>Administrators are able to optionally expose a host aggregate as an
+<a class="reference internal" href="https://docs.openstack.org/nova/2025.1/reference/glossary.html#term-Availability-Zone"><span class="xref std std-term">Availability Zone</span></a>. Availability zones are different from host
+aggregates in that they are explicitly exposed to the user, and hosts can only
+be in a single availability zone. Administrators can configure a default
+availability zone where instances will be scheduled when the user fails to
+specify one. For more information on how to do this, refer to
+<a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/availability-zones.html"><span class="doc">Availability Zones</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not allowed to move instances between Availability Zones.
+If adding a host to an aggregate or removing a host from an aggregate would
+cause an instance to move between Availability Zones, including moving
+from or moving to the default AZ, then the operation will be rejected. The
+administrator should drain the instances from the host first then the host
+can be moved.</p>
+</div>
+<section id="configure-scheduler-to-support-host-aggregates">
+<span id="config-sch-for-aggs"></span><h2>Configure scheduler to support host aggregates<a class="headerlink" href="#configure-scheduler-to-support-host-aggregates" title="Link to this heading">¶</a></h2>
+<p>One common use case for host aggregates is when you want to support scheduling
+instances to a subset of compute hosts because they have a specific capability.
+For example, you may want to allow users to request compute hosts that have SSD
+drives if they need access to faster disk I/O, or access to compute hosts that
+have GPU cards to take advantage of GPU-accelerated code.</p>
+<p>To configure the scheduler to support host aggregates, the
+<a class="reference internal" href="S23-nova-config.html#filter_scheduler.enabled_filters" title="enabled_filters"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">filter_scheduler.enabled_filters</span></code></a> configuration option
+must contain the <code class="docutils literal notranslate"><span class="pre">AggregateInstanceExtraSpecsFilter</span></code> in addition to the other
+filters used by the scheduler. Add the following line to <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code> on the
+host that runs the <code class="docutils literal notranslate"><span class="pre">nova-scheduler</span></code> service to enable host aggregates
+filtering, as well as the other filters that are typically enabled:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[filter_scheduler]</span>
+<span class="na">enabled_filters</span><span class="o">=</span><span class="s">...,AggregateInstanceExtraSpecsFilter</span>
+</pre></div>
+</div>
+<section id="example-specify-compute-hosts-with-ssds">
+<h3>Example: Specify compute hosts with SSDs<a class="headerlink" href="#example-specify-compute-hosts-with-ssds" title="Link to this heading">¶</a></h3>
+<p>This example configures the Compute service to enable users to request nodes
+that have solid-state drives (SSDs). You create a <code class="docutils literal notranslate"><span class="pre">fast-io</span></code> host aggregate in
+the <code class="docutils literal notranslate"><span class="pre">nova</span></code> availability zone and you add the <code class="docutils literal notranslate"><span class="pre">ssd=true</span></code> key-value pair to
+the aggregate. Then, you add the <code class="docutils literal notranslate"><span class="pre">node1</span></code>, and <code class="docutils literal notranslate"><span class="pre">node2</span></code> compute nodes to it.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>create<span class="w"> </span>--zone<span class="w"> </span>nova<span class="w"> </span>fast-io
+<span class="go">+-------------------+----------------------------+</span>
+<span class="go">| Field             | Value                      |</span>
+<span class="go">+-------------------+----------------------------+</span>
+<span class="go">| availability_zone | nova                       |</span>
+<span class="go">| created_at        | 2016-12-22T07:31:13.013466 |</span>
+<span class="go">| deleted           | False                      |</span>
+<span class="go">| deleted_at        | None                       |</span>
+<span class="go">| id                | 1                          |</span>
+<span class="go">| name              | fast-io                    |</span>
+<span class="go">| updated_at        | None                       |</span>
+<span class="go">+-------------------+----------------------------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--property<span class="w"> </span><span class="nv">ssd</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="m">1</span>
+<span class="go">+-------------------+----------------------------+</span>
+<span class="go">| Field             | Value                      |</span>
+<span class="go">+-------------------+----------------------------+</span>
+<span class="go">| availability_zone | nova                       |</span>
+<span class="go">| created_at        | 2016-12-22T07:31:13.000000 |</span>
+<span class="go">| deleted           | False                      |</span>
+<span class="go">| deleted_at        | None                       |</span>
+<span class="go">| hosts             | []                         |</span>
+<span class="go">| id                | 1                          |</span>
+<span class="go">| name              | fast-io                    |</span>
+<span class="go">| properties        | ssd='true'                 |</span>
+<span class="go">| updated_at        | None                       |</span>
+<span class="go">+-------------------+----------------------------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span><span class="m">1</span><span class="w"> </span>node1
+<span class="go">+-------------------+--------------------------------------------------+</span>
+<span class="go">| Field             | Value                                            |</span>
+<span class="go">+-------------------+--------------------------------------------------+</span>
+<span class="go">| availability_zone | nova                                             |</span>
+<span class="go">| created_at        | 2016-12-22T07:31:13.000000                       |</span>
+<span class="go">| deleted           | False                                            |</span>
+<span class="go">| deleted_at        | None                                             |</span>
+<span class="go">| hosts             | [u'node1']                                       |</span>
+<span class="go">| id                | 1                                                |</span>
+<span class="go">| metadata          | {u'ssd': u'true', u'availability_zone': u'nova'} |</span>
+<span class="go">| name              | fast-io                                          |</span>
+<span class="go">| updated_at        | None                                             |</span>
+<span class="go">+-------------------+--------------------------------------------------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span><span class="m">1</span><span class="w"> </span>node2
+<span class="go">+-------------------+--------------------------------------------------+</span>
+<span class="go">| Field             | Value                                            |</span>
+<span class="go">+-------------------+--------------------------------------------------+</span>
+<span class="go">| availability_zone | nova                                             |</span>
+<span class="go">| created_at        | 2016-12-22T07:31:13.000000                       |</span>
+<span class="go">| deleted           | False                                            |</span>
+<span class="go">| deleted_at        | None                                             |</span>
+<span class="go">| hosts             | [u'node1', u'node2']                             |</span>
+<span class="go">| id                | 1                                                |</span>
+<span class="go">| metadata          | {u'ssd': u'true', u'availability_zone': u'nova'} |</span>
+<span class="go">| name              | fast-io                                          |</span>
+<span class="go">| updated_at        | None                                             |</span>
+<span class="go">+-------------------+--------------------------------------------------+</span>
+</pre></div>
+</div>
+<p>Use the <strong class="command">openstack flavor create</strong> command to create the <code class="docutils literal notranslate"><span class="pre">ssd.large</span></code>
+flavor called with an ID of 6, 8 GB of RAM, 80 GB root disk, and 4 vCPUs.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>flavor<span class="w"> </span>create<span class="w"> </span>--id<span class="w"> </span><span class="m">6</span><span class="w"> </span>--ram<span class="w"> </span><span class="m">8192</span><span class="w"> </span>--disk<span class="w"> </span><span class="m">80</span><span class="w"> </span>--vcpus<span class="w"> </span><span class="m">4</span><span class="w"> </span>ssd.large
+<span class="go">+----------------------------+-----------+</span>
+<span class="go">| Field                      | Value     |</span>
+<span class="go">+----------------------------+-----------+</span>
+<span class="go">| OS-FLV-DISABLED:disabled   | False     |</span>
+<span class="go">| OS-FLV-EXT-DATA:ephemeral  | 0         |</span>
+<span class="go">| disk                       | 80        |</span>
+<span class="go">| id                         | 6         |</span>
+<span class="go">| name                       | ssd.large |</span>
+<span class="go">| os-flavor-access:is_public | True      |</span>
+<span class="go">| ram                        | 8192      |</span>
+<span class="go">| rxtx_factor                | 1.0       |</span>
+<span class="go">| swap                       |           |</span>
+<span class="go">| vcpus                      | 4         |</span>
+<span class="go">+----------------------------+-----------+</span>
+</pre></div>
+</div>
+<p>Once the flavor is created, specify one or more key-value pairs that match the
+key-value pairs on the host aggregates with scope
+<code class="docutils literal notranslate"><span class="pre">aggregate_instance_extra_specs</span></code>. In this case, that is the
+<code class="docutils literal notranslate"><span class="pre">aggregate_instance_extra_specs:ssd=true</span></code> key-value pair.  Setting a
+key-value pair on a flavor is done using the <strong class="command">openstack flavor set</strong>
+command.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>flavor<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--property<span class="w"> </span>aggregate_instance_extra_specs:ssd<span class="o">=</span><span class="nb">true</span><span class="w"> </span>ssd.large
+</pre></div>
+</div>
+<p>Once it is set, you should see the <code class="docutils literal notranslate"><span class="pre">extra_specs</span></code> property of the
+<code class="docutils literal notranslate"><span class="pre">ssd.large</span></code> flavor populated with a key of <code class="docutils literal notranslate"><span class="pre">ssd</span></code> and a corresponding value
+of <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>flavor<span class="w"> </span>show<span class="w"> </span>ssd.large
+<span class="go">+----------------------------+-------------------------------------------+</span>
+<span class="go">| Field                      | Value                                     |</span>
+<span class="go">+----------------------------+-------------------------------------------+</span>
+<span class="go">| OS-FLV-DISABLED:disabled   | False                                     |</span>
+<span class="go">| OS-FLV-EXT-DATA:ephemeral  | 0                                         |</span>
+<span class="go">| disk                       | 80                                        |</span>
+<span class="go">| id                         | 6                                         |</span>
+<span class="go">| name                       | ssd.large                                 |</span>
+<span class="go">| os-flavor-access:is_public | True                                      |</span>
+<span class="go">| properties                 | aggregate_instance_extra_specs:ssd='true' |</span>
+<span class="go">| ram                        | 8192                                      |</span>
+<span class="go">| rxtx_factor                | 1.0                                       |</span>
+<span class="go">| swap                       |                                           |</span>
+<span class="go">| vcpus                      | 4                                         |</span>
+<span class="go">+----------------------------+-------------------------------------------+</span>
+</pre></div>
+</div>
+<p>Now, when a user requests an instance with the <code class="docutils literal notranslate"><span class="pre">ssd.large</span></code> flavor,
+the scheduler only considers hosts with the <code class="docutils literal notranslate"><span class="pre">ssd=true</span></code> key-value pair.
+In this example, these are <code class="docutils literal notranslate"><span class="pre">node1</span></code> and <code class="docutils literal notranslate"><span class="pre">node2</span></code>.</p>
+</section>
+</section>
+<section id="aggregates-in-placement">
+<h2>Aggregates in Placement<a class="headerlink" href="#aggregates-in-placement" title="Link to this heading">¶</a></h2>
+<p>Aggregates also exist in placement and are not the same thing as host
+aggregates in nova. These aggregates are defined (purely) as groupings of
+related resource providers. Since compute nodes in nova are represented in
+placement as resource providers, they can be added to a placement aggregate as
+well. For example, get the UUID of the compute node using <strong class="command">openstack
+hypervisor list</strong> and add it to an aggregate in placement using
+<strong class="command">openstack resource provider aggregate set</strong>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-compute-api-version<span class="o">=</span><span class="m">2</span>.53<span class="w"> </span>hypervisor<span class="w"> </span>list
+<span class="go">+--------------------------------------+---------------------+-----------------+-----------------+-------+</span>
+<span class="go">| ID                                   | Hypervisor Hostname | Hypervisor Type | Host IP         | State |</span>
+<span class="go">+--------------------------------------+---------------------+-----------------+-----------------+-------+</span>
+<span class="go">| 815a5634-86fb-4e1e-8824-8a631fee3e06 | node1               | QEMU            | 192.168.1.123   | up    |</span>
+<span class="go">+--------------------------------------+---------------------+-----------------+-----------------+-------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>--os-placement-api-version<span class="o">=</span><span class="m">1</span>.2<span class="w"> </span>resource<span class="w"> </span>provider<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--aggregate<span class="w"> </span>df4c74f3-d2c4-4991-b461-f1a678e1d161<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>815a5634-86fb-4e1e-8824-8a631fee3e06
+</pre></div>
+</div>
+<p>Some scheduling filter operations can be performed by placement for increased
+speed and efficiency.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The nova-api service attempts (as of nova 18.0.0) to automatically mirror
+the association of a compute host with an aggregate when an administrator
+adds or removes a host to/from a nova host aggregate. This should alleviate
+the need to manually create those association records in the placement API
+using the <code class="docutils literal notranslate"><span class="pre">openstack</span> <span class="pre">resource</span> <span class="pre">provider</span> <span class="pre">aggregate</span> <span class="pre">set</span></code> CLI invocation.</p>
+</div>
+</section>
+<section id="tenant-isolation-with-placement">
+<span id="id1"></span><h2>Tenant Isolation with Placement<a class="headerlink" href="#tenant-isolation-with-placement" title="Link to this heading">¶</a></h2>
+<p>In order to use placement to isolate tenants, there must be placement
+aggregates that match the membership and UUID of nova host aggregates that you
+want to use for isolation. The same key pattern in aggregate metadata used by
+the <a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregatemultitenancyisolation"><span class="std std-ref">AggregateMultiTenancyIsolation</span></a> filter controls this function, and is
+enabled by setting
+<a class="reference internal" href="S23-nova-config.html#scheduler.limit_tenants_to_placement_aggregate" title="limit_tenants_to_placement_aggregate"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">scheduler.limit_tenants_to_placement_aggregate</span></code></a> to
+<code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-compute-api-version<span class="o">=</span><span class="m">2</span>.53<span class="w"> </span>aggregate<span class="w"> </span>create<span class="w"> </span>myagg
+<span class="go">+-------------------+--------------------------------------+</span>
+<span class="go">| Field             | Value                                |</span>
+<span class="go">+-------------------+--------------------------------------+</span>
+<span class="go">| availability_zone | None                                 |</span>
+<span class="go">| created_at        | 2018-03-29T16:22:23.175884           |</span>
+<span class="go">| deleted           | False                                |</span>
+<span class="go">| deleted_at        | None                                 |</span>
+<span class="go">| id                | 4                                    |</span>
+<span class="go">| name              | myagg                                |</span>
+<span class="go">| updated_at        | None                                 |</span>
+<span class="go">| uuid              | 019e2189-31b3-49e1-aff2-b220ebd91c24 |</span>
+<span class="go">+-------------------+--------------------------------------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>--os-compute-api-version<span class="o">=</span><span class="m">2</span>.53<span class="w"> </span>aggregate<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span>myagg<span class="w"> </span>node1
+<span class="go">+-------------------+--------------------------------------+</span>
+<span class="go">| Field             | Value                                |</span>
+<span class="go">+-------------------+--------------------------------------+</span>
+<span class="go">| availability_zone | None                                 |</span>
+<span class="go">| created_at        | 2018-03-29T16:22:23.175884           |</span>
+<span class="go">| deleted           | False                                |</span>
+<span class="go">| deleted_at        | None                                 |</span>
+<span class="go">| hosts             | [u'node1']                           |</span>
+<span class="go">| id                | 4                                    |</span>
+<span class="go">| name              | myagg                                |</span>
+<span class="go">| updated_at        | None                                 |</span>
+<span class="go">| uuid              | 019e2189-31b3-49e1-aff2-b220ebd91c24 |</span>
+<span class="go">+-------------------+--------------------------------------+</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>project<span class="w"> </span>list<span class="w"> </span>-f<span class="w"> </span>value<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">'demo'</span>
+<span class="go">9691591f913949818a514f95286a6b90 demo</span>
+
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--property<span class="w"> </span><span class="nv">filter_tenant_id</span><span class="o">=</span>9691591f913949818a514f95286a6b90<span class="w"> </span>myagg
+
+<span class="gp">$ </span>openstack<span class="w"> </span>--os-placement-api-version<span class="o">=</span><span class="m">1</span>.2<span class="w"> </span>resource<span class="w"> </span>provider<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--aggregate<span class="w"> </span>019e2189-31b3-49e1-aff2-b220ebd91c24<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>815a5634-86fb-4e1e-8824-8a631fee3e06
+</pre></div>
+</div>
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">filter_tenant_id</span></code> metadata key can be optionally suffixed
+with any string for multiple tenants, such as <code class="docutils literal notranslate"><span class="pre">filter_tenant_id3=$tenantid</span></code>.</p>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
+<p>Much of the configuration of host aggregates is driven from the API or
+command-line clients. For example, to create a new aggregate and add hosts to
+it using the <strong class="command">openstack</strong> client, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>create<span class="w"> </span>my-aggregate
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span>my-aggregate<span class="w"> </span>my-host
+</pre></div>
+</div>
+<p>To list all aggregates and show information about a specific aggregate, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>list
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>show<span class="w"> </span>my-aggregate
+</pre></div>
+</div>
+<p>To set and unset a property on the aggregate, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--property<span class="w"> </span><span class="nv">pinned</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>my-aggregrate
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">unset</span><span class="w"> </span>--property<span class="w"> </span>pinned<span class="w"> </span>my-aggregate
+</pre></div>
+</div>
+<p>To rename the aggregate, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span><span class="nb">set</span><span class="w"> </span>--name<span class="w"> </span>my-awesome-aggregate<span class="w"> </span>my-aggregate
+</pre></div>
+</div>
+<p>To remove a host from an aggregate and delete the aggregate, run:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>remove<span class="w"> </span>host<span class="w"> </span>my-aggregate<span class="w"> </span>my-host
+<span class="gp">$ </span>openstack<span class="w"> </span>aggregate<span class="w"> </span>delete<span class="w"> </span>my-aggregate
+</pre></div>
+</div>
+<p>For more information, refer to the <a class="extlink-python-openstackclient reference external" href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/aggregate.html">OpenStack
+Client documentation</a>.</p>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<p>In addition to CRUD operations enabled by the API and clients, the following
+configuration options can be used to configure how host aggregates and the
+related availability zones feature operate under the hood:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="S23-nova-config.html#DEFAULT.default_schedule_zone" title="default_schedule_zone"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">default_schedule_zone</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#scheduler.limit_tenants_to_placement_aggregate" title="limit_tenants_to_placement_aggregate"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">scheduler.limit_tenants_to_placement_aggregate</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#cinder.cross_az_attach" title="cross_az_attach"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">cinder.cross_az_attach</span></code></a></p></li>
+</ul>
+<p>Finally, as discussed previously, there are a number of host aggregate-specific
+scheduler filters. These are:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregateimagepropertiesisolation"><span class="std std-ref">AggregateImagePropertiesIsolation</span></a></p></li>
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregateinstanceextraspecsfilter"><span class="std std-ref">AggregateInstanceExtraSpecsFilter</span></a></p></li>
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregateioopsfilter"><span class="std std-ref">AggregateIoOpsFilter</span></a></p></li>
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregatemultitenancyisolation"><span class="std std-ref">AggregateMultiTenancyIsolation</span></a></p></li>
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregatenuminstancesfilter"><span class="std std-ref">AggregateNumInstancesFilter</span></a></p></li>
+<li><p><a class="reference internal" href="https://docs.openstack.org/nova/2025.1/admin/scheduling.html#aggregatetypeaffinityfilter"><span class="std std-ref">AggregateTypeAffinityFilter</span></a></p></li>
+</ul>
+<p>The following configuration options are applicable to the scheduler
+configuration:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="S23-nova-config.html#DEFAULT.cpu_allocation_ratio" title="cpu_allocation_ratio"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">cpu_allocation_ratio</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#DEFAULT.ram_allocation_ratio" title="ram_allocation_ratio"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">ram_allocation_ratio</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#filter_scheduler.max_instances_per_host" title="max_instances_per_host"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">filter_scheduler.max_instances_per_host</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#filter_scheduler.aggregate_image_properties_isolation_separator" title="aggregate_image_properties_isolation_separator"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">filter_scheduler.aggregate_image_properties_isolation_separator</span></code></a></p></li>
+<li><p><a class="reference internal" href="S23-nova-config.html#filter_scheduler.aggregate_image_properties_isolation_namespace" title="aggregate_image_properties_isolation_namespace"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">filter_scheduler.aggregate_image_properties_isolation_namespace</span></code></a></p></li>
+</ul>
+</section>
+<section id="image-caching">
+<span id="image-caching-aggregates"></span><h2>Image Caching<a class="headerlink" href="#image-caching" title="Link to this heading">¶</a></h2>
+<p>Aggregates can be used as a way to target multiple compute nodes for the purpose of
+requesting that images be pre-cached for performance reasons.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference external" href="https://docs.openstack.org/nova/latest/user/support-matrix.html#operation_cache_images">Some of the virt drivers</a> provide image caching support, which improves performance
+of second-and-later boots of the same image by keeping the base image in an on-disk
+cache. This avoids the need to re-download the image from Glance, which reduces
+network utilization and time-to-boot latency. Image pre-caching is the act of priming
+that cache with images ahead of time to improve performance of the first boot.</p>
+</div>
+<p>Assuming an aggregate called <code class="docutils literal notranslate"><span class="pre">my-aggregate</span></code> where two images should
+be pre-cached, running the following command will initiate the
+request:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>nova<span class="w"> </span>aggregate-cache-images<span class="w"> </span>my-aggregate<span class="w"> </span>image1<span class="w"> </span>image2
+</pre></div>
+</div>
+<p>Note that image pre-caching happens asynchronously in a best-effort
+manner. The images and aggregate provided are checked by the server
+when the command is run, but the compute nodes are not checked to see
+if they support image caching until the process runs. Progress and
+results are logged by each compute, and the process sends
+<code class="docutils literal notranslate"><span class="pre">aggregate.cache_images.start</span></code>, <code class="docutils literal notranslate"><span class="pre">aggregate.cache_images.progress</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">aggregate.cache_images.end</span></code> notifications, which may be useful
+for monitoring the operation externally.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.openstack.org/videos/vancouver-2018/curse-your-bones-availability-zones-1">Curse your bones, Availability Zones! (Openstack Summit Vancouver 2018)</a></p></li>
+</ul>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект nova. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/nova/2025.1/admin/aggregates.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

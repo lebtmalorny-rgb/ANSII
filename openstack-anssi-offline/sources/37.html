@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cinder as a backend for Glance — cinder 29.1.0.dev82 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-37">Каталог источников</a> · [37] · <a href="https://docs.openstack.org/cinder/latest/admin/volume-backed-image.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="cinder-as-a-backend-for-glance">
+<span id="volume-backed-image"></span><h1>Cinder as a backend for Glance<a class="headerlink" href="#cinder-as-a-backend-for-glance" title="Link to this heading">¶</a></h1>
+<p>OpenStack Block Storage (Cinder) provides the ability to be configured
+as a backend for Glance. This configuration offers various optimizations
+between Glance Cinder interaction and also allows a common storage strategy
+where Cinder volumes are used to store Glance images.</p>
+<section id="configure-cinder-backend-for-glance">
+<h2>Configure Cinder backend for Glance<a class="headerlink" href="#configure-cinder-backend-for-glance" title="Link to this heading">¶</a></h2>
+<p>To configure Cinder as a backend for Glance, refer to the detailed guide
+in the Glance documentation <a class="reference external" href="https://docs.openstack.org/glance/latest/configuration/configuring.html#configuring-the-cinder-storage-backend">configuring-the-cinder-storage-backend</a>.
+Note that Glance has deprecated support for single store and recommends
+configuring multi store deployment.</p>
+</section>
+<section id="optimization">
+<h2>Optimization<a class="headerlink" href="#optimization" title="Link to this heading">¶</a></h2>
+<p>Cinder requires location information from Glance to be able to perform
+optimizations in the operations that involve Glance Cinder interaction.
+Following are the operations that benefit from the optimzations:</p>
+<ul class="simple">
+<li><p>Create a bootable volume from image</p></li>
+<li><p>Upload a volume to Image Service</p></li>
+</ul>
+<p>Starting with the 2025.2 (Flamingo) release, Cinder supports the <a class="reference external" href="https://docs.openstack.org/glance/latest/admin/new-location-apis.html">New
+Location APIs</a> which allows Cinder to <strong>Add</strong> and <strong>Get</strong> the location from
+the Image service without allowing the exploit of OSSN-0090 and OSSN-0065.
+If you are running a version of Cinder prior to the 2025.2 (Flamingo)
+release, read through OSSN-0090 and then configure the following parameters
+in the Glance configuration file to allow Glance to expose the image location
+that can be consumed by Cinder.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">show_image_direct_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<span class="na">show_multiple_locations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+</pre></div>
+</div>
+<section id="creating-a-bootable-volume-from-image">
+<h3>Creating a bootable volume from image<a class="headerlink" href="#creating-a-bootable-volume-from-image" title="Link to this heading">¶</a></h3>
+<p>Cinder provides an optimized path for creating bootable volume from images
+where the images are stored in volumes called Image-Volume. There are two
+pre-conditions that needs to be satisfied for this optimization to work:</p>
+<ol class="arabic simple">
+<li><p>Image format should be ‘raw’ and container format should be ‘bare’</p></li>
+<li><p>The user requested volume should be in the same project as the image</p></li>
+</ol>
+<p>To enable this optimization, configure the following parameter in the Cinder
+configuration file:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">allowed_direct_url_schemes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder</span>
+</pre></div>
+</div>
+<p>This optimization allows efficient cloning of the Image-Volume to the user
+requested volume which skips the generic path of downloading the image to
+the image conversion directory and writing it into the volume hence saving
+space and increasing performance for single or bulk operations.</p>
+</section>
+<section id="uploading-a-volume-to-image-service">
+<h3>Uploading a volume to Image Service<a class="headerlink" href="#uploading-a-volume-to-image-service" title="Link to this heading">¶</a></h3>
+<p>When uploading a volume to the Image service, the data is copied chunk by
+chunk resulting in long wait time for the completion of the operation.
+With this optimization, Cinder clones the source volume to an Image-Volume
+and registers the location in Glance which is a significant performance
+improvement over the generic path.
+The pre-condition to enable this optimization is:</p>
+<ol class="arabic simple">
+<li><p>Image format should be ‘raw’ and container format should be ‘bare’</p></li>
+</ol>
+<p>Add the following configuration parameter in your Cinder configuration file
+in the respective backend section. Here we’ve used <code class="docutils literal notranslate"><span class="pre">lvmdriver-1</span></code> as an
+example.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[lvmdriver-1]</span>
+<span class="na">image_upload_use_cinder_backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+</pre></div>
+</div>
+<p>To avoid creating the Image-Volume in the user project, it is recommended to
+configure the internal tenant so the Image-Volumes are always stored in the
+service project. The <code class="docutils literal notranslate"><span class="pre">image_upload_use_internal_tenant</span></code> configuration should
+be done in the backend section, Here we’ve used <code class="docutils literal notranslate"><span class="pre">lvmdriver-1</span></code> as an example.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">cinder_internal_tenant_project_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&lt;UUID of the service project&gt;</span>
+<span class="na">cinder_internal_tenant_user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&lt;UUID of the Cinder user&gt;</span>
+<span class="k">[lvmdriver-1]</span>
+<span class="na">image_upload_use_internal_tenant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

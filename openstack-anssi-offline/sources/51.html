@@ -1,0 +1,79 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audit middleware — keystonemiddleware 13.1.0.dev39 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-51">Каталог источников</a> · [51] · <a href="https://docs.openstack.org/keystonemiddleware/latest/audit.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="audit-middleware">
+<span id="middleware"></span><h1>Audit middleware<a class="headerlink" href="#audit-middleware" title="Link to this heading">¶</a></h1>
+<p>The Keystone middleware library provides an optional WSGI middleware filter
+which allows the ability to audit API requests for each component of OpenStack.</p>
+<p>The audit middleware filter utilises environment variables to build the CADF
+event.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="assets/51-2f59b30f75.png"><img alt="Figure 1: Audit middleware in Nova pipeline" src="assets/51-2f59b30f75.png">
+</a>
+</figure>
+<p>The figure above shows the middleware in Nova’s pipeline.</p>
+<section id="enabling-audit-middleware">
+<h2>Enabling audit middleware<a class="headerlink" href="#enabling-audit-middleware" title="Link to this heading">¶</a></h2>
+<p>To enable auditing, <a class="reference external" href="http://www.github.com/openstack/oslo.messaging">oslo.messaging</a> should be installed. If not, the middleware
+will log the audit event instead. Auditing can be enabled for a specific
+project by editing the project’s api-paste.ini file to include the following
+filter definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">audit</span><span class="p">]</span>
+<span class="n">paste</span><span class="o">.</span><span class="n">filter_factory</span> <span class="o">=</span> <span class="n">keystonemiddleware</span><span class="o">.</span><span class="n">audit</span><span class="p">:</span><span class="n">filter_factory</span>
+<span class="n">audit_map_file</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">nova</span><span class="o">/</span><span class="n">api_audit_map</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+<p>The filter should be included after Keystone middleware’s auth_token middleware
+so it can utilise environment variables set by auth_token. Below is an example
+using Nova’s WSGI pipeline:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">composite</span><span class="p">:</span><span class="n">openstack_compute_api_v2</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">call</span><span class="p">:</span><span class="n">nova</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">auth</span><span class="p">:</span><span class="n">pipeline_factory</span>
+<span class="n">noauth</span> <span class="o">=</span> <span class="n">faultwrap</span> <span class="n">sizelimit</span> <span class="n">noauth</span> <span class="n">ratelimit</span> <span class="n">osapi_compute_app_v2</span>
+<span class="n">keystone</span> <span class="o">=</span> <span class="n">faultwrap</span> <span class="n">sizelimit</span> <span class="n">authtoken</span> <span class="n">keystonecontext</span> <span class="n">ratelimit</span> <span class="n">audit</span> <span class="n">osapi_compute_app_v2</span>
+<span class="n">keystone_nolimit</span> <span class="o">=</span> <span class="n">faultwrap</span> <span class="n">sizelimit</span> <span class="n">authtoken</span> <span class="n">keystonecontext</span> <span class="n">audit</span> <span class="n">osapi_compute_app_v2</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-audit-middleware">
+<h2>Configure audit middleware<a class="headerlink" href="#configure-audit-middleware" title="Link to this heading">¶</a></h2>
+<p>To properly audit api requests, the audit middleware requires an
+api_audit_map.conf to be defined. The project’s corresponding
+api_audit_map.conf file is included in the <a class="reference external" href="https://github.com/openstack/pycadf/tree/master/etc/pycadf">pyCADF library</a>.</p>
+<p>The location of the mapping file should be specified explicitly by adding the
+path to the ‘audit_map_file’ option of the filter definition:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">audit</span><span class="p">]</span>
+<span class="n">paste</span><span class="o">.</span><span class="n">filter_factory</span> <span class="o">=</span> <span class="n">keystonemiddleware</span><span class="o">.</span><span class="n">audit</span><span class="p">:</span><span class="n">filter_factory</span>
+<span class="n">audit_map_file</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">nova</span><span class="o">/</span><span class="n">api_audit_map</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+<p>Additional options can be set:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">audit</span><span class="p">]</span>
+<span class="n">paste</span><span class="o">.</span><span class="n">filter_factory</span> <span class="o">=</span> <span class="n">pycadf</span><span class="o">.</span><span class="n">middleware</span><span class="o">.</span><span class="n">audit</span><span class="p">:</span><span class="n">filter_factory</span>
+<span class="n">audit_map_file</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">nova</span><span class="o">/</span><span class="n">api_audit_map</span><span class="o">.</span><span class="n">conf</span>
+<span class="n">service_name</span> <span class="o">=</span> <span class="n">test</span> <span class="c1"># opt to set HTTP_X_SERVICE_NAME environ variable</span>
+<span class="n">ignore_req_list</span> <span class="o">=</span> <span class="n">GET</span><span class="p">,</span><span class="n">POST</span> <span class="c1"># opt to ignore specific requests</span>
+</pre></div>
+</div>
+<p>Audit middleware can be configured to use its own exclusive notification driver
+and topic(s) value. This can be useful when the service is already using oslo
+messaging notifications and wants to use a different driver for auditing e.g.
+service has existing notifications sent to queue via ‘messagingv2’ and wants to
+send audit notifications to a log file via ‘log’ driver. Example shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">audit_middleware_notifications</span><span class="p">]</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">log</span>
+</pre></div>
+</div>
+<p>When audit events are sent via ‘messagingv2’ or ‘messaging’, middleware can
+specify a transport URL if its transport URL needs to be different from the
+service’s own messaging transport setting. Other Transport related settings are
+read from oslo messaging sections defined in service configuration e.g.
+‘oslo_messaging_rabbit’. Example shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">audit_middleware_notifications</span><span class="p">]</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">messaging</span>
+<span class="n">transport_url</span> <span class="o">=</span> <span class="n">rabbit</span><span class="p">:</span><span class="o">//</span><span class="n">user2</span><span class="p">:</span><span class="n">passwd</span><span class="nd">@host</span><span class="p">:</span><span class="mi">5672</span><span class="o">/</span><span class="n">another_virtual_host</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

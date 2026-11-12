@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Multi Store Support · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="multi-store-support">
+<span id="multi-stores"></span><h1>Multi Store Support<a class="headerlink" href="#multi-store-support" title="Link to this heading">¶</a></h1>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Multi Store feature was introduced as EXPERIMENTAL in Rocky
+and is now fully supported in the Train release.</p>
+</div>
+<section id="scope-of-this-document">
+<h2>Scope of this document<a class="headerlink" href="#scope-of-this-document" title="Link to this heading">¶</a></h2>
+<p>This page describes how to enable multiple stores in glance.</p>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Glance version 17.0.0 or Later</p></li>
+<li><p>Glance Store Library 0.25.0 or Later</p></li>
+<li><p>Glance not using the Glance Registry</p></li>
+<li><p>Available backends</p></li>
+</ul>
+</section>
+<section id="procedure">
+<h2>Procedure<a class="headerlink" href="#procedure" title="Link to this heading">¶</a></h2>
+<p>In this section, we discuss what configuration options are available to
+operators to enable multiple stores support.</p>
+<ul>
+<li><p>in the <code class="docutils literal notranslate"><span class="pre">[DEFAULT]</span></code> options group:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code> must be set as a key:value pair where key
+represents the identifier for the store and value will be the type
+of the store. Valid values are one of <code class="docutils literal notranslate"><span class="pre">file</span></code>, <code class="docutils literal notranslate"><span class="pre">http</span></code>, <code class="docutils literal notranslate"><span class="pre">rbd</span></code>,
+<code class="docutils literal notranslate"><span class="pre">swift</span></code>, <code class="docutils literal notranslate"><span class="pre">cinder</span></code> or <code class="docutils literal notranslate"><span class="pre">vmware</span></code>. In order to have multiple stores
+operator can specify multiple key:value separated by comma.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The store identifier prefix <code class="docutils literal notranslate"><span class="pre">os_glance_</span></code> is reserved.  If you
+define a store identifier with this prefix, the glance service will
+refuse to start.</p>
+</div>
+<p>The http store type is always treated by Glance as a read-only
+store.  This is indicated in the response to the <code class="docutils literal notranslate"><span class="pre">/v2/info/stores</span></code>
+call, where an http type store will have the attribute <code class="docutils literal notranslate"><span class="pre">read-only:</span>
+<span class="pre">True</span></code> in addition to the usual <code class="docutils literal notranslate"><span class="pre">id</span></code> and <code class="docutils literal notranslate"><span class="pre">description</span></code> fields.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">enabled_backends</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">fast:rbd, cheap:rbd, shared:file, reliable:file</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>in the <code class="docutils literal notranslate"><span class="pre">[glance_store]</span></code> options group:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">default_backend</span></code> must be set to one of the identifier which are defined
+using <code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code> option. If <code class="docutils literal notranslate"><span class="pre">default_backend</span></code> is not set or if
+it is not representing one of the valid store drivers then it will prevent
+glance api service from starting.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[glance_store]</span>
+<span class="na">default_backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">fast</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>For each of the store identifier defined in <code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code> section
+operator needs to add a new config group which will define config options
+related to that particular store.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[shared]</span>
+<span class="na">filesystem_store_datadir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/opt/stack/data/glance/shared_images/</span>
+<span class="na">store_description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Shared filesystem store"</span>
+
+<span class="k">[reliable]</span>
+<span class="na">filesystem_store_datadir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/opt/stack/data/glance/reliable</span>
+<span class="na">store_description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Reliable filesystem backend"</span>
+
+<span class="k">[fast]</span>
+<span class="na">store_description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Fast rbd backend"</span>
+<span class="na">rbd_store_chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8</span>
+<span class="na">rbd_store_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">images</span>
+<span class="na">rbd_store_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">admin</span>
+<span class="na">rbd_store_ceph_conf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/etc/ceph/ceph.conf</span>
+<span class="na">rados_connect_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span>
+
+<span class="k">[cheap]</span>
+<span class="na">store_description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Cheap rbd backend"</span>
+<span class="na">rbd_store_chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8</span>
+<span class="na">rbd_store_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">images</span>
+<span class="na">rbd_store_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">admin</span>
+<span class="na">rbd_store_ceph_conf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/etc/ceph/ceph1.conf</span>
+<span class="na">rados_connect_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">0</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">store_description</span></code> is a new config option added to each store where
+operator can add meaningful description about that store. This
+description is displayed in the GET /v2/info/stores response.</p>
+</div>
+</li>
+</ul>
+<section id="store-configuration-issues">
+<h3>Store Configuration Issues<a class="headerlink" href="#store-configuration-issues" title="Link to this heading">¶</a></h3>
+<p>Please keep the following points in mind.</p>
+<ul class="simple">
+<li><p>Due to the special read only nature and characteristics of the
+http store type, configuring multiple instances of the http type
+store <strong>is not supported</strong>.  (This constraint is not currently
+enforced in the code.)</p></li>
+<li><p>Each instance of the filesystem store <strong>must</strong> have a different value
+for the <code class="docutils literal notranslate"><span class="pre">filesystem_store_datadir</span></code>.  (This constraint is not currently
+enforced in the code.)</p></li>
+</ul>
+</section>
+</section>
+<section id="reserved-stores">
+<span id="id1"></span><h2>Reserved Stores<a class="headerlink" href="#reserved-stores" title="Link to this heading">¶</a></h2>
+<p>With the Train release, Glance is beginning a transition from its former
+reliance upon local directories for temporary data storage to the ability
+to use backend stores accessed via the glance_store library.</p>
+<p>In the Train release, the use of backend stores for this purpose is optional
+<strong>unless you are using the multi store support feature</strong>.  Since you are
+reading this document, this situation most likely applies to you.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Currently, only the filesystem store type is supported as a Glance
+reserved store.</p>
+</div>
+<p>The reserved stores are not intended to be exposed to end users.  Thus
+they will not appear in the response to the store discovery call, GET
+/v2/info/stores, or as values in the <code class="docutils literal notranslate"><span class="pre">OpenStack-image-store-ids</span></code>
+response header of the image-create call.</p>
+<p>You do not get to select the name of a reserved store; these are defined
+by Glance and begin with the prefix <code class="docutils literal notranslate"><span class="pre">os_glance_</span></code>.  In the Train release,
+you do not get to select the store type: all reserved stores must be of
+type filesystem.</p>
+<p>Currently, there are two reserved stores:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">os_glance_tasks_store</span></code></dt><dd><p>This store is used for the tasks engine.  It replaces the use of the
+DEPRECATED configuration option <code class="docutils literal notranslate"><span class="pre">[task]/work_dir</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">os_glance_staging_store</span></code></dt><dd><p>This store is used for the staging area for the interoperable image
+import process.  It replaces  the use of the DEPRECATED configuration
+option <code class="docutils literal notranslate"><span class="pre">[DEFAULT]/node_staging_uri</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If end user wants to retrieve all the available stores using
+<code class="docutils literal notranslate"><span class="pre">CONF.enabled_backends</span></code> then they need to remove reserved
+stores from that list explicitly.</p>
+</div>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h3>
+<p>As mentioned above, you do not get to select the name or the type of
+a reserved store (though we anticipate that you will be able configure
+the store type in a future release).</p>
+<p>The reserved stores <em>must</em> be of type filesystem.  Hence, you must
+provide configuration for them in your <code class="docutils literal notranslate"><span class="pre">glance-api.conf</span></code> file.  You
+do this by introducing a section in <code class="docutils literal notranslate"><span class="pre">glance-api.conf</span></code> for each reserved
+store as follows:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[os_glance_tasks_store]</span>
+<span class="na">filesystem_store_datadir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/var/lib/glance/tasks_work_dir</span>
+
+<span class="k">[os_glance_staging_store]</span>
+<span class="na">filesystem_store_datadir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/var/lib/glance/staging</span>
+</pre></div>
+</div>
+<p>Since these are both filesystem stores (remember, you do not get a choice)
+the only option you must configure for each is the
+<code class="docutils literal notranslate"><span class="pre">filesystem_store_datadir</span></code>.  Please keep the following points in mind:</p>
+<ul class="simple">
+<li><p>The path for <code class="docutils literal notranslate"><span class="pre">filesystem_store_datadir</span></code> used for the reserved
+stores must be <strong>different</strong> from the path you are using for
+any filesystem store you have listed in <code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code>.
+Using the same data directory for multiple filesystem stores is
+<strong>unsupported</strong> and may lead to data loss.</p></li>
+<li><p>The identifiers for reserved stores, that is, <code class="docutils literal notranslate"><span class="pre">os_glance_tasks_store</span></code>
+and <code class="docutils literal notranslate"><span class="pre">os_glance_staging_store</span></code>, must <strong>not</strong> be included in the
+<code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code> list.</p></li>
+<li><p>The reserved stores will <strong>not</strong> appear in the store discovery response
+or as values in the <code class="docutils literal notranslate"><span class="pre">OpenStack-image-store-ids</span></code> response header of
+the image-create call.</p></li>
+<li><p>The reserved stores will <strong>not</strong> be accepted as the value of the
+<code class="docutils literal notranslate"><span class="pre">X-Image-Meta-Store</span></code> header on the image-data-upload call or
+the image-import call.</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект glance. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/glance/2025.1/admin/multistores.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

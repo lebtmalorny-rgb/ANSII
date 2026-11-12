@@ -1,0 +1,97 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Database transport security — Security Guide  documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-42">Каталог источников</a> · [42] · <a href="https://docs.openstack.org/security-guide/databases/database-transport-security.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="database-transport-security">
+<h1>Database transport security<a class="headerlink" href="#database-transport-security" title="Link to this heading">¶</a></h1>
+<p>This chapter covers issues related to network communications to and from
+the database server. This includes IP address bindings and encrypting
+network traffic with TLS.</p>
+<section id="database-server-ip-address-binding">
+<h2>Database server IP address binding<a class="headerlink" href="#database-server-ip-address-binding" title="Link to this heading">¶</a></h2>
+<p>To isolate sensitive database communications between the services and
+the database, we strongly recommend that the database server(s) be
+configured to only allow communications to and from the database over an
+isolated management network. This is achieved by restricting the
+interface or IP address on which the database server binds a network
+socket for incoming client connections.</p>
+<section id="restricting-bind-address-for-mysql">
+<h3>Restricting bind address for MySQL<a class="headerlink" href="#restricting-bind-address-for-mysql" title="Link to this heading">¶</a></h3>
+<p>In <code class="docutils literal notranslate"><span class="pre">my.cnf</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[mysqld]</span>
+<span class="na">...</span>
+<span class="na">bind-address &lt;ip address or hostname of management network interface&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="restricting-listen-address-for-postgresql">
+<h3>Restricting listen address for PostgreSQL<a class="headerlink" href="#restricting-listen-address-for-postgresql" title="Link to this heading">¶</a></h3>
+<p>In <code class="docutils literal notranslate"><span class="pre">postgresql.conf</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">listen_addresses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&lt;ip address or hostname of management network interface&gt;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="database-transport">
+<h2>Database transport<a class="headerlink" href="#database-transport" title="Link to this heading">¶</a></h2>
+<p>In addition to restricting database communications to the management
+network, we also strongly recommend that the cloud administrator
+configure their database back end to require TLS. Using TLS for the
+database client connections protects the communications from tampering
+and eavesdropping. As will be discussed in the next section, using TLS
+also provides the framework for doing database user authentication
+through X.509 certificates (commonly referred to as PKI). Below is
+guidance on how TLS is typically configured for the two popular database
+back ends MySQL and PostgreSQL.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When installing the certificate and key files, ensure that the file
+permissions are restricted, for example <code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">0600</span></code>, and the
+ownership is restricted to the database daemon user to prevent
+unauthorized access by other processes and users on the database
+server.</p>
+</div>
+</section>
+<section id="mysql-ssl-configuration">
+<h2>MySQL SSL configuration<a class="headerlink" href="#mysql-ssl-configuration" title="Link to this heading">¶</a></h2>
+<p>The following lines should be added in the system-wide MySQL
+configuration file:</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">my.cnf</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[[mysqld]]</span>
+<span class="na">...</span>
+<span class="na">ssl-ca</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/path/to/ssl/cacert.pem</span>
+<span class="na">ssl-cert</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/path/to/ssl/server-cert.pem</span>
+<span class="na">ssl-key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/path/to/ssl/server-key.pem</span>
+</pre></div>
+</div>
+<p>Optionally, if you wish to restrict the set of SSL ciphers used for the
+encrypted connection. See <a class="reference external" href="https://www.openssl.org/docs/manmaster/man1/ciphers.html">ciphers</a>
+for a list of ciphers and the syntax for specifying the cipher string:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">ssl-cipher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'cipher:list'</span>
+</pre></div>
+</div>
+</section>
+<section id="postgresql-ssl-configuration">
+<h2>PostgreSQL SSL configuration<a class="headerlink" href="#postgresql-ssl-configuration" title="Link to this heading">¶</a></h2>
+<p>The following lines should be added in the system-wide PostgreSQL
+configuration file, <code class="docutils literal notranslate"><span class="pre">postgresql.conf</span></code>.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">ssl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
+</pre></div>
+</div>
+<p>Optionally, if you wish to restrict the set of SSL ciphers used for the
+encrypted connection. See <a class="reference external" href="https://www.openssl.org/docs/manmaster/man1/ciphers.html">ciphers</a>
+for a list of ciphers and the syntax for specifying the cipher string:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">ssl-ciphers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'cipher:list'</span>
+</pre></div>
+</div>
+<p>The server certificate, key, and certificate authority (CA) files should
+be placed in the $PGDATA directory in the following files:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">$PGDATA/server.crt</span></code> - Server certificate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$PGDATA/server.key</span></code> - Private key corresponding to <code class="docutils literal notranslate"><span class="pre">server.crt</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$PGDATA/root.crt</span></code> - Trusted certificate authorities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$PGDATA/root.crl</span></code> - Certificate revocation list</p></li>
+</ul>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

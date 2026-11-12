@@ -1,0 +1,161 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OpenStack Docs: Caching layer</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-19">Каталог источников</a> · [19] · <a href="https://docs.openstack.org/keystone/pike/admin/identity-caching-layer.html">Страница издателя</a></header><main><div class="docs-body">
+
+  <div class="section" id="caching-layer">
+<h1>Caching layer<a class="headerlink" href="#caching-layer" title="Permalink to this headline">¶</a></h1>
+<p>OpenStack Identity supports a caching layer that is above the configurable
+subsystems (for example, token). This gives you the flexibility to setup
+caching for all or some subsystems. OpenStack Identity uses the <a class="reference external" href="https://docs.openstack.org/developer/oslo.cache/">oslo.cache</a> library which allows
+flexible cache back ends. The majority of the caching configuration options are
+set in the <code class="docutils literal"><span class="pre">[cache]</span></code> section of the <code class="docutils literal"><span class="pre">/etc/keystone/keystone.conf</span></code> file. The
+<code class="docutils literal"><span class="pre">enabled</span></code> option of the <code class="docutils literal"><span class="pre">[cache]</span></code> section must be set to <code class="docutils literal"><span class="pre">True</span></code> in order
+for any subsystem to cache responses. Each section that has the capability to
+be cached will have a <code class="docutils literal"><span class="pre">caching</span></code> boolean value that toggles caching behavior
+of that particular subsystem.</p>
+<p>So to enable only the token back end caching, set the values as follows:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[cache]</span>
+<span class="na">enabled</span><span class="o">=</span><span class="s">true</span>
+
+<span class="k">[catalog]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[domain_config]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[federation]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[resource]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[revoke]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[role]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">false</span>
+
+<span class="k">[token]</span>
+<span class="na">caching</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Each subsystem is configured to cache by default. However, the global
+toggle for caching defaults to <code class="docutils literal"><span class="pre">False</span></code>. A subsystem is only able to cache
+responses if the global toggle is enabled.</p>
+</div>
+<p>Current functional back ends are:</p>
+<dl class="docutils">
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.memcached</span></code></dt>
+<dd>Memcached back end using the standard <code class="docutils literal"><span class="pre">python-memcached</span></code> library.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.pylibmc</span></code></dt>
+<dd>Memcached back end using the <code class="docutils literal"><span class="pre">pylibmc</span></code> library.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.bmemcached</span></code></dt>
+<dd>Memcached using the <code class="docutils literal"><span class="pre">python-binary-memcached</span></code> library.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.redis</span></code></dt>
+<dd>Redis back end.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.dbm</span></code></dt>
+<dd>Local DBM file back end.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.memory</span></code></dt>
+<dd>In-memory cache, not suitable for use outside of testing as it does not
+cleanup its internal cache on cache expiration and does not share cache
+between processes. This means that caching and cache invalidation will not
+be consistent or reliable.</dd>
+<dt><code class="docutils literal"><span class="pre">dogpile.cache.mongo</span></code></dt>
+<dd>MongoDB as caching back end.</dd>
+</dl>
+<div class="section" id="caching-for-tokens-and-tokens-validation">
+<h2>Caching for tokens and tokens validation<a class="headerlink" href="#caching-for-tokens-and-tokens-validation" title="Permalink to this headline">¶</a></h2>
+<p>The token subsystem is OpenStack Identity’s most heavily used API. As a result,
+all types of tokens benefit from caching, including Fernet tokens. Although
+Fernet tokens do not need to be persisted, they should still be cached for
+optimal token validation performance.</p>
+<p>The token system has a separate <code class="docutils literal"><span class="pre">cache_time</span></code> configuration option,
+that can be set to a value above or below the global <code class="docutils literal"><span class="pre">expiration_time</span></code>
+default, allowing for different caching behavior from the other systems
+in OpenStack Identity. This option is set in the <code class="docutils literal"><span class="pre">[token]</span></code> section of
+the configuration file.</p>
+<p>The token revocation list cache time is handled by the configuration
+option <code class="docutils literal"><span class="pre">revocation_cache_time</span></code> in the <code class="docutils literal"><span class="pre">[token]</span></code> section. The
+revocation list is refreshed whenever a token is revoked. It typically
+sees significantly more requests than specific token retrievals or token
+validation calls.</p>
+<p>Here is a list of actions that are affected by the cached time: getting
+a new token, revoking tokens, validating tokens, checking v2 tokens, and
+checking v3 tokens.</p>
+<p>The delete token API calls invalidate the cache for the tokens being
+acted upon, as well as invalidating the cache for the revoked token list
+and the validate/check token calls.</p>
+<p>Token caching is configurable independently of the <code class="docutils literal"><span class="pre">revocation_list</span></code>
+caching. Lifted expiration checks from the token drivers to the token
+manager. This ensures that cached tokens will still raise a
+<code class="docutils literal"><span class="pre">TokenNotFound</span></code> flag when expired.</p>
+<p>For cache consistency, all token IDs are transformed into the short
+token hash at the provider and token driver level. Some methods have
+access to the full ID (PKI Tokens), and some methods do not. Cache
+invalidation is inconsistent without token ID normalization.</p>
+</div>
+<div class="section" id="caching-for-non-token-resources">
+<h2>Caching for non-token resources<a class="headerlink" href="#caching-for-non-token-resources" title="Permalink to this headline">¶</a></h2>
+<p>Various other keystone components have a separate <code class="docutils literal"><span class="pre">cache_time</span></code> configuration
+option, that can be set to a value above or below the global
+<code class="docutils literal"><span class="pre">expiration_time</span></code> default, allowing for different caching behavior
+from the other systems in Identity service. This option can be set in various
+sections (for example, <code class="docutils literal"><span class="pre">[role]</span></code> and <code class="docutils literal"><span class="pre">[resource]</span></code>) of the configuration
+file.
+The create, update, and delete actions for domains, projects and roles
+will perform proper invalidations of the cached methods listed above.</p>
+<p>For more information about the different back ends (and configuration
+options), see:</p>
+<ul>
+<li><p class="first"><a class="reference external" href="https://dogpilecache.readthedocs.io/en/latest/api.html#memory-backend">dogpile.cache.memory</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://dogpilecache.readthedocs.io/en/latest/api.html#memcached-backends">dogpile.cache.memcached</a></p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The memory back end is not suitable for use in a production
+environment.</p>
+</div>
+</li>
+<li><p class="first"><a class="reference external" href="https://dogpilecache.readthedocs.io/en/latest/api.html#redis-backends">dogpile.cache.redis</a></p>
+</li>
+<li><p class="first"><a class="reference external" href="https://dogpilecache.readthedocs.io/en/latest/api.html#file-backends">dogpile.cache.dbm</a></p>
+</li>
+</ul>
+</div>
+<div class="section" id="cache-invalidation">
+<h2>Cache invalidation<a class="headerlink" href="#cache-invalidation" title="Permalink to this headline">¶</a></h2>
+<p>A common concern with caching is relaying inaccurate information after updating
+or deleting a resource. Most subsystems within OpenStack Identity invalidate
+specific cache entries once they have changed. In cases where a specific cache
+entry cannot be invalidated from the cache, the cache region will be
+invalidated instead. This invalidates all entries within the cache to prevent
+returning stale or misleading data. A subsequent request for the resource will
+be fully processed and cached.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Be aware that if a read-only back end is in use for a particular subsystem,
+the cache will not immediately reflect changes performed through the back
+end. Any given change may take up to the <code class="docutils literal"><span class="pre">cache_time</span></code> (if set in the
+subsystem section of the configuration) or the global <code class="docutils literal"><span class="pre">expiration_time</span></code>
+(set in the <code class="docutils literal"><span class="pre">[cache]</span></code> section of the configuration) before it is
+reflected. If this type of delay is an issue, we recommend disabling
+caching for that particular subsystem.</p>
+</div>
+</div>
+<div class="section" id="configure-the-memcached-back-end-example">
+<h2>Configure the Memcached back end example<a class="headerlink" href="#configure-the-memcached-back-end-example" title="Permalink to this headline">¶</a></h2>
+<p>The following example shows how to configure the memcached back end:</p>
+<div class="highlight-ini"><div class="highlight"><pre><span></span><span class="k">[cache]</span>
+
+<span class="na">enabled</span> <span class="o">=</span> <span class="s">true</span>
+<span class="na">backend</span> <span class="o">=</span> <span class="s">dogpile.cache.memcached</span>
+<span class="na">backend_argument</span> <span class="o">=</span> <span class="s">url:127.0.0.1:11211</span>
+</pre></div>
+</div>
+<p>You need to specify the URL to reach the <code class="docutils literal"><span class="pre">memcached</span></code> instance with the
+<code class="docutils literal"><span class="pre">backend_argument</span></code> parameter.</p>
+</div>
+</div>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

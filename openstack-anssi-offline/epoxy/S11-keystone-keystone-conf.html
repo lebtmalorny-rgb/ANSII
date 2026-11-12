@@ -1,0 +1,2796 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>keystone.conf · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="keystone-conf">
+<h1>keystone.conf<a class="headerlink" href="#keystone-conf" title="Link to this heading">¶</a></h1>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code> file to configure most Identity service
+options. This sample configuration can also be viewed in <a class="reference external" href="https://docs.openstack.org/keystone/2025.1/_static/keystone.conf.sample">raw
+format</a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">DEFAULT</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Using this feature is *NOT* recommended. Instead, use the `keystone-manage</span>
+<span class="c1"># bootstrap` command. The value of this option is treated as a "shared secret"</span>
+<span class="c1"># that can be used to bootstrap Keystone through the API. This "token" does not</span>
+<span class="c1"># represent a user (it has no identity), and carries no explicit authorization</span>
+<span class="c1"># (it effectively bypasses most authorization checks). If set to `None`, the</span>
+<span class="c1"># value is ignored and the `admin_token` middleware is effectively disabled.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#admin_token = &lt;None&gt;</span>
+
+<span class="c1"># The base public endpoint URL for Keystone that is advertised to clients</span>
+<span class="c1"># (NOTE: this does NOT affect how Keystone listens for connections). Defaults</span>
+<span class="c1"># to the base host URL of the request. For example, if keystone receives a</span>
+<span class="c1"># request to `http://server:5000/v3/users`, then this will option will be</span>
+<span class="c1"># automatically treated as `http://server:5000`. You should only need to set</span>
+<span class="c1"># option if either the value of the base URL contains a path that keystone does</span>
+<span class="c1"># not automatically infer (`/prefix/v3`), or if the endpoint should be found on</span>
+<span class="c1"># a different host. (uri value)</span>
+<span class="c1">#public_endpoint = &lt;None&gt;</span>
+
+<span class="c1"># Maximum depth of the project hierarchy, excluding the project acting as a</span>
+<span class="c1"># domain at the top of the hierarchy. WARNING: Setting it to a large value may</span>
+<span class="c1"># adversely impact performance. (integer value)</span>
+<span class="c1">#max_project_tree_depth = 5</span>
+
+<span class="c1"># DEPRECATED: Limit the sizes of user &amp; project ID/names. (integer value)</span>
+<span class="c1"># This option is deprecated for removal since 2025.1.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: This option has had no effect.</span>
+<span class="c1">#max_param_size = 64</span>
+
+<span class="c1"># Similar to `[DEFAULT] max_param_size`, but provides an exception for token</span>
+<span class="c1"># values. With Fernet tokens, this can be set as low as 255. (integer value)</span>
+<span class="c1">#max_token_size = 255</span>
+
+<span class="c1"># The maximum number of entities that will be returned in a collection. This</span>
+<span class="c1"># global limit may be then overridden for a specific driver, by specifying a</span>
+<span class="c1"># list_limit in the appropriate section (for example, `[assignment]`). No limit</span>
+<span class="c1"># is set by default. In larger deployments, it is recommended that you set this</span>
+<span class="c1"># to a reasonable number to prevent operations like listing all users and</span>
+<span class="c1"># projects from placing an unnecessary load on the system. (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+<span class="c1"># As a query can potentially return many thousands of items, you can limit the</span>
+<span class="c1"># maximum number of items in a single response by setting this option. While</span>
+<span class="c1"># `list_limit` is used to set the default page size this parameter sets global</span>
+<span class="c1"># maximum that cannot be exceded. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#max_db_limit = 1000</span>
+
+<span class="c1"># If set to true, strict password length checking is performed for password</span>
+<span class="c1"># manipulation. If a password exceeds the maximum length, the operation will</span>
+<span class="c1"># fail with an HTTP 403 Forbidden error. If set to false, passwords are</span>
+<span class="c1"># automatically truncated to the maximum length. (boolean value)</span>
+<span class="c1">#strict_password_check = false</span>
+
+<span class="c1"># If set to true, then the server will return information in HTTP responses</span>
+<span class="c1"># that may allow an unauthenticated or authenticated user to get more</span>
+<span class="c1"># information than normal, such as additional details about why authentication</span>
+<span class="c1"># failed. This may be useful for debugging but is insecure. (boolean value)</span>
+<span class="c1">#insecure_debug = false</span>
+
+<span class="c1"># Default `publisher_id` for outgoing notifications. If left undefined,</span>
+<span class="c1"># Keystone will default to using the server's host name. (string value)</span>
+<span class="c1">#default_publisher_id = &lt;None&gt;</span>
+
+<span class="c1"># Define the notification format for identity service events. A `basic`</span>
+<span class="c1"># notification only has information about the resource being operated on. A</span>
+<span class="c1"># `cadf` notification has the same information, as well as information about</span>
+<span class="c1"># the initiator of the event. The `cadf` option is entirely backwards</span>
+<span class="c1"># compatible with the `basic` option, but is fully CADF-compliant, and is</span>
+<span class="c1"># recommended for auditing use cases. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># basic - &lt;No description provided&gt;</span>
+<span class="c1"># cadf - &lt;No description provided&gt;</span>
+<span class="c1">#notification_format = cadf</span>
+
+<span class="c1"># You can reduce the number of notifications keystone emits by explicitly</span>
+<span class="c1"># opting out. Keystone will not emit notifications that match the patterns</span>
+<span class="c1"># expressed in this list. Values are expected to be in the form of</span>
+<span class="c1"># `identity.&lt;resource_type&gt;.&lt;operation&gt;`. By default, all notifications related</span>
+<span class="c1"># to authentication are automatically suppressed. This field can be set</span>
+<span class="c1"># multiple times in order to opt-out of multiple notification topics. For</span>
+<span class="c1"># example, the following suppresses notifications describing user creation or</span>
+<span class="c1"># successful authentication events: notification_opt_out=identity.user.create</span>
+<span class="c1"># notification_opt_out=identity.authenticate.success (multi valued)</span>
+<span class="c1">#notification_opt_out = identity.authenticate.success</span>
+<span class="c1">#notification_opt_out = identity.authenticate.pending</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.log</span>
+<span class="c1">#</span>
+
+<span class="c1"># If set to true, the logging level will be set to DEBUG instead of the default</span>
+<span class="c1"># INFO level. (boolean value)</span>
+<span class="c1"># Note: This option can be changed without restarting.</span>
+<span class="c1">#debug = false</span>
+
+<span class="c1"># The name of a logging configuration file. This file is appended to any</span>
+<span class="c1"># existing logging configuration files. For details about logging configuration</span>
+<span class="c1"># files, see the Python logging module documentation. Note that when logging</span>
+<span class="c1"># configuration files are used then all logging configuration is set in the</span>
+<span class="c1"># configuration file and other logging configuration options are ignored (for</span>
+<span class="c1"># example, log-date-format). (string value)</span>
+<span class="c1"># Note: This option can be changed without restarting.</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/log_config</span>
+<span class="c1">#log_config_append = &lt;None&gt;</span>
+
+<span class="c1"># Defines the format string for %%(asctime)s in log records. Default:</span>
+<span class="c1"># %(default)s . This option is ignored if log_config_append is set. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#log_date_format = %Y-%m-%d %H:%M:%S</span>
+
+<span class="c1"># (Optional) Name of log file to send logging output to. If no default is set,</span>
+<span class="c1"># logging will go to stderr as defined by use_stderr. This option is ignored if</span>
+<span class="c1"># log_config_append is set. (string value)</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/logfile</span>
+<span class="c1">#log_file = &lt;None&gt;</span>
+
+<span class="c1"># (Optional) The base directory used for relative log_file  paths. This option</span>
+<span class="c1"># is ignored if log_config_append is set. (string value)</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/logdir</span>
+<span class="c1">#log_dir = &lt;None&gt;</span>
+
+<span class="c1"># DEPRECATED: Uses logging handler designed to watch file system. When log file</span>
+<span class="c1"># is moved or removed this handler will open a new log file with specified path</span>
+<span class="c1"># instantaneously. It makes sense only if log_file option is specified and</span>
+<span class="c1"># Linux platform is used. This option is ignored if log_config_append is set.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1"># This option is deprecated for removal.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: This function is known to have bene broken for long time, and depends</span>
+<span class="c1"># on the unmaintained library</span>
+<span class="c1">#watch_log_file = false</span>
+
+<span class="c1"># Use syslog for logging. Existing syslog format is DEPRECATED and will be</span>
+<span class="c1"># changed later to honor RFC5424. This option is ignored if log_config_append</span>
+<span class="c1"># is set. (boolean value)</span>
+<span class="c1">#use_syslog = false</span>
+
+<span class="c1"># Enable journald for logging. If running in a systemd environment you may wish</span>
+<span class="c1"># to enable journal support. Doing so will use the journal native protocol</span>
+<span class="c1"># which includes structured metadata in addition to log messages.This option is</span>
+<span class="c1"># ignored if log_config_append is set. (boolean value)</span>
+<span class="c1">#use_journal = false</span>
+
+<span class="c1"># Syslog facility to receive log lines. This option is ignored if</span>
+<span class="c1"># log_config_append is set. (string value)</span>
+<span class="c1">#syslog_log_facility = LOG_USER</span>
+
+<span class="c1"># Use JSON formatting for logging. This option is ignored if log_config_append</span>
+<span class="c1"># is set. (boolean value)</span>
+<span class="c1">#use_json = false</span>
+
+<span class="c1"># Log output to standard error. This option is ignored if log_config_append is</span>
+<span class="c1"># set. (boolean value)</span>
+<span class="c1">#use_stderr = false</span>
+
+<span class="c1"># (Optional) Set the 'color' key according to log levels. This option takes</span>
+<span class="c1"># effect only when logging to stderr or stdout is used. This option is ignored</span>
+<span class="c1"># if log_config_append is set. (boolean value)</span>
+<span class="c1">#log_color = false</span>
+
+<span class="c1"># The amount of time before the log files are rotated. This option is ignored</span>
+<span class="c1"># unless log_rotation_type is set to "interval". (integer value)</span>
+<span class="c1">#log_rotate_interval = 1</span>
+
+<span class="c1"># Rotation interval type. The time of the last file change (or the time when</span>
+<span class="c1"># the service was started) is used when scheduling the next rotation. (string</span>
+<span class="c1"># value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># Seconds - &lt;No description provided&gt;</span>
+<span class="c1"># Minutes - &lt;No description provided&gt;</span>
+<span class="c1"># Hours - &lt;No description provided&gt;</span>
+<span class="c1"># Days - &lt;No description provided&gt;</span>
+<span class="c1"># Weekday - &lt;No description provided&gt;</span>
+<span class="c1"># Midnight - &lt;No description provided&gt;</span>
+<span class="c1">#log_rotate_interval_type = days</span>
+
+<span class="c1"># Maximum number of rotated log files. (integer value)</span>
+<span class="c1">#max_logfile_count = 30</span>
+
+<span class="c1"># Log file maximum size in MB. This option is ignored if "log_rotation_type" is</span>
+<span class="c1"># not set to "size". (integer value)</span>
+<span class="c1">#max_logfile_size_mb = 200</span>
+
+<span class="c1"># Log rotation type. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># interval - Rotate logs at predefined time intervals.</span>
+<span class="c1"># size - Rotate logs once they reach a predefined size.</span>
+<span class="c1"># none - Do not rotate log files.</span>
+<span class="c1">#log_rotation_type = none</span>
+
+<span class="c1"># Format string to use for log messages with context. Used by</span>
+<span class="c1"># oslo_log.formatters.ContextFormatter (string value)</span>
+<span class="c1">#logging_context_format_string = %(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [%(global_request_id)s %(request_id)s %(user_identity)s] %(instance)s%(message)s</span>
+
+<span class="c1"># Format string to use for log messages when context is undefined. Used by</span>
+<span class="c1"># oslo_log.formatters.ContextFormatter (string value)</span>
+<span class="c1">#logging_default_format_string = %(asctime)s.%(msecs)03d %(process)d %(levelname)s %(name)s [-] %(instance)s%(message)s</span>
+
+<span class="c1"># Additional data to append to log message when logging level for the message</span>
+<span class="c1"># is DEBUG. Used by oslo_log.formatters.ContextFormatter (string value)</span>
+<span class="c1">#logging_debug_format_suffix = %(funcName)s %(pathname)s:%(lineno)d</span>
+
+<span class="c1"># Prefix each line of exception output with this format. Used by</span>
+<span class="c1"># oslo_log.formatters.ContextFormatter (string value)</span>
+<span class="c1">#logging_exception_prefix = %(asctime)s.%(msecs)03d %(process)d ERROR %(name)s %(instance)s</span>
+
+<span class="c1"># Defines the format string for %(user_identity)s that is used in</span>
+<span class="c1"># logging_context_format_string. Used by oslo_log.formatters.ContextFormatter</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#logging_user_identity_format = %(user)s %(project)s %(domain)s %(system_scope)s %(user_domain)s %(project_domain)s</span>
+
+<span class="c1"># List of package logging levels in logger=LEVEL pairs. This option is ignored</span>
+<span class="c1"># if log_config_append is set. (list value)</span>
+<span class="c1">#default_log_levels = amqp=WARN,amqplib=WARN,boto=WARN,qpid=WARN,sqlalchemy=WARN,suds=INFO,oslo.messaging=INFO,oslo_messaging=INFO,iso8601=WARN,requests.packages.urllib3.connectionpool=WARN,urllib3.connectionpool=WARN,websocket=WARN,requests.packages.urllib3.util.retry=WARN,urllib3.util.retry=WARN,keystonemiddleware=WARN,routes.middleware=WARN,stevedore=WARN,taskflow=WARN,keystoneauth=WARN,oslo.cache=INFO,oslo_policy=INFO,dogpile.core.dogpile=INFO</span>
+
+<span class="c1"># Enables or disables publication of error events. (boolean value)</span>
+<span class="c1">#publish_errors = false</span>
+
+<span class="c1"># The format for an instance that is passed with the log message. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#instance_format = "[instance: %(uuid)s] "</span>
+
+<span class="c1"># The format for an instance UUID that is passed with the log message. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#instance_uuid_format = "[instance: %(uuid)s] "</span>
+
+<span class="c1"># Interval, number of seconds, of log rate limiting. (integer value)</span>
+<span class="c1">#rate_limit_interval = 0</span>
+
+<span class="c1"># Maximum number of logged messages per rate_limit_interval. (integer value)</span>
+<span class="c1">#rate_limit_burst = 0</span>
+
+<span class="c1"># Log level name used by rate limiting. Logs with level greater or equal to</span>
+<span class="c1"># rate_limit_except_level are not filtered. An empty string means that all</span>
+<span class="c1"># levels are filtered. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># CRITICAL - &lt;No description provided&gt;</span>
+<span class="c1"># ERROR - &lt;No description provided&gt;</span>
+<span class="c1"># INFO - &lt;No description provided&gt;</span>
+<span class="c1"># WARNING - &lt;No description provided&gt;</span>
+<span class="c1"># DEBUG - &lt;No description provided&gt;</span>
+<span class="c1"># '' - &lt;No description provided&gt;</span>
+<span class="c1">#rate_limit_except_level = CRITICAL</span>
+
+<span class="c1"># Enables or disables fatal status of deprecations. (boolean value)</span>
+<span class="c1">#fatal_deprecations = false</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.messaging</span>
+<span class="c1">#</span>
+
+<span class="c1"># Size of executor thread pool when executor is threading or eventlet. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/rpc_thread_pool_size</span>
+<span class="c1">#executor_thread_pool_size = 64</span>
+
+<span class="c1"># Seconds to wait for a response from a call. (integer value)</span>
+<span class="c1">#rpc_response_timeout = 60</span>
+
+<span class="c1"># The network address and optional user credentials for connecting to the</span>
+<span class="c1"># messaging backend, in URL format. The expected format is:</span>
+<span class="c1">#</span>
+<span class="c1"># driver://[user:pass@]host:port[,[userN:passN@]hostN:portN]/virtual_host?query</span>
+<span class="c1">#</span>
+<span class="c1"># Example: rabbit://rabbitmq:password@127.0.0.1:5672//</span>
+<span class="c1">#</span>
+<span class="c1"># For full details on the fields in the URL see the documentation of</span>
+<span class="c1"># oslo_messaging.TransportURL at</span>
+<span class="c1"># https://docs.openstack.org/oslo.messaging/latest/reference/transport.html</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#transport_url = rabbit://</span>
+
+<span class="c1"># The default exchange under which topics are scoped. May be overridden by an</span>
+<span class="c1"># exchange name specified in the transport_url option. (string value)</span>
+<span class="c1">#control_exchange = keystone</span>
+
+<span class="c1"># Add an endpoint to answer to ping calls. Endpoint is named</span>
+<span class="c1"># oslo_rpc_server_ping (boolean value)</span>
+<span class="c1">#rpc_ping_enabled = false</span>
+
+
+<span class="p">[</span><span class="n">api</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Configure validation of API responses.  ``warn`` is the current</span>
+<span class="c1"># recommendation for production environments. If you find it necessary to</span>
+<span class="c1"># enable the ``ignore`` option, please report the issues you are seeing to the</span>
+<span class="c1"># Keystone team so we can improve our schemas.  ``error`` should not be used in</span>
+<span class="c1"># a production environment. This is because schema validation happens *after*</span>
+<span class="c1"># the response body has been generated, meaning any side effects will still</span>
+<span class="c1"># happen and the call may be non-idempotent despite the user receiving a HTTP</span>
+<span class="c1"># 500 error. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># error - Raise a HTTP 500 (Server Error) for responses that fail schema</span>
+<span class="c1"># validation</span>
+<span class="c1"># warn - Log a warning for responses that fail schema validation</span>
+<span class="c1"># ignore - Ignore schema validation failures</span>
+<span class="c1">#response_validation = warn</span>
+
+
+<span class="p">[</span><span class="n">application_credential</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the application credential backend driver in the</span>
+<span class="c1"># `keystone.application_credential` namespace.  Keystone only provides a `sql`</span>
+<span class="c1"># driver, so there is no reason to change this unless you are providing a</span>
+<span class="c1"># custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for application credential caching. This has no effect unless global</span>
+<span class="c1"># caching is enabled. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache application credential data in seconds. This has no effect</span>
+<span class="c1"># unless global caching is enabled. (integer value)</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># Maximum number of application credentials a user is permitted to create. A</span>
+<span class="c1"># value of -1 means unlimited. If a limit is not set, users are permitted to</span>
+<span class="c1"># create application credentials at will, which could lead to bloat in the</span>
+<span class="c1"># keystone database or open keystone to a DoS attack. (integer value)</span>
+<span class="c1">#user_limit = -1</span>
+
+
+<span class="p">[</span><span class="n">assignment</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the assignment backend driver (where role assignments are</span>
+<span class="c1"># stored) in the `keystone.assignment` namespace. Only a SQL driver is supplied</span>
+<span class="c1"># by keystone itself. Unless you are writing proprietary drivers for keystone,</span>
+<span class="c1"># you do not need to set this option. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># A list of role names which are prohibited from being an implied role. (list</span>
+<span class="c1"># value)</span>
+<span class="c1">#prohibited_implied_role = admin</span>
+
+
+<span class="p">[</span><span class="n">auth</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Allowed authentication methods. Note: You should disable the `external` auth</span>
+<span class="c1"># method if you are currently using federation. External auth and federation</span>
+<span class="c1"># both use the REMOTE_USER variable. Since both the mapped and external plugin</span>
+<span class="c1"># are being invoked to validate attributes in the request environment, it can</span>
+<span class="c1"># cause conflicts. (list value)</span>
+<span class="c1">#methods = external,password,token,oauth1,mapped,application_credential</span>
+
+<span class="c1"># Entry point for the password auth plugin module in the</span>
+<span class="c1"># `keystone.auth.password` namespace. You do not need to set this unless you</span>
+<span class="c1"># are overriding keystone's own password authentication plugin. (string value)</span>
+<span class="c1">#password = &lt;None&gt;</span>
+
+<span class="c1"># Entry point for the token auth plugin module in the `keystone.auth.token`</span>
+<span class="c1"># namespace. You do not need to set this unless you are overriding keystone's</span>
+<span class="c1"># own token authentication plugin. (string value)</span>
+<span class="c1">#token = &lt;None&gt;</span>
+
+<span class="c1"># Entry point for the external (`REMOTE_USER`) auth plugin module in the</span>
+<span class="c1"># `keystone.auth.external` namespace. Supplied drivers are `DefaultDomain` and</span>
+<span class="c1"># `Domain`. The default driver is `DefaultDomain`, which assumes that all users</span>
+<span class="c1"># identified by the username specified to keystone in the `REMOTE_USER`</span>
+<span class="c1"># variable exist within the context of the default domain. The `Domain` option</span>
+<span class="c1"># expects an additional environment variable be presented to keystone,</span>
+<span class="c1"># `REMOTE_DOMAIN`, containing the domain name of the `REMOTE_USER` (if</span>
+<span class="c1"># `REMOTE_DOMAIN` is not set, then the default domain will be used instead).</span>
+<span class="c1"># You do not need to set this unless you are taking advantage of "external</span>
+<span class="c1"># authentication", where the application server (such as Apache) is handling</span>
+<span class="c1"># authentication instead of keystone. (string value)</span>
+<span class="c1">#external = &lt;None&gt;</span>
+
+<span class="c1"># Entry point for the OAuth 1.0a auth plugin module in the</span>
+<span class="c1"># `keystone.auth.oauth1` namespace. You do not need to set this unless you are</span>
+<span class="c1"># overriding keystone's own `oauth1` authentication plugin. (string value)</span>
+<span class="c1">#oauth1 = &lt;None&gt;</span>
+
+<span class="c1"># Entry point for the mapped auth plugin module in the `keystone.auth.mapped`</span>
+<span class="c1"># namespace. You do not need to set this unless you are overriding keystone's</span>
+<span class="c1"># own `mapped` authentication plugin. (string value)</span>
+<span class="c1">#mapped = &lt;None&gt;</span>
+
+<span class="c1"># Entry point for the application_credential auth plugin module in the</span>
+<span class="c1"># `keystone.auth.application_credential` namespace. You do not need to set this</span>
+<span class="c1"># unless you are overriding keystone's own `application_credential`</span>
+<span class="c1"># authentication plugin. (string value)</span>
+<span class="c1">#application_credential = &lt;None&gt;</span>
+
+<span class="c1"># Auth method names, beyond keystone's own built-in primary methods (password,</span>
+<span class="c1"># totp, mapped, saml2, openid, external, kerberos, x509, token), that</span>
+<span class="c1"># authenticate a user directly rather than via a delegated credential. Set this</span>
+<span class="c1"># if you run a custom, third-party auth plugin (for example a site-specific SSO</span>
+<span class="c1"># integration) so that tokens issued through it are not mistaken for a</span>
+<span class="c1"># delegated credential (application credential, OAuth1 access token, EC2</span>
+<span class="c1"># credential) by the guards that block delegated tokens from managing trusts,</span>
+<span class="c1"># application credentials, OAuth1 access tokens, credentials, or exchanging a</span>
+<span class="c1"># token for another token. Without this, a token issued via an unlisted custom</span>
+<span class="c1"># method is treated as delegated and rejected from those actions by default.</span>
+<span class="c1"># (list value)</span>
+<span class="c1">#additional_primary_auth_methods =</span>
+
+<span class="c1"># EC2 credentials are supported by keystone only to allow Swift to implement</span>
+<span class="c1"># the S3 protocol against keystone identities. When enabled (the default), a</span>
+<span class="c1"># token issued via EC2 credential authentication (ec2credential) is rejected by</span>
+<span class="c1"># the auth middleware for every keystone API operation except validating the</span>
+<span class="c1"># token, which Swift's S3 support needs. Disable only if a deployment has an</span>
+<span class="c1"># existing, legitimate dependency on using EC2-derived tokens directly against</span>
+<span class="c1"># the keystone API. (boolean value)</span>
+<span class="c1">#ban_ec2credential_tokens = true</span>
+
+
+<span class="p">[</span><span class="n">cache</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.cache</span>
+<span class="c1">#</span>
+
+<span class="c1"># Prefix for building the configuration dictionary for the cache region. This</span>
+<span class="c1"># should not need to be changed unless there is another dogpile.cache region</span>
+<span class="c1"># with the same configuration name. (string value)</span>
+<span class="c1">#config_prefix = cache.oslo</span>
+
+<span class="c1"># Default TTL, in seconds, for any cached item in the dogpile.cache region.</span>
+<span class="c1"># This applies to any cached method that doesn't have an explicit cache</span>
+<span class="c1"># expiration time defined for it. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#expiration_time = 600</span>
+
+<span class="c1"># Expiration time in cache backend to purge expired records automatically. This</span>
+<span class="c1"># should be greater than expiration_time and all cache_time options (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#backend_expiration_time = &lt;None&gt;</span>
+
+<span class="c1"># Cache backend module. For eventlet-based or environments with hundreds of</span>
+<span class="c1"># threaded servers, Memcache with pooling (oslo_cache.memcache_pool) is</span>
+<span class="c1"># recommended. For environments with less than 100 threaded servers, Memcached</span>
+<span class="c1"># (dogpile.cache.memcached) or Redis (dogpile.cache.redis) is recommended. Test</span>
+<span class="c1"># environments with a single instance of the server can use the</span>
+<span class="c1"># dogpile.cache.memory backend. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># oslo_cache.memcache_pool - &lt;No description provided&gt;</span>
+<span class="c1"># oslo_cache.dict - &lt;No description provided&gt;</span>
+<span class="c1"># oslo_cache.mongo - &lt;No description provided&gt;</span>
+<span class="c1"># oslo_cache.etcd3gw - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.pymemcache - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.memcached - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.pylibmc - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.bmemcached - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.dbm - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.redis - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.redis_sentinel - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.memory - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.memory_pickle - &lt;No description provided&gt;</span>
+<span class="c1"># dogpile.cache.null - &lt;No description provided&gt;</span>
+<span class="c1">#backend = dogpile.cache.null</span>
+
+<span class="c1"># Arguments supplied to the backend module. Specify this option once per</span>
+<span class="c1"># argument to be passed to the dogpile.cache backend. Example format:</span>
+<span class="c1"># "&lt;argname&gt;:&lt;value&gt;". (multi valued)</span>
+<span class="c1">#backend_argument =</span>
+
+<span class="c1"># Proxy classes to import that will affect the way the dogpile.cache backend</span>
+<span class="c1"># functions. See the dogpile.cache documentation on changing-backend-behavior.</span>
+<span class="c1"># (list value)</span>
+<span class="c1">#proxies =</span>
+
+<span class="c1"># Global toggle for caching. (boolean value)</span>
+<span class="c1">#enabled = true</span>
+
+<span class="c1"># Extra debugging from the cache backend (cache keys, get/set/delete/etc</span>
+<span class="c1"># calls). This is only really useful if you need to see the specific cache-</span>
+<span class="c1"># backend get/set/delete calls with the keys/values.  Typically this should be</span>
+<span class="c1"># left set to false. (boolean value)</span>
+<span class="c1">#debug_cache_backend = false</span>
+
+<span class="c1"># Memcache servers in the format of "host:port". This is used by backends</span>
+<span class="c1"># dependent on Memcached.If ``dogpile.cache.memcached`` or</span>
+<span class="c1"># ``oslo_cache.memcache_pool`` is used and a given host refer to an IPv6 or a</span>
+<span class="c1"># given domain refer to IPv6 then you should prefix the given address with the</span>
+<span class="c1"># address family (``inet6``) (e.g ``inet6[::1]:11211``,</span>
+<span class="c1"># ``inet6:[fd12:3456:789a:1::1]:11211``,</span>
+<span class="c1"># ``inet6:[controller-0.internalapi]:11211``). If the address family is not</span>
+<span class="c1"># given then these backends will use the default ``inet`` address family which</span>
+<span class="c1"># corresponds to IPv4 (list value)</span>
+<span class="c1">#memcache_servers = localhost:11211</span>
+
+<span class="c1"># Number of seconds memcached server is considered dead before it is tried</span>
+<span class="c1"># again. (dogpile.cache.memcache and oslo_cache.memcache_pool backends only).</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#memcache_dead_retry = 300</span>
+
+<span class="c1"># Timeout in seconds for every call to a server. (dogpile.cache.memcache and</span>
+<span class="c1"># oslo_cache.memcache_pool backends only). (floating point value)</span>
+<span class="c1">#memcache_socket_timeout = 1.0</span>
+
+<span class="c1"># Max total number of open connections to every memcached server.</span>
+<span class="c1"># (oslo_cache.memcache_pool backend only). (integer value)</span>
+<span class="c1">#memcache_pool_maxsize = 10</span>
+
+<span class="c1"># Number of seconds a connection to memcached is held unused in the pool before</span>
+<span class="c1"># it is closed. (oslo_cache.memcache_pool backend only). (integer value)</span>
+<span class="c1">#memcache_pool_unused_timeout = 60</span>
+
+<span class="c1"># Number of seconds that an operation will wait to get a memcache client</span>
+<span class="c1"># connection. (integer value)</span>
+<span class="c1">#memcache_pool_connection_get_timeout = 10</span>
+
+<span class="c1"># Global toggle if memcache will be flushed on reconnect.</span>
+<span class="c1"># (oslo_cache.memcache_pool backend only). (boolean value)</span>
+<span class="c1">#memcache_pool_flush_on_reconnect = false</span>
+
+<span class="c1"># Enable the SASL(Simple Authentication and SecurityLayer) if the SASL_enable</span>
+<span class="c1"># is true, else disable. (boolean value)</span>
+<span class="c1">#memcache_sasl_enabled = false</span>
+
+<span class="c1"># the user name for the memcached which SASL enabled (string value)</span>
+<span class="c1">#memcache_username = &lt;None&gt;</span>
+
+<span class="c1"># the password for the memcached which SASL enabled (string value)</span>
+<span class="c1">#memcache_password = &lt;None&gt;</span>
+
+<span class="c1"># Redis server in the format of "host:port" (string value)</span>
+<span class="c1">#redis_server = localhost:6379</span>
+
+<span class="c1"># Database id in Redis server (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#redis_db = 0</span>
+
+<span class="c1"># the user name for redis (string value)</span>
+<span class="c1">#redis_username = &lt;None&gt;</span>
+
+<span class="c1"># the password for redis (string value)</span>
+<span class="c1">#redis_password = &lt;None&gt;</span>
+
+<span class="c1"># Redis sentinel servers in the format of "host:port" (list value)</span>
+<span class="c1">#redis_sentinels = localhost:26379</span>
+
+<span class="c1"># Timeout in seconds for every call to a server. (dogpile.cache.redis and</span>
+<span class="c1"># dogpile.cache.redis_sentinel backends only). (floating point value)</span>
+<span class="c1">#redis_socket_timeout = 1.0</span>
+
+<span class="c1"># Service name of the redis sentinel cluster. (string value)</span>
+<span class="c1">#redis_sentinel_service_name = mymaster</span>
+
+<span class="c1"># Global toggle for TLS usage when communicating with the caching servers.</span>
+<span class="c1"># Currently supported by ``dogpile.cache.bmemcache``,</span>
+<span class="c1"># ``dogpile.cache.pymemcache``, ``oslo_cache.memcache_pool``,</span>
+<span class="c1"># ``dogpile.cache.redis`` and ``dogpile.cache.redis_sentinel``. (boolean value)</span>
+<span class="c1">#tls_enabled = false</span>
+
+<span class="c1"># Path to a file of concatenated CA certificates in PEM format necessary to</span>
+<span class="c1"># establish the caching servers' authenticity. If tls_enabled is False, this</span>
+<span class="c1"># option is ignored. (string value)</span>
+<span class="c1">#tls_cafile = &lt;None&gt;</span>
+
+<span class="c1"># Path to a single file in PEM format containing the client's certificate as</span>
+<span class="c1"># well as any number of CA certificates needed to establish the certificate's</span>
+<span class="c1"># authenticity. This file is only required when client side authentication is</span>
+<span class="c1"># necessary. If tls_enabled is False, this option is ignored. (string value)</span>
+<span class="c1">#tls_certfile = &lt;None&gt;</span>
+
+<span class="c1"># Path to a single file containing the client's private key in. Otherwise the</span>
+<span class="c1"># private key will be taken from the file specified in tls_certfile. If</span>
+<span class="c1"># tls_enabled is False, this option is ignored. (string value)</span>
+<span class="c1">#tls_keyfile = &lt;None&gt;</span>
+
+<span class="c1"># Set the available ciphers for sockets created with the TLS context. It should</span>
+<span class="c1"># be a string in the OpenSSL cipher list format. If not specified, all OpenSSL</span>
+<span class="c1"># enabled ciphers will be available. Currently supported by</span>
+<span class="c1"># ``dogpile.cache.bmemcache``, ``dogpile.cache.pymemcache`` and</span>
+<span class="c1"># ``oslo_cache.memcache_pool``. (string value)</span>
+<span class="c1">#tls_allowed_ciphers = &lt;None&gt;</span>
+
+<span class="c1"># Global toggle for the socket keepalive of dogpile's pymemcache backend</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#enable_socket_keepalive = false</span>
+
+<span class="c1"># The time (in seconds) the connection needs to remain idle before TCP starts</span>
+<span class="c1"># sending keepalive probes. Should be a positive integer most greater than</span>
+<span class="c1"># zero. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#socket_keepalive_idle = 1</span>
+
+<span class="c1"># The time (in seconds) between individual keepalive probes. Should be a</span>
+<span class="c1"># positive integer greater than zero. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#socket_keepalive_interval = 1</span>
+
+<span class="c1"># The maximum number of keepalive probes TCP should send before dropping the</span>
+<span class="c1"># connection. Should be a positive integer greater than zero. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#socket_keepalive_count = 1</span>
+
+<span class="c1"># Enable retry client mechanisms to handle failure. Those mechanisms can be</span>
+<span class="c1"># used to wrap all kind of pymemcache clients. The wrapper allows you to define</span>
+<span class="c1"># how many attempts to make and how long to wait between attemots. (boolean</span>
+<span class="c1"># value)</span>
+<span class="c1">#enable_retry_client = false</span>
+
+<span class="c1"># Number of times to attempt an action before failing. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#retry_attempts = 2</span>
+
+<span class="c1"># Number of seconds to sleep between each attempt. (floating point value)</span>
+<span class="c1">#retry_delay = 0</span>
+
+<span class="c1"># Amount of times a client should be tried before it is marked dead and removed</span>
+<span class="c1"># from the pool in the HashClient's internal mechanisms. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#hashclient_retry_attempts = 2</span>
+
+<span class="c1"># Time in seconds that should pass between retry attempts in the HashClient's</span>
+<span class="c1"># internal mechanisms. (floating point value)</span>
+<span class="c1">#hashclient_retry_delay = 1</span>
+
+<span class="c1"># Time in seconds before attempting to add a node back in the pool in the</span>
+<span class="c1"># HashClient's internal mechanisms. (floating point value)</span>
+<span class="c1">#dead_timeout = 60</span>
+
+<span class="c1"># Global toggle for enforcing the OpenSSL FIPS mode. This feature requires</span>
+<span class="c1"># Python support. This is available in Python 3.9 in all environments and may</span>
+<span class="c1"># have been backported to older Python versions on select environments. If the</span>
+<span class="c1"># Python executable used does not support OpenSSL FIPS mode, an exception will</span>
+<span class="c1"># be raised. Currently supported by ``dogpile.cache.bmemcache``,</span>
+<span class="c1"># ``dogpile.cache.pymemcache`` and ``oslo_cache.memcache_pool``. (boolean</span>
+<span class="c1"># value)</span>
+<span class="c1">#enforce_fips_mode = false</span>
+
+
+<span class="p">[</span><span class="n">catalog</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the catalog driver in the `keystone.catalog` namespace.</span>
+<span class="c1"># Keystone provides a `sql` option (which supports basic CRUD operations</span>
+<span class="c1"># through SQL) and a `endpoint_filter.sql` option (which supports arbitrary</span>
+<span class="c1"># service catalogs per project). (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for catalog caching. This has no effect unless global caching is</span>
+<span class="c1"># enabled. In a typical deployment, there is no reason to disable this.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache catalog data (in seconds). This has no effect unless global and</span>
+<span class="c1"># catalog caching are both enabled. Catalog data (services, endpoints, etc.)</span>
+<span class="c1"># typically does not change frequently, and so a longer duration than the</span>
+<span class="c1"># global default may be desirable. (integer value)</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># Maximum number of entities that will be returned in a catalog collection.</span>
+<span class="c1"># There is typically no reason to set this, as it would be unusual for a</span>
+<span class="c1"># deployment to have enough services or endpoints to exceed a reasonable limit.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">cors</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.middleware</span>
+<span class="c1">#</span>
+
+<span class="c1"># Indicate whether this resource may be shared with the domain received in the</span>
+<span class="c1"># requests "origin" header. Format: "&lt;protocol&gt;://&lt;host&gt;[:&lt;port&gt;]", no trailing</span>
+<span class="c1"># slash. Example: https://horizon.example.com (list value)</span>
+<span class="c1">#allowed_origin = &lt;None&gt;</span>
+
+<span class="c1"># Indicate that the actual request can include user credentials (boolean value)</span>
+<span class="c1">#allow_credentials = true</span>
+
+<span class="c1"># Indicate which headers are safe to expose to the API. Defaults to HTTP Simple</span>
+<span class="c1"># Headers. (list value)</span>
+<span class="c1">#expose_headers = X-Auth-Token,X-Openstack-Request-Id,X-Subject-Token,Openstack-Auth-Receipt</span>
+
+<span class="c1"># Maximum cache age of CORS preflight requests. (integer value)</span>
+<span class="c1">#max_age = 3600</span>
+
+<span class="c1"># Indicate which methods can be used during the actual request. (list value)</span>
+<span class="c1">#allow_methods = GET,PUT,POST,DELETE,PATCH</span>
+
+<span class="c1"># Indicate which header field names may be used during the actual request.</span>
+<span class="c1"># (list value)</span>
+<span class="c1">#allow_headers = X-Auth-Token,X-Openstack-Request-Id,X-Subject-Token,X-Project-Id,X-Project-Name,X-Project-Domain-Id,X-Project-Domain-Name,X-Domain-Id,X-Domain-Name,Openstack-Auth-Receipt</span>
+
+
+<span class="p">[</span><span class="n">credential</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the credential backend driver in the `keystone.credential`</span>
+<span class="c1"># namespace. Keystone only provides a `sql` driver, so there's no reason to</span>
+<span class="c1"># change this unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Entry point for credential encryption and decryption operations in the</span>
+<span class="c1"># `keystone.credential.provider` namespace. Keystone only provides a `fernet`</span>
+<span class="c1"># driver, so there's no reason to change this unless you are providing a custom</span>
+<span class="c1"># entry point to encrypt and decrypt credentials. (string value)</span>
+<span class="c1">#provider = fernet</span>
+
+<span class="c1"># Directory containing Fernet keys used to encrypt and decrypt credentials</span>
+<span class="c1"># stored in the credential backend. Fernet keys used to encrypt credentials</span>
+<span class="c1"># have no relationship to Fernet keys used to encrypt Fernet tokens. Both sets</span>
+<span class="c1"># of keys should be managed separately and require different rotation policies.</span>
+<span class="c1"># Do not share this repository with the repository used to manage keys for</span>
+<span class="c1"># Fernet tokens. (string value)</span>
+<span class="c1">#key_repository = /etc/keystone/credential-keys/</span>
+
+<span class="c1"># Toggle for caching only on retrieval of user credentials. This has no effect</span>
+<span class="c1"># unless global caching is enabled. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache credential data in seconds. This has no effect unless global</span>
+<span class="c1"># caching is enabled. (integer value)</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># The length of time in minutes for which a signed EC2 or S3 token request is</span>
+<span class="c1"># valid from the timestamp contained in the token request. (integer value)</span>
+<span class="c1">#auth_ttl = 15</span>
+
+<span class="c1"># Maximum number of credentials a user is permitted to create. A value of -1</span>
+<span class="c1"># means unlimited. If a limit is not set, users are permitted to create</span>
+<span class="c1"># credentials at will, which could lead to bloat in the keystone database or</span>
+<span class="c1"># open keystone to a DoS attack. (integer value)</span>
+<span class="c1">#user_limit = -1</span>
+
+
+<span class="p">[</span><span class="n">database</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.db</span>
+<span class="c1">#</span>
+
+<span class="c1"># If True, SQLite uses synchronous mode. (boolean value)</span>
+<span class="c1">#sqlite_synchronous = true</span>
+
+<span class="c1"># The back end to use for the database. (string value)</span>
+<span class="c1">#backend = sqlalchemy</span>
+
+<span class="c1"># The SQLAlchemy connection string to use to connect to the database. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#connection = &lt;None&gt;</span>
+
+<span class="c1"># The SQLAlchemy connection string to use to connect to the slave database.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#slave_connection = &lt;None&gt;</span>
+
+<span class="c1"># The SQLAlchemy asyncio connection string to use to connect to the database.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#asyncio_connection = &lt;None&gt;</span>
+
+<span class="c1"># The SQLAlchemy asyncio connection string to use to connect to the slave</span>
+<span class="c1"># database. (string value)</span>
+<span class="c1">#asyncio_slave_connection = &lt;None&gt;</span>
+
+<span class="c1"># The SQL mode to be used for MySQL sessions. This option, including the</span>
+<span class="c1"># default, overrides any server-set SQL mode. To use whatever SQL mode is set</span>
+<span class="c1"># by the server configuration, set this to no value. Example: mysql_sql_mode=</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#mysql_sql_mode = TRADITIONAL</span>
+
+<span class="c1"># For Galera only, configure wsrep_sync_wait causality checks on new</span>
+<span class="c1"># connections.  Default is None, meaning don't configure any setting. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1">#mysql_wsrep_sync_wait = &lt;None&gt;</span>
+
+<span class="c1"># Connections which have been present in the connection pool longer than this</span>
+<span class="c1"># number of seconds will be replaced with a new one the next time they are</span>
+<span class="c1"># checked out from the pool. (integer value)</span>
+<span class="c1">#connection_recycle_time = 3600</span>
+
+<span class="c1"># Maximum number of SQL connections to keep open in a pool. Setting a value of</span>
+<span class="c1"># 0 indicates no limit. (integer value)</span>
+<span class="c1">#max_pool_size = 5</span>
+
+<span class="c1"># Maximum number of database connection retries during startup. Set to -1 to</span>
+<span class="c1"># specify an infinite retry count. (integer value)</span>
+<span class="c1">#max_retries = 10</span>
+
+<span class="c1"># Interval between retries of opening a SQL connection. (integer value)</span>
+<span class="c1">#retry_interval = 10</span>
+
+<span class="c1"># If set, use this value for max_overflow with SQLAlchemy. (integer value)</span>
+<span class="c1">#max_overflow = 50</span>
+
+<span class="c1"># Verbosity of SQL debugging information: 0=None, 100=Everything. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 100</span>
+<span class="c1">#connection_debug = 0</span>
+
+<span class="c1"># Add Python stack traces to SQL as comment strings. (boolean value)</span>
+<span class="c1">#connection_trace = false</span>
+
+<span class="c1"># If set, use this value for pool_timeout with SQLAlchemy. (integer value)</span>
+<span class="c1">#pool_timeout = &lt;None&gt;</span>
+
+<span class="c1"># Enable the experimental use of database reconnect on connection lost.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#use_db_reconnect = false</span>
+
+<span class="c1"># Seconds between retries of a database transaction. (integer value)</span>
+<span class="c1">#db_retry_interval = 1</span>
+
+<span class="c1"># If True, increases the interval between retries of a database operation up to</span>
+<span class="c1"># db_max_retry_interval. (boolean value)</span>
+<span class="c1">#db_inc_retry_interval = true</span>
+
+<span class="c1"># If db_inc_retry_interval is set, the maximum seconds between retries of a</span>
+<span class="c1"># database operation. (integer value)</span>
+<span class="c1">#db_max_retry_interval = 10</span>
+
+<span class="c1"># Maximum retries in case of connection error or deadlock error before error is</span>
+<span class="c1"># raised. Set to -1 to specify an infinite retry count. (integer value)</span>
+<span class="c1">#db_max_retries = 20</span>
+
+<span class="c1"># Optional URL parameters to append onto the connection URL at connect time;</span>
+<span class="c1"># specify as param1=value1&amp;param2=value2&amp;... (string value)</span>
+<span class="c1">#connection_parameters =</span>
+
+
+<span class="p">[</span><span class="n">domain_config</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the domain-specific configuration driver in the</span>
+<span class="c1"># `keystone.resource.domain_config` namespace. Only a `sql` option is provided</span>
+<span class="c1"># by keystone, so there is no reason to set this unless you are providing a</span>
+<span class="c1"># custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for caching of the domain-specific configuration backend. This has no</span>
+<span class="c1"># effect unless global caching is enabled. There is normally no reason to</span>
+<span class="c1"># disable this. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time-to-live (TTL, in seconds) to cache domain-specific configuration data.</span>
+<span class="c1"># This has no effect unless `[domain_config] caching` is enabled. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1">#cache_time = 300</span>
+
+<span class="c1"># Additional whitelisted domain-specific options for out-of-tree drivers. This</span>
+<span class="c1"># is a dictonary of lists with the key being the group name and value a list of</span>
+<span class="c1"># group options. (dict value)</span>
+<span class="c1">#additional_whitelisted_options = &lt;None&gt;</span>
+
+<span class="c1"># Additional sensitive domain-specific options for out-of-tree drivers. This is</span>
+<span class="c1"># a dictonary of lists with the key being the group name and value a list of</span>
+<span class="c1"># group options. (dict value)</span>
+<span class="c1">#additional_sensitive_options = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">endpoint_filter</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the endpoint filter driver in the `keystone.endpoint_filter`</span>
+<span class="c1"># namespace. Only a `sql` option is provided by keystone, so there is no reason</span>
+<span class="c1"># to set this unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># This controls keystone's behavior if the configured endpoint filters do not</span>
+<span class="c1"># result in any endpoints for a user + project pair (and therefore a</span>
+<span class="c1"># potentially empty service catalog). If set to true, keystone will return the</span>
+<span class="c1"># entire service catalog. If set to false, keystone will return an empty</span>
+<span class="c1"># service catalog. (boolean value)</span>
+<span class="c1">#return_all_endpoints_if_no_filter = true</span>
+
+
+<span class="p">[</span><span class="n">endpoint_policy</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the endpoint policy driver in the `keystone.endpoint_policy`</span>
+<span class="c1"># namespace. Only a `sql` driver is provided by keystone, so there is no reason</span>
+<span class="c1"># to set this unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+
+<span class="p">[</span><span class="n">federation</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the federation backend driver in the `keystone.federation`</span>
+<span class="c1"># namespace. Keystone only provides a `sql` driver, so there is no reason to</span>
+<span class="c1"># set this option unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Prefix to use when filtering environment variable names for federated</span>
+<span class="c1"># assertions. Matched variables are passed into the federated mapping engine.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#assertion_prefix =</span>
+
+<span class="c1"># Default value for all protocols to be used to obtain the entity ID of the</span>
+<span class="c1"># Identity Provider from the environment. For `mod_shib`, this would be `Shib-</span>
+<span class="c1"># Identity-Provider`. For `mod_auth_openidc`, this could be `HTTP_OIDC_ISS`.</span>
+<span class="c1"># For `mod_auth_mellon`, this could be `MELLON_IDP`. This can be overridden on</span>
+<span class="c1"># a per-protocol basis by providing a `remote_id_attribute` to the federation</span>
+<span class="c1"># protocol using the API. (string value)</span>
+<span class="c1">#remote_id_attribute = &lt;None&gt;</span>
+
+<span class="c1"># DEPRECATED: An arbitrary domain name that is reserved to allow federated</span>
+<span class="c1"># ephemeral users to have a domain concept. Note that an admin will not be able</span>
+<span class="c1"># to create a domain with this name or update an existing domain to this name.</span>
+<span class="c1"># You are not advised to change this value unless you really have to. (string</span>
+<span class="c1"># value)</span>
+<span class="c1"># This option is deprecated for removal since T.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: This option has been superseded by ephemeral users existing in the</span>
+<span class="c1"># domain of their identity provider.</span>
+<span class="c1">#federated_domain_name = Federated</span>
+
+<span class="c1"># A list of trusted dashboard hosts. Before accepting a Single Sign-On request</span>
+<span class="c1"># to return a token, the origin host must be a member of this list. This</span>
+<span class="c1"># configuration option may be repeated for multiple values. You must set this</span>
+<span class="c1"># in order to use web-based SSO flows. For example:</span>
+<span class="c1"># trusted_dashboard=https://acme.example.com/auth/websso</span>
+<span class="c1"># trusted_dashboard=https://beta.example.com/auth/websso (multi valued)</span>
+<span class="c1">#trusted_dashboard =</span>
+
+<span class="c1"># Absolute path to an HTML file used as a Single Sign-On callback handler. This</span>
+<span class="c1"># page is expected to redirect the user from keystone back to a trusted</span>
+<span class="c1"># dashboard host, by form encoding a token in a POST request. Keystone's</span>
+<span class="c1"># default value should be sufficient for most deployments. (string value)</span>
+<span class="c1">#sso_callback_template = /etc/keystone/sso_callback_template.html</span>
+
+<span class="c1"># Toggle for federation caching. This has no effect unless global caching is</span>
+<span class="c1"># enabled. There is typically no reason to disable this. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Default time in minutes for the validity of group memberships carried over</span>
+<span class="c1"># from a mapping. Default is 0, which means disabled. (integer value)</span>
+<span class="c1">#default_authorization_ttl = 0</span>
+
+<span class="c1"># The attribute mapping default schema version to be used, if the attribute</span>
+<span class="c1"># mapping being registered does not have a schema version. One must bear in</span>
+<span class="c1"># mind that changing this value will have no effect on attribute mappings that</span>
+<span class="c1"># were previously registered when another default value was applied. Once</span>
+<span class="c1"># registered, one needs to update the attribute mapping schema via the update</span>
+<span class="c1"># API to be able to change an attribute mapping schema version. (string value)</span>
+<span class="c1">#attribute_mapping_default_schema_version = 1.0</span>
+
+
+<span class="p">[</span><span class="n">fernet_receipts</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Directory containing Fernet receipt keys. This directory must exist before</span>
+<span class="c1"># using `keystone-manage fernet_setup` for the first time, must be writable by</span>
+<span class="c1"># the user running `keystone-manage fernet_setup` or `keystone-manage</span>
+<span class="c1"># fernet_rotate`, and of course must be readable by keystone's server process.</span>
+<span class="c1"># The repository may contain keys in one of three states: a single staged key</span>
+<span class="c1"># (always index 0) used for receipt validation, a single primary key (always</span>
+<span class="c1"># the highest index) used for receipt creation and validation, and any number</span>
+<span class="c1"># of secondary keys (all other index values) used for receipt validation. With</span>
+<span class="c1"># multiple keystone nodes, each node must share the same key repository</span>
+<span class="c1"># contents, with the exception of the staged key (index 0). It is safe to run</span>
+<span class="c1"># `keystone-manage fernet_rotate` once on any one node to promote a staged key</span>
+<span class="c1"># (index 0) to be the new primary (incremented from the previous highest</span>
+<span class="c1"># index), and produce a new staged key (a new key with index 0); the resulting</span>
+<span class="c1"># repository can then be atomically replicated to other nodes without any risk</span>
+<span class="c1"># of race conditions (for example, it is safe to run `keystone-manage</span>
+<span class="c1"># fernet_rotate` on host A, wait any amount of time, create a tarball of the</span>
+<span class="c1"># directory on host A, unpack it on host B to a temporary location, and</span>
+<span class="c1"># atomically move (`mv`) the directory into place on host B). Running</span>
+<span class="c1"># `keystone-manage fernet_rotate` *twice* on a key repository without syncing</span>
+<span class="c1"># other nodes will result in receipts that can not be validated by all nodes.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#key_repository = /etc/keystone/fernet-keys/</span>
+
+<span class="c1"># This controls how many keys are held in rotation by `keystone-manage</span>
+<span class="c1"># fernet_rotate` before they are discarded. The default value of 3 means that</span>
+<span class="c1"># keystone will maintain one staged key (always index 0), one primary key (the</span>
+<span class="c1"># highest numerical index), and one secondary key (every other index).</span>
+<span class="c1"># Increasing this value means that additional secondary keys will be kept in</span>
+<span class="c1"># the rotation. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#max_active_keys = 3</span>
+
+
+<span class="p">[</span><span class="n">fernet_tokens</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Directory containing Fernet token keys. This directory must exist before</span>
+<span class="c1"># using `keystone-manage fernet_setup` for the first time, must be writable by</span>
+<span class="c1"># the user running `keystone-manage fernet_setup` or `keystone-manage</span>
+<span class="c1"># fernet_rotate`, and of course must be readable by keystone's server process.</span>
+<span class="c1"># The repository may contain keys in one of three states: a single staged key</span>
+<span class="c1"># (always index 0) used for token validation, a single primary key (always the</span>
+<span class="c1"># highest index) used for token creation and validation, and any number of</span>
+<span class="c1"># secondary keys (all other index values) used for token validation. With</span>
+<span class="c1"># multiple keystone nodes, each node must share the same key repository</span>
+<span class="c1"># contents, with the exception of the staged key (index 0). It is safe to run</span>
+<span class="c1"># `keystone-manage fernet_rotate` once on any one node to promote a staged key</span>
+<span class="c1"># (index 0) to be the new primary (incremented from the previous highest</span>
+<span class="c1"># index), and produce a new staged key (a new key with index 0); the resulting</span>
+<span class="c1"># repository can then be atomically replicated to other nodes without any risk</span>
+<span class="c1"># of race conditions (for example, it is safe to run `keystone-manage</span>
+<span class="c1"># fernet_rotate` on host A, wait any amount of time, create a tarball of the</span>
+<span class="c1"># directory on host A, unpack it on host B to a temporary location, and</span>
+<span class="c1"># atomically move (`mv`) the directory into place on host B). Running</span>
+<span class="c1"># `keystone-manage fernet_rotate` *twice* on a key repository without syncing</span>
+<span class="c1"># other nodes will result in tokens that can not be validated by all nodes.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#key_repository = /etc/keystone/fernet-keys/</span>
+
+<span class="c1"># This controls how many keys are held in rotation by `keystone-manage</span>
+<span class="c1"># fernet_rotate` before they are discarded. The default value of 3 means that</span>
+<span class="c1"># keystone will maintain one staged key (always index 0), one primary key (the</span>
+<span class="c1"># highest numerical index), and one secondary key (every other index).</span>
+<span class="c1"># Increasing this value means that additional secondary keys will be kept in</span>
+<span class="c1"># the rotation. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#max_active_keys = 3</span>
+
+
+<span class="p">[</span><span class="n">healthcheck</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.middleware</span>
+<span class="c1">#</span>
+
+<span class="c1"># DEPRECATED: The path to respond to healtcheck requests on. (string value)</span>
+<span class="c1"># This option is deprecated for removal.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1">#path = /healthcheck</span>
+
+<span class="c1"># Show more detailed information as part of the response. Security note:</span>
+<span class="c1"># Enabling this option may expose sensitive details about the service being</span>
+<span class="c1"># monitored. Be sure to verify that it will not violate your security policies.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#detailed = false</span>
+
+<span class="c1"># Additional backends that can perform health checks and report that</span>
+<span class="c1"># information back as part of a request. (list value)</span>
+<span class="c1">#backends =</span>
+
+<span class="c1"># A list of network addresses to limit source ip allowed to access healthcheck</span>
+<span class="c1"># information. Any request from ip outside of these network addresses are</span>
+<span class="c1"># ignored. (list value)</span>
+<span class="c1">#allowed_source_ranges =</span>
+
+<span class="c1"># Ignore requests with proxy headers. (boolean value)</span>
+<span class="c1">#ignore_proxied_requests = false</span>
+
+<span class="c1"># Check the presence of a file to determine if an application is running on a</span>
+<span class="c1"># port. Used by DisableByFileHealthcheck plugin. (string value)</span>
+<span class="c1">#disable_by_file_path = &lt;None&gt;</span>
+
+<span class="c1"># Check the presence of a file based on a port to determine if an application</span>
+<span class="c1"># is running on a port. Expects a "port:path" list of strings. Used by</span>
+<span class="c1"># DisableByFilesPortsHealthcheck plugin. (list value)</span>
+<span class="c1">#disable_by_file_paths =</span>
+
+<span class="c1"># Check the presence of files. Used by EnableByFilesHealthcheck plugin. (list</span>
+<span class="c1"># value)</span>
+<span class="c1">#enable_by_file_paths =</span>
+
+
+<span class="p">[</span><span class="n">identity</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># This references the domain to use for all Identity API v2 requests (which are</span>
+<span class="c1"># not aware of domains). A domain with this ID can optionally be created for</span>
+<span class="c1"># you by `keystone-manage bootstrap`. The domain referenced by this ID cannot</span>
+<span class="c1"># be deleted on the v3 API, to prevent accidentally breaking the v2 API. There</span>
+<span class="c1"># is nothing special about this domain, other than the fact that it must exist</span>
+<span class="c1"># to order to maintain support for your v2 clients. There is typically no</span>
+<span class="c1"># reason to change this value. (string value)</span>
+<span class="c1">#default_domain_id = default</span>
+
+<span class="c1"># A subset (or all) of domains can have their own identity driver, each with</span>
+<span class="c1"># their own partial configuration options, stored in either the resource</span>
+<span class="c1"># backend or in a file in a domain configuration directory (depending on the</span>
+<span class="c1"># setting of `[identity] domain_configurations_from_database`). Only values</span>
+<span class="c1"># specific to the domain need to be specified in this manner. This feature is</span>
+<span class="c1"># disabled by default, but may be enabled by default in a future release; set</span>
+<span class="c1"># to true to enable. (boolean value)</span>
+<span class="c1">#domain_specific_drivers_enabled = false</span>
+
+<span class="c1"># By default, domain-specific configuration data is read from files in the</span>
+<span class="c1"># directory identified by `[identity] domain_config_dir`. Enabling this</span>
+<span class="c1"># configuration option allows you to instead manage domain-specific</span>
+<span class="c1"># configurations through the API, which are then persisted in the backend</span>
+<span class="c1"># (typically, a SQL database), rather than using configuration files on disk.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#domain_configurations_from_database = false</span>
+
+<span class="c1"># Absolute path where keystone should locate domain-specific `[identity]`</span>
+<span class="c1"># configuration files. This option has no effect unless `[identity]</span>
+<span class="c1"># domain_specific_drivers_enabled` is set to true. There is typically no reason</span>
+<span class="c1"># to change this value. (string value)</span>
+<span class="c1">#domain_config_dir = /etc/keystone/domains</span>
+
+<span class="c1"># Entry point for the identity backend driver in the `keystone.identity`</span>
+<span class="c1"># namespace. Keystone provides a `sql` and `ldap` driver. This option is also</span>
+<span class="c1"># used as the default driver selection (along with the other configuration</span>
+<span class="c1"># variables in this section) in the event that `[identity]</span>
+<span class="c1"># domain_specific_drivers_enabled` is enabled, but no applicable domain-</span>
+<span class="c1"># specific configuration is defined for the domain in question. Unless your</span>
+<span class="c1"># deployment primarily relies on `ldap` AND is not using domain-specific</span>
+<span class="c1"># configuration, you should typically leave this set to `sql`. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for identity caching. This has no effect unless global caching is</span>
+<span class="c1"># enabled. There is typically no reason to disable this. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache identity data (in seconds). This has no effect unless global</span>
+<span class="c1"># and identity caching are enabled. (integer value)</span>
+<span class="c1">#cache_time = 600</span>
+
+<span class="c1"># Maximum allowed length for user passwords. Decrease this value to improve</span>
+<span class="c1"># performance. Changing this value does not effect existing passwords. This</span>
+<span class="c1"># value can also be overridden by certain hashing algorithms maximum allowed</span>
+<span class="c1"># length which takes precedence over the configured value.  The bcrypt</span>
+<span class="c1"># max_password_length is 72 bytes. (integer value)</span>
+<span class="c1"># Maximum value: 4096</span>
+<span class="c1">#max_password_length = 4096</span>
+
+<span class="c1"># Maximum number of entities that will be returned in an identity collection.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+<span class="c1"># The password hashing algorithm to use for passwords stored within keystone.</span>
+<span class="c1"># (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># bcrypt - &lt;No description provided&gt;</span>
+<span class="c1"># bcrypt_sha256 - &lt;No description provided&gt;</span>
+<span class="c1"># scrypt - &lt;No description provided&gt;</span>
+<span class="c1"># pbkdf2_sha512 - &lt;No description provided&gt;</span>
+<span class="c1">#password_hash_algorithm = bcrypt</span>
+
+<span class="c1"># This option represents a trade off between security and performance. Higher</span>
+<span class="c1"># values lead to slower performance, but higher security. Changing this option</span>
+<span class="c1"># will only affect newly created passwords as existing password hashes already</span>
+<span class="c1"># have a fixed number of rounds applied, so it is safe to tune this option in a</span>
+<span class="c1"># running cluster.  The default for bcrypt is 12, must be between 4 and 31,</span>
+<span class="c1"># inclusive.  The default for scrypt is 16, must be within `range(1,32)`.  The</span>
+<span class="c1"># default for pbkdf_sha512 is 60000, must be within `range(1,1&lt;&lt;32)`  WARNING:</span>
+<span class="c1"># If using scrypt, increasing this value increases BOTH time AND memory</span>
+<span class="c1"># requirements to hash a password. (integer value)</span>
+<span class="c1">#password_hash_rounds = &lt;None&gt;</span>
+
+<span class="c1"># Optional block size to pass to scrypt hash function (the `r` parameter).</span>
+<span class="c1"># Useful for tuning scrypt to optimal performance for your CPU architecture.</span>
+<span class="c1"># This option is only used when the `password_hash_algorithm` option is set to</span>
+<span class="c1"># `scrypt`. Defaults to 8. (integer value)</span>
+<span class="c1">#scrypt_block_size = &lt;None&gt;</span>
+
+<span class="c1"># Optional parallelism to pass to scrypt hash function (the `p` parameter).</span>
+<span class="c1"># This option is only used when the `password_hash_algorithm` option is set to</span>
+<span class="c1"># `scrypt`. Defaults to 1. (integer value)</span>
+<span class="c1">#scrypt_parallelism = &lt;None&gt;</span>
+
+<span class="c1"># Number of bytes to use in scrypt and pbkfd2_sha512 hashing salt.  Default for</span>
+<span class="c1"># scrypt is 16 bytes. Default for pbkfd2_sha512 is 16 bytes.  Limited to a</span>
+<span class="c1"># maximum of 96 bytes due to the size of the column used to store password</span>
+<span class="c1"># hashes. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 96</span>
+<span class="c1">#salt_bytesize = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">identity_mapping</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the identity mapping backend driver in the</span>
+<span class="c1"># `keystone.identity.id_mapping` namespace. Keystone only provides a `sql`</span>
+<span class="c1"># driver, so there is no reason to change this unless you are providing a</span>
+<span class="c1"># custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Entry point for the public ID generator for user and group entities in the</span>
+<span class="c1"># `keystone.identity.id_generator` namespace. The Keystone identity mapper only</span>
+<span class="c1"># supports generators that produce 64 bytes or less. Keystone only provides a</span>
+<span class="c1"># `sha256` entry point, so there is no reason to change this value unless</span>
+<span class="c1"># you're providing a custom entry point. (string value)</span>
+<span class="c1">#generator = sha256</span>
+
+<span class="c1"># The format of user and group IDs changed in Juno for backends that do not</span>
+<span class="c1"># generate UUIDs (for example, LDAP), with keystone providing a hash mapping to</span>
+<span class="c1"># the underlying attribute in LDAP. By default this mapping is disabled, which</span>
+<span class="c1"># ensures that existing IDs will not change. Even when the mapping is enabled</span>
+<span class="c1"># by using domain-specific drivers (`[identity]</span>
+<span class="c1"># domain_specific_drivers_enabled`), any users and groups from the default</span>
+<span class="c1"># domain being handled by LDAP will still not be mapped to ensure their IDs</span>
+<span class="c1"># remain backward compatible. Setting this value to false will enable the new</span>
+<span class="c1"># mapping for all backends, including the default LDAP driver. It is only</span>
+<span class="c1"># guaranteed to be safe to enable this option if you do not already have</span>
+<span class="c1"># assignments for users and groups from the default LDAP domain, and you</span>
+<span class="c1"># consider it to be acceptable for Keystone to provide the different IDs to</span>
+<span class="c1"># clients than it did previously (existing IDs in the API will suddenly</span>
+<span class="c1"># change). Typically this means that the only time you can set this value to</span>
+<span class="c1"># false is when configuring a fresh installation, although that is the</span>
+<span class="c1"># recommended value. (boolean value)</span>
+<span class="c1">#backward_compatible_ids = true</span>
+
+
+<span class="p">[</span><span class="n">jwt_tokens</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Directory containing public keys for validating JWS token signatures. This</span>
+<span class="c1"># directory must exist in order for keystone's server process to start. It must</span>
+<span class="c1"># also be readable by keystone's server process. It must contain at least one</span>
+<span class="c1"># public key that corresponds to a private key in `keystone.conf [jwt_tokens]</span>
+<span class="c1"># jws_private_key_repository`. This option is only applicable in deployments</span>
+<span class="c1"># issuing JWS tokens and setting `keystone.conf [token] provider = jws`.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#jws_public_key_repository = /etc/keystone/jws-keys/public</span>
+
+<span class="c1"># Directory containing private keys for signing JWS tokens. This directory must</span>
+<span class="c1"># exist in order for keystone's server process to start. It must also be</span>
+<span class="c1"># readable by keystone's server process. It must contain at least one private</span>
+<span class="c1"># key that corresponds to a public key in `keystone.conf [jwt_tokens]</span>
+<span class="c1"># jws_public_key_repository`. In the event there are multiple private keys in</span>
+<span class="c1"># this directory, keystone will use a key named `private.pem` to sign tokens.</span>
+<span class="c1"># In the future, keystone may support the ability to sign tokens with multiple</span>
+<span class="c1"># private keys. For now, only a key named `private.pem` within this directory</span>
+<span class="c1"># is required to issue JWS tokens. This option is only applicable in</span>
+<span class="c1"># deployments issuing JWS tokens and setting `keystone.conf [token] provider =</span>
+<span class="c1"># jws`. (string value)</span>
+<span class="c1">#jws_private_key_repository = /etc/keystone/jws-keys/private</span>
+
+
+<span class="p">[</span><span class="n">ldap</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># URL(s) for connecting to the LDAP server. Multiple LDAP URLs may be specified</span>
+<span class="c1"># as a comma separated string. The first URL to successfully bind is used for</span>
+<span class="c1"># the connection. (string value)</span>
+<span class="c1">#url = ldap://localhost</span>
+
+<span class="c1"># Randomize the order of URLs in each keystone process. This makes the failure</span>
+<span class="c1"># behavior more gradual, since if the first server is down, a process/thread</span>
+<span class="c1"># will wait for the specified timeout before attempting a connection to a</span>
+<span class="c1"># server further down the list. This defaults to False, for backward</span>
+<span class="c1"># compatibility. (boolean value)</span>
+<span class="c1">#randomize_urls = false</span>
+
+<span class="c1"># The user name of the administrator bind DN to use when querying the LDAP</span>
+<span class="c1"># server, if your LDAP server requires it. (string value)</span>
+<span class="c1">#user = &lt;None&gt;</span>
+
+<span class="c1"># The password of the administrator bind DN to use when querying the LDAP</span>
+<span class="c1"># server, if your LDAP server requires it. (string value)</span>
+<span class="c1">#password = &lt;None&gt;</span>
+
+<span class="c1"># The default LDAP server suffix to use, if a DN is not defined via either</span>
+<span class="c1"># `[ldap] user_tree_dn` or `[ldap] group_tree_dn`. (string value)</span>
+<span class="c1">#suffix = cn=example,cn=com</span>
+
+<span class="c1"># The search scope which defines how deep to search within the search base. A</span>
+<span class="c1"># value of `one` (representing `oneLevel` or `singleLevel`) indicates a search</span>
+<span class="c1"># of objects immediately below to the base object, but does not include the</span>
+<span class="c1"># base object itself. A value of `sub` (representing `subtree` or</span>
+<span class="c1"># `wholeSubtree`) indicates a search of both the base object itself and the</span>
+<span class="c1"># entire subtree below it. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># one - &lt;No description provided&gt;</span>
+<span class="c1"># sub - &lt;No description provided&gt;</span>
+<span class="c1">#query_scope = one</span>
+
+<span class="c1"># Defines the maximum number of results per page that keystone should request</span>
+<span class="c1"># from the LDAP server when listing objects. A value of zero (`0`) disables</span>
+<span class="c1"># paging. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#page_size = 0</span>
+
+<span class="c1"># The LDAP dereferencing option to use for queries involving aliases. A value</span>
+<span class="c1"># of `default` falls back to using default dereferencing behavior configured by</span>
+<span class="c1"># your `ldap.conf`. A value of `never` prevents aliases from being dereferenced</span>
+<span class="c1"># at all. A value of `searching` dereferences aliases only after name</span>
+<span class="c1"># resolution. A value of `finding` dereferences aliases only during name</span>
+<span class="c1"># resolution. A value of `always` dereferences aliases in all cases. (string</span>
+<span class="c1"># value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># never - &lt;No description provided&gt;</span>
+<span class="c1"># searching - &lt;No description provided&gt;</span>
+<span class="c1"># always - &lt;No description provided&gt;</span>
+<span class="c1"># finding - &lt;No description provided&gt;</span>
+<span class="c1"># default - &lt;No description provided&gt;</span>
+<span class="c1">#alias_dereferencing = default</span>
+
+<span class="c1"># Sets the LDAP debugging level for LDAP calls. A value of 0 means that</span>
+<span class="c1"># debugging is not enabled. This value is a bitmask, consult your LDAP</span>
+<span class="c1"># documentation for possible values. (integer value)</span>
+<span class="c1"># Minimum value: -1</span>
+<span class="c1">#debug_level = &lt;None&gt;</span>
+
+<span class="c1"># Sets keystone's referral chasing behavior across directory partitions. If</span>
+<span class="c1"># left unset, the system's default behavior will be used. (boolean value)</span>
+<span class="c1">#chase_referrals = &lt;None&gt;</span>
+
+<span class="c1"># The search base to use for users. Defaults to `ou=Users` with the `[ldap]</span>
+<span class="c1"># suffix` appended to it. (string value)</span>
+<span class="c1">#user_tree_dn = &lt;None&gt;</span>
+
+<span class="c1"># The LDAP search filter to use for users. (string value)</span>
+<span class="c1">#user_filter = &lt;None&gt;</span>
+
+<span class="c1"># The LDAP object class to use for users. (string value)</span>
+<span class="c1">#user_objectclass = inetOrgPerson</span>
+
+<span class="c1"># The LDAP attribute mapped to user IDs in keystone. This must NOT be a</span>
+<span class="c1"># multivalued attribute. User IDs are expected to be globally unique across</span>
+<span class="c1"># keystone domains and URL-safe. (string value)</span>
+<span class="c1">#user_id_attribute = cn</span>
+
+<span class="c1"># The LDAP attribute mapped to user names in keystone. User names are expected</span>
+<span class="c1"># to be unique only within a keystone domain and are not expected to be URL-</span>
+<span class="c1"># safe. (string value)</span>
+<span class="c1">#user_name_attribute = sn</span>
+
+<span class="c1"># The LDAP attribute mapped to user descriptions in keystone. (string value)</span>
+<span class="c1">#user_description_attribute = description</span>
+
+<span class="c1"># The LDAP attribute mapped to user emails in keystone. (string value)</span>
+<span class="c1">#user_mail_attribute = mail</span>
+
+<span class="c1"># The LDAP attribute mapped to user passwords in keystone. (string value)</span>
+<span class="c1">#user_pass_attribute = userPassword</span>
+
+<span class="c1"># The LDAP attribute mapped to the user enabled attribute in keystone. If</span>
+<span class="c1"># setting this option to `userAccountControl`, then you may be interested in</span>
+<span class="c1"># setting `[ldap] user_enabled_mask` and `[ldap] user_enabled_default` as well.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#user_enabled_attribute = enabled</span>
+
+<span class="c1"># Logically negate the boolean value of the enabled attribute obtained from the</span>
+<span class="c1"># LDAP server. Some LDAP servers use a boolean lock attribute where "true"</span>
+<span class="c1"># means an account is disabled. Setting `[ldap] user_enabled_invert = true`</span>
+<span class="c1"># will allow these lock attributes to be used. This option will have no effect</span>
+<span class="c1"># if either the `[ldap] user_enabled_mask` or `[ldap] user_enabled_emulation`</span>
+<span class="c1"># options are in use. (boolean value)</span>
+<span class="c1">#user_enabled_invert = false</span>
+
+<span class="c1"># Bitmask integer to select which bit indicates the enabled value if the LDAP</span>
+<span class="c1"># server represents "enabled" as a bit on an integer rather than as a discrete</span>
+<span class="c1"># boolean. A value of `0` indicates that the mask is not used. If this is not</span>
+<span class="c1"># set to `0` the typical value is `2`. This is typically used when `[ldap]</span>
+<span class="c1"># user_enabled_attribute = userAccountControl`. Setting this option causes</span>
+<span class="c1"># keystone to ignore the value of `[ldap] user_enabled_invert`. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#user_enabled_mask = 0</span>
+
+<span class="c1"># The default value to enable users. This should match an appropriate integer</span>
+<span class="c1"># value if the LDAP server uses non-boolean (bitmask) values to indicate if a</span>
+<span class="c1"># user is enabled or disabled. If this is not set to `True`, then the typical</span>
+<span class="c1"># value is `512`. This is typically used when `[ldap] user_enabled_attribute =</span>
+<span class="c1"># userAccountControl`. (string value)</span>
+<span class="c1">#user_enabled_default = True</span>
+
+<span class="c1"># List of user attributes to ignore on create and update, or whether a specific</span>
+<span class="c1"># user attribute should be filtered for list or show user. (list value)</span>
+<span class="c1">#user_attribute_ignore = default_project_id</span>
+
+<span class="c1"># The LDAP attribute mapped to a user's default_project_id in keystone. This is</span>
+<span class="c1"># most commonly used when keystone has write access to LDAP. (string value)</span>
+<span class="c1">#user_default_project_id_attribute = &lt;None&gt;</span>
+
+<span class="c1"># If enabled, keystone uses an alternative method to determine if a user is</span>
+<span class="c1"># enabled or not by checking if they are a member of the group defined by the</span>
+<span class="c1"># `[ldap] user_enabled_emulation_dn` option. Enabling this option causes</span>
+<span class="c1"># keystone to ignore the value of `[ldap] user_enabled_invert`. (boolean value)</span>
+<span class="c1">#user_enabled_emulation = false</span>
+
+<span class="c1"># DN of the group entry to hold enabled users when using enabled emulation.</span>
+<span class="c1"># Setting this option has no effect unless `[ldap] user_enabled_emulation` is</span>
+<span class="c1"># also enabled. (string value)</span>
+<span class="c1">#user_enabled_emulation_dn = &lt;None&gt;</span>
+
+<span class="c1"># Use the `[ldap] group_member_attribute` and `[ldap] group_objectclass`</span>
+<span class="c1"># settings to determine membership in the emulated enabled group. Enabling this</span>
+<span class="c1"># option has no effect unless `[ldap] user_enabled_emulation` is also enabled.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#user_enabled_emulation_use_group_config = false</span>
+
+<span class="c1"># A list of LDAP attribute to keystone user attribute pairs used for mapping</span>
+<span class="c1"># additional attributes to users in keystone. The expected format is</span>
+<span class="c1"># `&lt;ldap_attr&gt;:&lt;user_attr&gt;`, where `ldap_attr` is the attribute in the LDAP</span>
+<span class="c1"># object and `user_attr` is the attribute which should appear in the identity</span>
+<span class="c1"># API. (list value)</span>
+<span class="c1">#user_additional_attribute_mapping =</span>
+
+<span class="c1"># The search base to use for groups. Defaults to `ou=UserGroups` with the</span>
+<span class="c1"># `[ldap] suffix` appended to it. (string value)</span>
+<span class="c1">#group_tree_dn = &lt;None&gt;</span>
+
+<span class="c1"># The LDAP search filter to use for groups. (string value)</span>
+<span class="c1">#group_filter = &lt;None&gt;</span>
+
+<span class="c1"># The LDAP object class to use for groups. If setting this option to</span>
+<span class="c1"># `posixGroup`, you may also be interested in enabling the `[ldap]</span>
+<span class="c1"># group_members_are_ids` option. (string value)</span>
+<span class="c1">#group_objectclass = groupOfNames</span>
+
+<span class="c1"># The LDAP attribute mapped to group IDs in keystone. This must NOT be a</span>
+<span class="c1"># multivalued attribute. Group IDs are expected to be globally unique across</span>
+<span class="c1"># keystone domains and URL-safe. (string value)</span>
+<span class="c1">#group_id_attribute = cn</span>
+
+<span class="c1"># The LDAP attribute mapped to group names in keystone. Group names are</span>
+<span class="c1"># expected to be unique only within a keystone domain and are not expected to</span>
+<span class="c1"># be URL-safe. (string value)</span>
+<span class="c1">#group_name_attribute = ou</span>
+
+<span class="c1"># The LDAP attribute used to indicate that a user is a member of the group.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#group_member_attribute = member</span>
+
+<span class="c1"># Enable this option if the members of the group object class are keystone user</span>
+<span class="c1"># IDs rather than LDAP DNs. This is the case when using `posixGroup` as the</span>
+<span class="c1"># group object class in Open Directory. (boolean value)</span>
+<span class="c1">#group_members_are_ids = false</span>
+
+<span class="c1"># The LDAP attribute mapped to group descriptions in keystone. (string value)</span>
+<span class="c1">#group_desc_attribute = description</span>
+
+<span class="c1"># List of group attributes to ignore on create and update. or whether a</span>
+<span class="c1"># specific group attribute should be filtered for list or show group. (list</span>
+<span class="c1"># value)</span>
+<span class="c1">#group_attribute_ignore =</span>
+
+<span class="c1"># A list of LDAP attribute to keystone group attribute pairs used for mapping</span>
+<span class="c1"># additional attributes to groups in keystone. The expected format is</span>
+<span class="c1"># `&lt;ldap_attr&gt;:&lt;group_attr&gt;`, where `ldap_attr` is the attribute in the LDAP</span>
+<span class="c1"># object and `group_attr` is the attribute which should appear in the identity</span>
+<span class="c1"># API. (list value)</span>
+<span class="c1">#group_additional_attribute_mapping =</span>
+
+<span class="c1"># If enabled, group queries will use Active Directory specific filters for</span>
+<span class="c1"># nested groups. (boolean value)</span>
+<span class="c1">#group_ad_nesting = false</span>
+
+<span class="c1"># An absolute path to a CA certificate file to use when communicating with LDAP</span>
+<span class="c1"># servers. This option will take precedence over `[ldap] tls_cacertdir`, so</span>
+<span class="c1"># there is no reason to set both. (string value)</span>
+<span class="c1">#tls_cacertfile = &lt;None&gt;</span>
+
+<span class="c1"># An absolute path to a CA certificate directory to use when communicating with</span>
+<span class="c1"># LDAP servers. There is no reason to set this option if you've also set</span>
+<span class="c1"># `[ldap] tls_cacertfile`. (string value)</span>
+<span class="c1">#tls_cacertdir = &lt;None&gt;</span>
+
+<span class="c1"># Enable TLS when communicating with LDAP servers. You should also set the</span>
+<span class="c1"># `[ldap] tls_cacertfile` and `[ldap] tls_cacertdir` options when using this</span>
+<span class="c1"># option. Do not set this option if you are using LDAP over SSL (LDAPS) instead</span>
+<span class="c1"># of TLS. (boolean value)</span>
+<span class="c1">#use_tls = false</span>
+
+<span class="c1"># Specifies which checks to perform against client certificates on incoming TLS</span>
+<span class="c1"># sessions. If set to `demand`, then a certificate will always be requested and</span>
+<span class="c1"># required from the LDAP server. If set to `allow`, then a certificate will</span>
+<span class="c1"># always be requested but not required from the LDAP server. If set to `never`,</span>
+<span class="c1"># then a certificate will never be requested. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># demand - &lt;No description provided&gt;</span>
+<span class="c1"># never - &lt;No description provided&gt;</span>
+<span class="c1"># allow - &lt;No description provided&gt;</span>
+<span class="c1">#tls_req_cert = demand</span>
+
+<span class="c1"># The connection timeout to use with the LDAP server. A value of `-1` means</span>
+<span class="c1"># that connections will never timeout. (integer value)</span>
+<span class="c1"># Minimum value: -1</span>
+<span class="c1">#connection_timeout = -1</span>
+
+<span class="c1"># Enable LDAP connection pooling for queries to the LDAP server. There is</span>
+<span class="c1"># typically no reason to disable this. (boolean value)</span>
+<span class="c1">#use_pool = true</span>
+
+<span class="c1"># The size of the LDAP connection pool. This option has no effect unless</span>
+<span class="c1"># `[ldap] use_pool` is also enabled. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#pool_size = 10</span>
+
+<span class="c1"># The maximum number of times to attempt connecting to the LDAP server before</span>
+<span class="c1"># aborting. A value of one makes only one connection attempt. This option has</span>
+<span class="c1"># no effect unless `[ldap] use_pool` is also enabled. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#pool_retry_max = 3</span>
+
+<span class="c1"># The number of seconds to wait before attempting to reconnect to the LDAP</span>
+<span class="c1"># server. This option has no effect unless `[ldap] use_pool` is also enabled.</span>
+<span class="c1"># (floating point value)</span>
+<span class="c1">#pool_retry_delay = 0.1</span>
+
+<span class="c1"># The connection timeout to use when pooling LDAP connections. A value of `-1`</span>
+<span class="c1"># means that connections will never timeout. This option has no effect unless</span>
+<span class="c1"># `[ldap] use_pool` is also enabled. (integer value)</span>
+<span class="c1"># Minimum value: -1</span>
+<span class="c1">#pool_connection_timeout = -1</span>
+
+<span class="c1"># The maximum connection lifetime to the LDAP server in seconds. When this</span>
+<span class="c1"># lifetime is exceeded, the connection will be unbound and removed from the</span>
+<span class="c1"># connection pool. This option has no effect unless `[ldap] use_pool` is also</span>
+<span class="c1"># enabled. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#pool_connection_lifetime = 600</span>
+
+<span class="c1"># Enable LDAP connection pooling for end user authentication. There is</span>
+<span class="c1"># typically no reason to disable this. (boolean value)</span>
+<span class="c1">#use_auth_pool = true</span>
+
+<span class="c1"># The size of the connection pool to use for end user authentication. This</span>
+<span class="c1"># option has no effect unless `[ldap] use_auth_pool` is also enabled. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#auth_pool_size = 100</span>
+
+<span class="c1"># The maximum end user authentication connection lifetime to the LDAP server in</span>
+<span class="c1"># seconds. When this lifetime is exceeded, the connection will be unbound and</span>
+<span class="c1"># removed from the connection pool. This option has no effect unless `[ldap]</span>
+<span class="c1"># use_auth_pool` is also enabled. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#auth_pool_connection_lifetime = 60</span>
+
+
+<span class="p">[</span><span class="n">oauth1</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the OAuth backend driver in the `keystone.oauth1` namespace.</span>
+<span class="c1"># Typically, there is no reason to set this option unless you are providing a</span>
+<span class="c1"># custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Number of seconds for the OAuth Request Token to remain valid after being</span>
+<span class="c1"># created. This is the amount of time the user has to authorize the token.</span>
+<span class="c1"># Setting this option to zero means that request tokens will last forever.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#request_token_duration = 28800</span>
+
+<span class="c1"># Number of seconds for the OAuth Access Token to remain valid after being</span>
+<span class="c1"># created. This is the amount of time the consumer has to interact with the</span>
+<span class="c1"># service provider (which is typically keystone). Setting this option to zero</span>
+<span class="c1"># means that access tokens will last forever. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#access_token_duration = 86400</span>
+
+
+<span class="p">[</span><span class="n">oauth2</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The OAuth2.0 authentication method supported by the system when user obtains</span>
+<span class="c1"># an access token through the OAuth2.0 token endpoint. This option can be set</span>
+<span class="c1"># to certificate or secret. If the option is not set, the default value is</span>
+<span class="c1"># certificate. When the option is set to secret, the OAuth2.0 token endpoint</span>
+<span class="c1"># uses client_secret_basic method for authentication, otherwise tls_client_auth</span>
+<span class="c1"># method is used for authentication. (list value)</span>
+<span class="c1">#oauth2_authn_methods = tls_client_auth,client_secret_basic</span>
+
+<span class="c1"># Used to define the mapping rule id. When not set, the mapping rule id is</span>
+<span class="c1"># oauth2_mapping. (string value)</span>
+<span class="c1">#oauth2_cert_dn_mapping_id = oauth2_mapping</span>
+
+
+<span class="p">[</span><span class="n">oslo_messaging_kafka</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.messaging</span>
+<span class="c1">#</span>
+
+<span class="c1"># Max fetch bytes of Kafka consumer (integer value)</span>
+<span class="c1">#kafka_max_fetch_bytes = 1048576</span>
+
+<span class="c1"># Default timeout(s) for Kafka consumers (floating point value)</span>
+<span class="c1">#kafka_consumer_timeout = 1.0</span>
+
+<span class="c1"># Group id for Kafka consumer. Consumers in one group will coordinate message</span>
+<span class="c1"># consumption (string value)</span>
+<span class="c1">#consumer_group = oslo_messaging_consumer</span>
+
+<span class="c1"># Upper bound on the delay for KafkaProducer batching in seconds (floating</span>
+<span class="c1"># point value)</span>
+<span class="c1">#producer_batch_timeout = 0.0</span>
+
+<span class="c1"># Size of batch for the producer async send (integer value)</span>
+<span class="c1">#producer_batch_size = 16384</span>
+
+<span class="c1"># The compression codec for all data generated by the producer. If not set,</span>
+<span class="c1"># compression will not be used. Note that the allowed values of this depend on</span>
+<span class="c1"># the kafka version (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># none - &lt;No description provided&gt;</span>
+<span class="c1"># gzip - &lt;No description provided&gt;</span>
+<span class="c1"># snappy - &lt;No description provided&gt;</span>
+<span class="c1"># lz4 - &lt;No description provided&gt;</span>
+<span class="c1"># zstd - &lt;No description provided&gt;</span>
+<span class="c1">#compression_codec = none</span>
+
+<span class="c1"># Enable asynchronous consumer commits (boolean value)</span>
+<span class="c1">#enable_auto_commit = false</span>
+
+<span class="c1"># The maximum number of records returned in a poll call (integer value)</span>
+<span class="c1">#max_poll_records = 500</span>
+
+<span class="c1"># Protocol used to communicate with brokers (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># PLAINTEXT - &lt;No description provided&gt;</span>
+<span class="c1"># SASL_PLAINTEXT - &lt;No description provided&gt;</span>
+<span class="c1"># SSL - &lt;No description provided&gt;</span>
+<span class="c1"># SASL_SSL - &lt;No description provided&gt;</span>
+<span class="c1">#security_protocol = PLAINTEXT</span>
+
+<span class="c1"># Mechanism when security protocol is SASL (string value)</span>
+<span class="c1">#sasl_mechanism = PLAIN</span>
+
+<span class="c1"># CA certificate PEM file used to verify the server certificate (string value)</span>
+<span class="c1">#ssl_cafile =</span>
+
+<span class="c1"># Client certificate PEM file used for authentication. (string value)</span>
+<span class="c1">#ssl_client_cert_file =</span>
+
+<span class="c1"># Client key PEM file used for authentication. (string value)</span>
+<span class="c1">#ssl_client_key_file =</span>
+
+<span class="c1"># Client key password file used for authentication. (string value)</span>
+<span class="c1">#ssl_client_key_password =</span>
+
+
+<span class="p">[</span><span class="n">oslo_messaging_notifications</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.messaging</span>
+<span class="c1">#</span>
+
+<span class="c1"># The Drivers(s) to handle sending notifications. Possible values are</span>
+<span class="c1"># messaging, messagingv2, routing, log, test, noop (multi valued)</span>
+<span class="c1">#driver =</span>
+
+<span class="c1"># A URL representing the messaging driver to use for notifications. If not set,</span>
+<span class="c1"># we fall back to the same configuration used for RPC. (string value)</span>
+<span class="c1">#transport_url = &lt;None&gt;</span>
+
+<span class="c1"># AMQP topic used for OpenStack notifications. (list value)</span>
+<span class="c1">#topics = notifications</span>
+
+<span class="c1"># The maximum number of attempts to re-send a notification message which failed</span>
+<span class="c1"># to be delivered due to a recoverable error. 0 - No retry, -1 - indefinite</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#retry = -1</span>
+
+
+<span class="p">[</span><span class="n">oslo_messaging_rabbit</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.messaging</span>
+<span class="c1">#</span>
+
+<span class="c1"># Use durable queues in AMQP. If rabbit_quorum_queue is enabled, queues will be</span>
+<span class="c1"># durable and this value will be ignored. (boolean value)</span>
+<span class="c1">#amqp_durable_queues = false</span>
+
+<span class="c1"># Auto-delete queues in AMQP. (boolean value)</span>
+<span class="c1">#amqp_auto_delete = false</span>
+
+<span class="c1"># Size of RPC connection pool. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#rpc_conn_pool_size = 30</span>
+
+<span class="c1"># The pool size limit for connections expiration policy (integer value)</span>
+<span class="c1">#conn_pool_min_size = 2</span>
+
+<span class="c1"># The time-to-live in sec of idle connections in the pool (integer value)</span>
+<span class="c1">#conn_pool_ttl = 1200</span>
+
+<span class="c1"># Connect over SSL. (boolean value)</span>
+<span class="c1">#ssl = false</span>
+
+<span class="c1"># SSL version to use (valid only if SSL enabled). Valid values are TLSv1 and</span>
+<span class="c1"># SSLv23. SSLv2, SSLv3, TLSv1_1, and TLSv1_2 may be available on some</span>
+<span class="c1"># distributions. (string value)</span>
+<span class="c1">#ssl_version =</span>
+
+<span class="c1"># SSL key file (valid only if SSL enabled). (string value)</span>
+<span class="c1">#ssl_key_file =</span>
+
+<span class="c1"># SSL cert file (valid only if SSL enabled). (string value)</span>
+<span class="c1">#ssl_cert_file =</span>
+
+<span class="c1"># SSL certification authority file (valid only if SSL enabled). (string value)</span>
+<span class="c1">#ssl_ca_file =</span>
+
+<span class="c1"># When true, verify the broker hostname against the certificate when</span>
+<span class="c1"># ``ssl_ca_file`` is set. When false (default on stable branches), ``ssl`` with</span>
+<span class="c1"># ``ssl_ca_file`` still validates the certificate chain but does not verify the</span>
+<span class="c1"># broker hostname. ``ssl=true`` without ``ssl_ca_file`` never enables hostname</span>
+<span class="c1"># verification. (boolean value)</span>
+<span class="c1">#ssl_enforce_hostname_verification = false</span>
+
+<span class="c1"># Global toggle for enforcing the OpenSSL FIPS mode. This feature requires</span>
+<span class="c1"># Python support. This is available in Python 3.9 in all environments and may</span>
+<span class="c1"># have been backported to older Python versions on select environments. If the</span>
+<span class="c1"># Python executable used does not support OpenSSL FIPS mode, an exception will</span>
+<span class="c1"># be raised. (boolean value)</span>
+<span class="c1">#ssl_enforce_fips_mode = false</span>
+
+<span class="c1"># DEPRECATED: (DEPRECATED) It is recommend not to use this option anymore. Run</span>
+<span class="c1"># the health check heartbeat thread through a native python thread by default.</span>
+<span class="c1"># If this option is equal to False then the health check heartbeat will inherit</span>
+<span class="c1"># the execution model from the parent process. For example if the parent</span>
+<span class="c1"># process has monkey patched the stdlib by using eventlet/greenlet then the</span>
+<span class="c1"># heartbeat will be run through a green thread. This option should be set to</span>
+<span class="c1"># True only for the wsgi services. (boolean value)</span>
+<span class="c1"># This option is deprecated for removal.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: The option is related to Eventlet which will be removed. In addition</span>
+<span class="c1"># this has never worked as expected with services using eventlet for core</span>
+<span class="c1"># service framework.</span>
+<span class="c1">#heartbeat_in_pthread = false</span>
+
+<span class="c1"># How long to wait (in seconds) before reconnecting in response to an AMQP</span>
+<span class="c1"># consumer cancel notification. (floating point value)</span>
+<span class="c1"># Minimum value: 0.0</span>
+<span class="c1"># Maximum value: 4.5</span>
+<span class="c1">#kombu_reconnect_delay = 1.0</span>
+
+<span class="c1"># Random time to wait for when reconnecting in response to an AMQP consumer</span>
+<span class="c1"># cancel notification. (floating point value)</span>
+<span class="c1"># Minimum value: 0.0</span>
+<span class="c1">#kombu_reconnect_splay = 0.0</span>
+
+<span class="c1"># EXPERIMENTAL: Possible values are: gzip, bz2. If not set compression will not</span>
+<span class="c1"># be used. This option may not be available in future versions. (string value)</span>
+<span class="c1">#kombu_compression = &lt;None&gt;</span>
+
+<span class="c1"># How long to wait a missing client before abandoning to send it its replies.</span>
+<span class="c1"># This value should not be longer than rpc_response_timeout. (integer value)</span>
+<span class="c1"># Deprecated group/name - [oslo_messaging_rabbit]/kombu_reconnect_timeout</span>
+<span class="c1">#kombu_missing_consumer_retry_timeout = 60</span>
+
+<span class="c1"># Determines how the next RabbitMQ node is chosen in case the one we are</span>
+<span class="c1"># currently connected to becomes unavailable. Takes effect only if more than</span>
+<span class="c1"># one RabbitMQ node is provided in config. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># round-robin - &lt;No description provided&gt;</span>
+<span class="c1"># shuffle - &lt;No description provided&gt;</span>
+<span class="c1">#kombu_failover_strategy = round-robin</span>
+
+<span class="c1"># The RabbitMQ login method. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># PLAIN - &lt;No description provided&gt;</span>
+<span class="c1"># AMQPLAIN - &lt;No description provided&gt;</span>
+<span class="c1"># EXTERNAL - &lt;No description provided&gt;</span>
+<span class="c1"># RABBIT-CR-DEMO - &lt;No description provided&gt;</span>
+<span class="c1">#rabbit_login_method = AMQPLAIN</span>
+
+<span class="c1"># How frequently to retry connecting with RabbitMQ. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#rabbit_retry_interval = 1</span>
+
+<span class="c1"># How long to backoff for between retries when connecting to RabbitMQ. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#rabbit_retry_backoff = 2</span>
+
+<span class="c1"># Maximum interval of RabbitMQ connection retries. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#rabbit_interval_max = 30</span>
+
+<span class="c1"># Try to use HA queues in RabbitMQ (x-ha-policy: all). If you change this</span>
+<span class="c1"># option, you must wipe the RabbitMQ database. In RabbitMQ 3.0, queue mirroring</span>
+<span class="c1"># is no longer controlled by the x-ha-policy argument when declaring a queue.</span>
+<span class="c1"># If you just want to make sure that all queues (except those with auto-</span>
+<span class="c1"># generated names) are mirrored across all nodes, run: "rabbitmqctl set_policy</span>
+<span class="c1"># HA '^(?!amq\.).*' '{"ha-mode": "all"}' " (boolean value)</span>
+<span class="c1">#rabbit_ha_queues = false</span>
+
+<span class="c1"># Use quorum queues in RabbitMQ (x-queue-type: quorum). The quorum queue is a</span>
+<span class="c1"># modern queue type for RabbitMQ implementing a durable, replicated FIFO queue</span>
+<span class="c1"># based on the Raft consensus algorithm. It is available as of RabbitMQ 3.8.0.</span>
+<span class="c1"># If set this option will conflict with the HA queues (``rabbit_ha_queues``)</span>
+<span class="c1"># aka mirrored queues, in other words the HA queues should be disabled. Quorum</span>
+<span class="c1"># queues are also durable by default so the amqp_durable_queues option is</span>
+<span class="c1"># ignored when this option is enabled. (boolean value)</span>
+<span class="c1">#rabbit_quorum_queue = false</span>
+
+<span class="c1"># Use quorum queues for transients queues in RabbitMQ. Enabling this option</span>
+<span class="c1"># will then make sure those queues are also using quorum kind of rabbit queues,</span>
+<span class="c1"># which are HA by default. (boolean value)</span>
+<span class="c1">#rabbit_transient_quorum_queue = false</span>
+
+<span class="c1"># Each time a message is redelivered to a consumer, a counter is incremented.</span>
+<span class="c1"># Once the redelivery count exceeds the delivery limit the message gets dropped</span>
+<span class="c1"># or dead-lettered (if a DLX exchange has been configured) Used only when</span>
+<span class="c1"># rabbit_quorum_queue is enabled, Default 0 which means dont set a limit.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#rabbit_quorum_delivery_limit = 0</span>
+
+<span class="c1"># By default all messages are maintained in memory if a quorum queue grows in</span>
+<span class="c1"># length it can put memory pressure on a cluster. This option can limit the</span>
+<span class="c1"># number of messages in the quorum queue. Used only when rabbit_quorum_queue is</span>
+<span class="c1"># enabled, Default 0 which means dont set a limit. (integer value)</span>
+<span class="c1"># Deprecated group/name - [oslo_messaging_rabbit]/rabbit_quroum_max_memory_length</span>
+<span class="c1">#rabbit_quorum_max_memory_length = 0</span>
+
+<span class="c1"># By default all messages are maintained in memory if a quorum queue grows in</span>
+<span class="c1"># length it can put memory pressure on a cluster. This option can limit the</span>
+<span class="c1"># number of memory bytes used by the quorum queue. Used only when</span>
+<span class="c1"># rabbit_quorum_queue is enabled, Default 0 which means dont set a limit.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Deprecated group/name - [oslo_messaging_rabbit]/rabbit_quroum_max_memory_bytes</span>
+<span class="c1">#rabbit_quorum_max_memory_bytes = 0</span>
+
+<span class="c1"># Positive integer representing duration in seconds for queue TTL (x-expires).</span>
+<span class="c1"># Queues which are unused for the duration of the TTL are automatically</span>
+<span class="c1"># deleted. The parameter affects only reply and fanout queues. Setting 0 as</span>
+<span class="c1"># value will disable the x-expires. If doing so, make sure you have a rabbitmq</span>
+<span class="c1"># policy to delete the queues or you deployment will create an infinite number</span>
+<span class="c1"># of queue over time.In case rabbit_stream_fanout is set to True, this option</span>
+<span class="c1"># will control data retention policy (x-max-age) for messages in the fanout</span>
+<span class="c1"># queue rather then the queue duration itself. So the oldest data in the stream</span>
+<span class="c1"># queue will be discarded from it once reaching TTL Setting to 0 will disable</span>
+<span class="c1"># x-max-age for stream which make stream grow indefinitely filling up the</span>
+<span class="c1"># diskspace (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#rabbit_transient_queues_ttl = 1800</span>
+
+<span class="c1"># Specifies the number of messages to prefetch. Setting to zero allows</span>
+<span class="c1"># unlimited messages. (integer value)</span>
+<span class="c1">#rabbit_qos_prefetch_count = 0</span>
+
+<span class="c1"># Number of seconds after which the Rabbit broker is considered down if</span>
+<span class="c1"># heartbeat's keep-alive fails (0 disables heartbeat). (integer value)</span>
+<span class="c1">#heartbeat_timeout_threshold = 60</span>
+
+<span class="c1"># How often times during the heartbeat_timeout_threshold we check the</span>
+<span class="c1"># heartbeat. (integer value)</span>
+<span class="c1">#heartbeat_rate = 3</span>
+
+<span class="c1"># DEPRECATED: (DEPRECATED) Enable/Disable the RabbitMQ mandatory flag for</span>
+<span class="c1"># direct send. The direct send is used as reply, so the MessageUndeliverable</span>
+<span class="c1"># exception is raised in case the client queue does not</span>
+<span class="c1"># exist.MessageUndeliverable exception will be used to loop for a timeout to</span>
+<span class="c1"># lets a chance to sender to recover.This flag is deprecated and it will not be</span>
+<span class="c1"># possible to deactivate this functionality anymore (boolean value)</span>
+<span class="c1"># This option is deprecated for removal.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: Mandatory flag no longer deactivable.</span>
+<span class="c1">#direct_mandatory_flag = true</span>
+
+<span class="c1"># Enable x-cancel-on-ha-failover flag so that rabbitmq server will cancel and</span>
+<span class="c1"># notify consumerswhen queue is down (boolean value)</span>
+<span class="c1">#enable_cancel_on_failover = false</span>
+
+<span class="c1"># Should we use consistant queue names or random ones (boolean value)</span>
+<span class="c1">#use_queue_manager = false</span>
+
+<span class="c1"># Hostname used by queue manager. Defaults to the value returned by</span>
+<span class="c1"># socket.gethostname(). (string value)</span>
+<span class="c1">#</span>
+<span class="c1"># This option has a sample default set, which means that</span>
+<span class="c1"># its actual default value may vary from the one documented</span>
+<span class="c1"># below.</span>
+<span class="c1">#hostname = node1.example.com</span>
+
+<span class="c1"># Process name used by queue manager (string value)</span>
+<span class="c1">#</span>
+<span class="c1"># This option has a sample default set, which means that</span>
+<span class="c1"># its actual default value may vary from the one documented</span>
+<span class="c1"># below.</span>
+<span class="c1">#processname = nova-api</span>
+
+<span class="c1"># Use stream queues in RabbitMQ (x-queue-type: stream). Streams are a new</span>
+<span class="c1"># persistent and replicated data structure ("queue type") in RabbitMQ which</span>
+<span class="c1"># models an append-only log with non-destructive consumer semantics. It is</span>
+<span class="c1"># available as of RabbitMQ 3.9.0. If set this option will replace all fanout</span>
+<span class="c1"># queues with only one stream queue. (boolean value)</span>
+<span class="c1">#rabbit_stream_fanout = false</span>
+
+
+<span class="p">[</span><span class="n">oslo_middleware</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.middleware</span>
+<span class="c1">#</span>
+
+<span class="c1"># The maximum body size for each  request, in bytes. (integer value)</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/osapi_max_request_body_size</span>
+<span class="c1"># Deprecated group/name - [DEFAULT]/max_request_body_size</span>
+<span class="c1">#max_request_body_size = 114688</span>
+
+<span class="c1"># Whether the application is behind a proxy or not. This determines if the</span>
+<span class="c1"># middleware should parse the headers or not. (boolean value)</span>
+<span class="c1">#enable_proxy_headers_parsing = false</span>
+
+<span class="c1"># HTTP basic auth password file. (string value)</span>
+<span class="c1">#http_basic_auth_user_file = /etc/htpasswd</span>
+
+
+<span class="p">[</span><span class="n">oslo_policy</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From oslo.policy</span>
+<span class="c1">#</span>
+
+<span class="c1"># DEPRECATED: This option controls whether or not to enforce scope when</span>
+<span class="c1"># evaluating policies. If ``True``, the scope of the token used in the request</span>
+<span class="c1"># is compared to the ``scope_types`` of the policy being enforced. If the</span>
+<span class="c1"># scopes do not match, an ``InvalidScope`` exception will be raised. If</span>
+<span class="c1"># ``False``, a message will be logged informing operators that policies are</span>
+<span class="c1"># being invoked with mismatching scope. (boolean value)</span>
+<span class="c1"># This option is deprecated for removal.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: This configuration was added temporarily to facilitate a smooth</span>
+<span class="c1"># transition to the new RBAC. OpenStack will always enforce scope checks. This</span>
+<span class="c1"># configuration option is deprecated and will be removed in the 2025.2 cycle.</span>
+<span class="c1">#enforce_scope = true</span>
+
+<span class="c1"># This option controls whether or not to use old deprecated defaults when</span>
+<span class="c1"># evaluating policies. If ``True``, the old deprecated defaults are not going</span>
+<span class="c1"># to be evaluated. This means if any existing token is allowed for old defaults</span>
+<span class="c1"># but is disallowed for new defaults, it will be disallowed. It is encouraged</span>
+<span class="c1"># to enable this flag along with the ``enforce_scope`` flag so that you can get</span>
+<span class="c1"># the benefits of new defaults and ``scope_type`` together. If ``False``, the</span>
+<span class="c1"># deprecated policy check string is logically OR'd with the new policy check</span>
+<span class="c1"># string, allowing for a graceful upgrade experience between releases with new</span>
+<span class="c1"># policies, which is the default behavior. (boolean value)</span>
+<span class="c1">#enforce_new_defaults = true</span>
+
+<span class="c1"># The relative or absolute path of a file that maps roles to permissions for a</span>
+<span class="c1"># given service. Relative paths must be specified in relation to the</span>
+<span class="c1"># configuration file setting this option. (string value)</span>
+<span class="c1">#policy_file = policy.yaml</span>
+
+<span class="c1"># Default rule. Enforced when a requested rule is not found. (string value)</span>
+<span class="c1">#policy_default_rule = default</span>
+
+<span class="c1"># Directories where policy configuration files are stored. They can be relative</span>
+<span class="c1"># to any directory in the search path defined by the config_dir option, or</span>
+<span class="c1"># absolute paths. The file defined by policy_file must exist for these</span>
+<span class="c1"># directories to be searched.  Missing or empty directories are ignored. (multi</span>
+<span class="c1"># valued)</span>
+<span class="c1">#policy_dirs = policy.d</span>
+
+<span class="c1"># Content Type to send and receive data for REST based policy check (string</span>
+<span class="c1"># value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># application/x-www-form-urlencoded - &lt;No description provided&gt;</span>
+<span class="c1"># application/json - &lt;No description provided&gt;</span>
+<span class="c1">#remote_content_type = application/x-www-form-urlencoded</span>
+
+<span class="c1"># server identity verification for REST based policy check (boolean value)</span>
+<span class="c1">#remote_ssl_verify_server_crt = false</span>
+
+<span class="c1"># Absolute path to ca cert file for REST based policy check (string value)</span>
+<span class="c1">#remote_ssl_ca_crt_file = &lt;None&gt;</span>
+
+<span class="c1"># Absolute path to client cert for REST based policy check (string value)</span>
+<span class="c1">#remote_ssl_client_crt_file = &lt;None&gt;</span>
+
+<span class="c1"># Absolute path client key file REST based policy check (string value)</span>
+<span class="c1">#remote_ssl_client_key_file = &lt;None&gt;</span>
+
+<span class="c1"># Timeout in seconds for REST based policy check (floating point value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#remote_timeout = 60</span>
+
+
+<span class="p">[</span><span class="n">policy</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the policy backend driver in the `keystone.policy` namespace.</span>
+<span class="c1"># Supplied drivers are `rules` (which does not support any CRUD operations for</span>
+<span class="c1"># the v3 policy API) and `sql`. Typically, there is no reason to set this</span>
+<span class="c1"># option unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Maximum number of entities that will be returned in a policy collection.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">profiler</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From osprofiler</span>
+<span class="c1">#</span>
+
+<span class="c1">#</span>
+<span class="c1"># Enable the profiling for all services on this node.</span>
+<span class="c1">#</span>
+<span class="c1"># Default value is False (fully disable the profiling feature).</span>
+<span class="c1">#</span>
+<span class="c1"># Possible values:</span>
+<span class="c1">#</span>
+<span class="c1"># * True: Enables the feature</span>
+<span class="c1"># * False: Disables the feature. The profiling cannot be started via this</span>
+<span class="c1"># project</span>
+<span class="c1">#   operations. If the profiling is triggered by another project, this project</span>
+<span class="c1">#   part will be empty.</span>
+<span class="c1">#  (boolean value)</span>
+<span class="c1"># Deprecated group/name - [profiler]/profiler_enabled</span>
+<span class="c1">#enabled = false</span>
+
+<span class="c1">#</span>
+<span class="c1"># Enable SQL requests profiling in services.</span>
+<span class="c1">#</span>
+<span class="c1"># Default value is False (SQL requests won't be traced).</span>
+<span class="c1">#</span>
+<span class="c1"># Possible values:</span>
+<span class="c1">#</span>
+<span class="c1"># * True: Enables SQL requests profiling. Each SQL query will be part of the</span>
+<span class="c1">#   trace and can the be analyzed by how much time was spent for that.</span>
+<span class="c1"># * False: Disables SQL requests profiling. The spent time is only shown on a</span>
+<span class="c1">#   higher level of operations. Single SQL queries cannot be analyzed this way.</span>
+<span class="c1">#  (boolean value)</span>
+<span class="c1">#trace_sqlalchemy = false</span>
+
+<span class="c1">#</span>
+<span class="c1"># Enable python requests package profiling.</span>
+<span class="c1">#</span>
+<span class="c1"># Supported drivers: jaeger+otlp</span>
+<span class="c1">#</span>
+<span class="c1"># Default value is False.</span>
+<span class="c1">#</span>
+<span class="c1"># Possible values:</span>
+<span class="c1">#</span>
+<span class="c1"># * True: Enables requests profiling.</span>
+<span class="c1"># * False: Disables requests profiling.</span>
+<span class="c1">#  (boolean value)</span>
+<span class="c1">#trace_requests = false</span>
+
+<span class="c1">#</span>
+<span class="c1"># Secret key(s) to use for encrypting context data for performance profiling.</span>
+<span class="c1">#</span>
+<span class="c1"># This string value should have the following format:</span>
+<span class="c1"># &lt;key1&gt;[,&lt;key2&gt;,...&lt;keyn&gt;],</span>
+<span class="c1"># where each key is some random string. A user who triggers the profiling via</span>
+<span class="c1"># the REST API has to set one of these keys in the headers of the REST API call</span>
+<span class="c1"># to include profiling results of this node for this particular project.</span>
+<span class="c1">#</span>
+<span class="c1"># Both "enabled" flag and "hmac_keys" config options should be set to enable</span>
+<span class="c1"># profiling. Also, to generate correct profiling information across all</span>
+<span class="c1"># services</span>
+<span class="c1"># at least one key needs to be consistent between OpenStack projects. This</span>
+<span class="c1"># ensures it can be used from client side to generate the trace, containing</span>
+<span class="c1"># information from all possible resources.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#hmac_keys = SECRET_KEY</span>
+
+<span class="c1">#</span>
+<span class="c1"># Connection string for a notifier backend.</span>
+<span class="c1">#</span>
+<span class="c1"># Default value is ``messaging://`` which sets the notifier to oslo_messaging.</span>
+<span class="c1">#</span>
+<span class="c1"># Examples of possible values:</span>
+<span class="c1">#</span>
+<span class="c1"># * ``messaging://`` - use oslo_messaging driver for sending spans.</span>
+<span class="c1"># * ``redis://127.0.0.1:6379`` - use redis driver for sending spans.</span>
+<span class="c1"># * ``mongodb://127.0.0.1:27017`` - use mongodb driver for sending spans.</span>
+<span class="c1"># * ``elasticsearch://127.0.0.1:9200`` - use elasticsearch driver for sending</span>
+<span class="c1">#   spans.</span>
+<span class="c1"># * ``jaeger://127.0.0.1:6831`` - use jaeger tracing as driver for sending</span>
+<span class="c1"># spans.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#connection_string = messaging://</span>
+
+<span class="c1">#</span>
+<span class="c1"># Document type for notification indexing in elasticsearch.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#es_doc_type = notification</span>
+
+<span class="c1">#</span>
+<span class="c1"># This parameter is a time value parameter (for example: es_scroll_time=2m),</span>
+<span class="c1"># indicating for how long the nodes that participate in the search will</span>
+<span class="c1"># maintain</span>
+<span class="c1"># relevant resources in order to continue and support it.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#es_scroll_time = 2m</span>
+
+<span class="c1">#</span>
+<span class="c1"># Elasticsearch splits large requests in batches. This parameter defines</span>
+<span class="c1"># maximum size of each batch (for example: es_scroll_size=10000).</span>
+<span class="c1">#  (integer value)</span>
+<span class="c1">#es_scroll_size = 10000</span>
+
+<span class="c1">#</span>
+<span class="c1"># Redissentinel provides a timeout option on the connections.</span>
+<span class="c1"># This parameter defines that timeout (for example: socket_timeout=0.1).</span>
+<span class="c1">#  (floating point value)</span>
+<span class="c1">#socket_timeout = 0.1</span>
+
+<span class="c1">#</span>
+<span class="c1"># Redissentinel uses a service name to identify a master redis service.</span>
+<span class="c1"># This parameter defines the name (for example:</span>
+<span class="c1"># ``sentinal_service_name=mymaster``).</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#sentinel_service_name = mymaster</span>
+
+<span class="c1">#</span>
+<span class="c1"># Enable filter traces that contain error/exception to a separated place.</span>
+<span class="c1">#</span>
+<span class="c1"># Default value is set to False.</span>
+<span class="c1">#</span>
+<span class="c1"># Possible values:</span>
+<span class="c1">#</span>
+<span class="c1"># * True: Enable filter traces that contain error/exception.</span>
+<span class="c1"># * False: Disable the filter.</span>
+<span class="c1">#  (boolean value)</span>
+<span class="c1">#filter_error_trace = false</span>
+
+
+<span class="p">[</span><span class="n">profiler_jaeger</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From osprofiler</span>
+<span class="c1">#</span>
+
+<span class="c1">#</span>
+<span class="c1"># Set service name prefix to Jaeger service name.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#service_name_prefix = &lt;None&gt;</span>
+
+<span class="c1">#</span>
+<span class="c1"># Set process tracer tags.</span>
+<span class="c1">#  (dict value)</span>
+<span class="c1">#process_tags =</span>
+
+
+<span class="p">[</span><span class="n">profiler_otlp</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From osprofiler</span>
+<span class="c1">#</span>
+
+<span class="c1">#</span>
+<span class="c1"># Set service name prefix to OTLP exporters.</span>
+<span class="c1">#  (string value)</span>
+<span class="c1">#service_name_prefix = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">receipt</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The amount of time that a receipt should remain valid (in seconds). This</span>
+<span class="c1"># value should always be very short, as it represents how long a user has to</span>
+<span class="c1"># reattempt auth with the missing auth methods. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 86400</span>
+<span class="c1">#expiration = 300</span>
+
+<span class="c1"># Entry point for the receipt provider in the `keystone.receipt.provider`</span>
+<span class="c1"># namespace. The receipt provider controls the receipt construction and</span>
+<span class="c1"># validation operations. Keystone includes just the `fernet` receipt provider</span>
+<span class="c1"># for now. `fernet` receipts do not need to be persisted at all, but require</span>
+<span class="c1"># that you run `keystone-manage fernet_setup` (also see the `keystone-manage</span>
+<span class="c1"># fernet_rotate` command). (string value)</span>
+<span class="c1">#provider = fernet</span>
+
+<span class="c1"># Toggle for caching receipt creation and validation data. This has no effect</span>
+<span class="c1"># unless global caching is enabled, or if cache_on_issue is disabled as we only</span>
+<span class="c1"># cache receipts on issue. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># The number of seconds to cache receipt creation and validation data. This has</span>
+<span class="c1"># no effect unless both global and `[receipt] caching` are enabled. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#cache_time = 300</span>
+
+<span class="c1"># Enable storing issued receipt data to receipt validation cache so that first</span>
+<span class="c1"># receipt validation doesn't actually cause full validation cycle. This option</span>
+<span class="c1"># has no effect unless global caching and receipt caching are enabled. (boolean</span>
+<span class="c1"># value)</span>
+<span class="c1">#cache_on_issue = true</span>
+
+
+<span class="p">[</span><span class="n">resource</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the resource driver in the `keystone.resource` namespace.</span>
+<span class="c1"># Only a `sql` driver is supplied by keystone. Unless you are writing</span>
+<span class="c1"># proprietary drivers for keystone, you do not need to set this option. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for resource caching. This has no effect unless global caching is</span>
+<span class="c1"># enabled. (boolean value)</span>
+<span class="c1"># Deprecated group/name - [assignment]/caching</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache resource data in seconds. This has no effect unless global</span>
+<span class="c1"># caching is enabled. (integer value)</span>
+<span class="c1"># Deprecated group/name - [assignment]/cache_time</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># Maximum number of entities that will be returned in a resource collection.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Deprecated group/name - [assignment]/list_limit</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+<span class="c1"># Name of the domain that owns the `admin_project_name`. If left unset, then</span>
+<span class="c1"># there is no admin project. `[resource] admin_project_name` must also be set</span>
+<span class="c1"># to use this option. (string value)</span>
+<span class="c1">#admin_project_domain_name = &lt;None&gt;</span>
+
+<span class="c1"># This is a special project which represents cloud-level administrator</span>
+<span class="c1"># privileges across services. Tokens scoped to this project will contain a true</span>
+<span class="c1"># `is_admin_project` attribute to indicate to policy systems that the role</span>
+<span class="c1"># assignments on that specific project should apply equally across every</span>
+<span class="c1"># project. If left unset, then there is no admin project, and thus no explicit</span>
+<span class="c1"># means of cross-project role assignments. `[resource]</span>
+<span class="c1"># admin_project_domain_name` must also be set to use this option. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#admin_project_name = &lt;None&gt;</span>
+
+<span class="c1"># This controls whether the names of projects are restricted from containing</span>
+<span class="c1"># URL-reserved characters. If set to `new`, attempts to create or update a</span>
+<span class="c1"># project with a URL-unsafe name will fail. If set to `strict`, attempts to</span>
+<span class="c1"># scope a token with a URL-unsafe project name will fail, thereby forcing all</span>
+<span class="c1"># project names to be updated to be URL-safe. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># off - &lt;No description provided&gt;</span>
+<span class="c1"># new - &lt;No description provided&gt;</span>
+<span class="c1"># strict - &lt;No description provided&gt;</span>
+<span class="c1">#project_name_url_safe = off</span>
+
+<span class="c1"># This controls whether the names of domains are restricted from containing</span>
+<span class="c1"># URL-reserved characters. If set to `new`, attempts to create or update a</span>
+<span class="c1"># domain with a URL-unsafe name will fail. If set to `strict`, attempts to</span>
+<span class="c1"># scope a token with a URL-unsafe domain name will fail, thereby forcing all</span>
+<span class="c1"># domain names to be updated to be URL-safe. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># off - &lt;No description provided&gt;</span>
+<span class="c1"># new - &lt;No description provided&gt;</span>
+<span class="c1"># strict - &lt;No description provided&gt;</span>
+<span class="c1">#domain_name_url_safe = off</span>
+
+
+<span class="p">[</span><span class="n">revoke</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the token revocation backend driver in the `keystone.revoke`</span>
+<span class="c1"># namespace. Keystone only provides a `sql` driver, so there is no reason to</span>
+<span class="c1"># set this option unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># The number of seconds after a token has expired before a corresponding</span>
+<span class="c1"># revocation event may be purged from the backend. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#expiration_buffer = 1800</span>
+
+<span class="c1"># Toggle for revocation event caching. This has no effect unless global caching</span>
+<span class="c1"># is enabled. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache the revocation list and the revocation events (in seconds).</span>
+<span class="c1"># This has no effect unless global and `[revoke] caching` are both enabled.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Deprecated group/name - [token]/revocation_cache_time</span>
+<span class="c1">#cache_time = 3600</span>
+
+
+<span class="p">[</span><span class="n">role</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the role backend driver in the `keystone.role` namespace.</span>
+<span class="c1"># Keystone only provides a `sql` driver, so there's no reason to change this</span>
+<span class="c1"># unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = &lt;None&gt;</span>
+
+<span class="c1"># Toggle for role caching. This has no effect unless global caching is enabled.</span>
+<span class="c1"># In a typical deployment, there is no reason to disable this. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache role data, in seconds. This has no effect unless both global</span>
+<span class="c1"># caching and `[role] caching` are enabled. (integer value)</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># Maximum number of entities that will be returned in a role collection. This</span>
+<span class="c1"># may be useful to tune if you have a large number of discrete roles in your</span>
+<span class="c1"># deployment. (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+
+<span class="p">[</span><span class="n">saml</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Determines the lifetime for any SAML assertions generated by keystone, using</span>
+<span class="c1"># `NotOnOrAfter` attributes. (integer value)</span>
+<span class="c1">#assertion_expiration_time = 3600</span>
+
+<span class="c1"># Name of, or absolute path to, the binary to be used for XML signing. Although</span>
+<span class="c1"># only the XML Security Library (`xmlsec1`) is supported, it may have a non-</span>
+<span class="c1"># standard name or path on your system. If keystone cannot find the binary</span>
+<span class="c1"># itself, you may need to install the appropriate package, use this option to</span>
+<span class="c1"># specify an absolute path, or adjust keystone's PATH environment variable.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#xmlsec1_binary = xmlsec1</span>
+
+<span class="c1"># Absolute path to the public certificate file to use for SAML signing. The</span>
+<span class="c1"># value cannot contain a comma (`,`). (string value)</span>
+<span class="c1">#certfile = /etc/keystone/ssl/certs/signing_cert.pem</span>
+
+<span class="c1"># Absolute path to the private key file to use for SAML signing. The value</span>
+<span class="c1"># cannot contain a comma (`,`). (string value)</span>
+<span class="c1">#keyfile = /etc/keystone/ssl/private/signing_key.pem</span>
+
+<span class="c1"># This is the unique entity identifier of the identity provider (keystone) to</span>
+<span class="c1"># use when generating SAML assertions. This value is required to generate</span>
+<span class="c1"># identity provider metadata and must be a URI (a URL is recommended). For</span>
+<span class="c1"># example: `https://keystone.example.com/v3/OS-FEDERATION/saml2/idp`. (uri</span>
+<span class="c1"># value)</span>
+<span class="c1">#idp_entity_id = &lt;None&gt;</span>
+
+<span class="c1"># This is the single sign-on (SSO) service location of the identity provider</span>
+<span class="c1"># which accepts HTTP POST requests. A value is required to generate identity</span>
+<span class="c1"># provider metadata. For example: `https://keystone.example.com/v3/OS-</span>
+<span class="c1"># FEDERATION/saml2/sso`. (uri value)</span>
+<span class="c1">#idp_sso_endpoint = &lt;None&gt;</span>
+
+<span class="c1"># This is the language used by the identity provider's organization. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#idp_lang = en</span>
+
+<span class="c1"># This is the name of the identity provider's organization. (string value)</span>
+<span class="c1">#idp_organization_name = SAML Identity Provider</span>
+
+<span class="c1"># This is the name of the identity provider's organization to be displayed.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#idp_organization_display_name = OpenStack SAML Identity Provider</span>
+
+<span class="c1"># This is the URL of the identity provider's organization. The URL referenced</span>
+<span class="c1"># here should be useful to humans. (uri value)</span>
+<span class="c1">#idp_organization_url = https://example.com/</span>
+
+<span class="c1"># This is the company name of the identity provider's contact person. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#idp_contact_company = Example, Inc.</span>
+
+<span class="c1"># This is the given name of the identity provider's contact person. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#idp_contact_name = SAML Identity Provider Support</span>
+
+<span class="c1"># This is the surname of the identity provider's contact person. (string value)</span>
+<span class="c1">#idp_contact_surname = Support</span>
+
+<span class="c1"># This is the email address of the identity provider's contact person. (string</span>
+<span class="c1"># value)</span>
+<span class="c1">#idp_contact_email = support@example.com</span>
+
+<span class="c1"># This is the telephone number of the identity provider's contact person.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#idp_contact_telephone = +1 800 555 0100</span>
+
+<span class="c1"># This is the type of contact that best describes the identity provider's</span>
+<span class="c1"># contact person. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># technical - &lt;No description provided&gt;</span>
+<span class="c1"># support - &lt;No description provided&gt;</span>
+<span class="c1"># administrative - &lt;No description provided&gt;</span>
+<span class="c1"># billing - &lt;No description provided&gt;</span>
+<span class="c1"># other - &lt;No description provided&gt;</span>
+<span class="c1">#idp_contact_type = other</span>
+
+<span class="c1"># Absolute path to the identity provider metadata file. This file should be</span>
+<span class="c1"># generated with the `keystone-manage saml_idp_metadata` command. There is</span>
+<span class="c1"># typically no reason to change this value. (string value)</span>
+<span class="c1">#idp_metadata_path = /etc/keystone/saml2_idp_metadata.xml</span>
+
+<span class="c1"># The prefix of the RelayState SAML attribute to use when generating enhanced</span>
+<span class="c1"># client and proxy (ECP) assertions. In a typical deployment, there is no</span>
+<span class="c1"># reason to change this value. (string value)</span>
+<span class="c1">#relay_state_prefix = ss:mem:</span>
+
+
+<span class="p">[</span><span class="n">security_compliance</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The maximum number of days a user can go without authenticating before being</span>
+<span class="c1"># considered "inactive" and automatically disabled (locked). This feature is</span>
+<span class="c1"># disabled by default; set any value to enable it. This feature depends on the</span>
+<span class="c1"># `sql` backend for the `[identity] driver`. When a user exceeds this threshold</span>
+<span class="c1"># and is considered "inactive", the user's `enabled` attribute in the HTTP API</span>
+<span class="c1"># may not match the value of the user's `enabled` column in the user table.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#disable_user_account_days_inactive = &lt;None&gt;</span>
+
+<span class="c1"># The maximum number of times that a user can fail to authenticate before the</span>
+<span class="c1"># user account is locked for the number of seconds specified by</span>
+<span class="c1"># `[security_compliance] lockout_duration`. This feature is disabled by</span>
+<span class="c1"># default. If this feature is enabled and `[security_compliance]</span>
+<span class="c1"># lockout_duration` is not set, then users may be locked out indefinitely until</span>
+<span class="c1"># the user is explicitly enabled via the API. This feature depends on the `sql`</span>
+<span class="c1"># backend for the `[identity] driver`. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#lockout_failure_attempts = &lt;None&gt;</span>
+
+<span class="c1"># The number of seconds a user account will be locked when the maximum number</span>
+<span class="c1"># of failed authentication attempts (as specified by `[security_compliance]</span>
+<span class="c1"># lockout_failure_attempts`) is exceeded. Setting this option will have no</span>
+<span class="c1"># effect unless you also set `[security_compliance] lockout_failure_attempts`</span>
+<span class="c1"># to a non-zero value. This feature depends on the `sql` backend for the</span>
+<span class="c1"># `[identity] driver`. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#lockout_duration = 1800</span>
+
+<span class="c1"># The number of days for which a password will be considered valid before</span>
+<span class="c1"># requiring it to be changed. This feature is disabled by default. If enabled,</span>
+<span class="c1"># new password changes will have an expiration date, however existing passwords</span>
+<span class="c1"># would not be impacted. This feature depends on the `sql` backend for the</span>
+<span class="c1"># `[identity] driver`. (integer value)</span>
+<span class="c1"># Minimum value: 1</span>
+<span class="c1">#password_expires_days = &lt;None&gt;</span>
+
+<span class="c1"># This controls the number of previous user password iterations to keep in</span>
+<span class="c1"># history, in order to enforce that newly created passwords are unique. The</span>
+<span class="c1"># total number which includes the new password should not be greater or equal</span>
+<span class="c1"># to this value. Setting the value to zero (the default) disables this feature.</span>
+<span class="c1"># Thus, to enable this feature, values must be greater than 0. This feature</span>
+<span class="c1"># depends on the `sql` backend for the `[identity] driver`. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#unique_last_password_count = 0</span>
+
+<span class="c1"># The number of days that a password must be used before the user can change</span>
+<span class="c1"># it. This prevents users from changing their passwords immediately in order to</span>
+<span class="c1"># wipe out their password history and reuse an old password. This feature does</span>
+<span class="c1"># not prevent administrators from manually resetting passwords. It is disabled</span>
+<span class="c1"># by default and allows for immediate password changes. This feature depends on</span>
+<span class="c1"># the `sql` backend for the `[identity] driver`. Note: If</span>
+<span class="c1"># `[security_compliance] password_expires_days` is set, then the value for this</span>
+<span class="c1"># option should be less than the `password_expires_days`. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1">#minimum_password_age = 0</span>
+
+<span class="c1"># The regular expression used to validate password strength requirements. By</span>
+<span class="c1"># default, the regular expression will match any password. The following is an</span>
+<span class="c1"># example of a pattern which requires at least 1 letter, 1 digit, and have a</span>
+<span class="c1"># minimum length of 7 characters: ^(?=.*\\\d)(?=.*[a-zA-Z]).{7,}$ This feature</span>
+<span class="c1"># depends on the `sql` backend for the `[identity] driver`. (string value)</span>
+<span class="c1">#password_regex = &lt;None&gt;</span>
+
+<span class="c1"># Describe your password regular expression here in language for humans. If a</span>
+<span class="c1"># password fails to match the regular expression, the contents of this</span>
+<span class="c1"># configuration variable will be returned to users to explain why their</span>
+<span class="c1"># requested password was insufficient. (string value)</span>
+<span class="c1">#password_regex_description = &lt;None&gt;</span>
+
+<span class="c1"># Enabling this option requires users to change their password when the user is</span>
+<span class="c1"># created, or upon administrative reset. Before accessing any services,</span>
+<span class="c1"># affected users will have to change their password. To ignore this requirement</span>
+<span class="c1"># for specific users, such as service users, set the `options` attribute</span>
+<span class="c1"># `ignore_change_password_upon_first_use` to `True` for the desired user via</span>
+<span class="c1"># the update user API. This feature is disabled by default. This feature is</span>
+<span class="c1"># only applicable with the `sql` backend for the `[identity] driver`. (boolean</span>
+<span class="c1"># value)</span>
+<span class="c1">#change_password_upon_first_use = false</span>
+
+<span class="c1"># DEPRECATED: INSECURE: When enabled, admin-role delegated tokens (trusts,</span>
+<span class="c1"># application credentials, OAuth1 access tokens) are allowed to access</span>
+<span class="c1"># credentials outside their project scope. By default (False), delegated tokens</span>
+<span class="c1"># can only access credentials whose project_id matches the token's project</span>
+<span class="c1"># scope, preventing cross-project lateral movement via a compromised delegation</span>
+<span class="c1"># token.  Enable this only if you have automated workflows (e.g. Mistral cron</span>
+<span class="c1"># triggers) that use admin-role trusts to access credentials across multiple</span>
+<span class="c1"># projects and cannot be migrated to use non-delegated service account</span>
+<span class="c1"># credentials. Enabling this option weakens the isolation guarantee provided by</span>
+<span class="c1"># the delegation boundary fix for LP#2150089. This option is deprecated and</span>
+<span class="c1"># will be removed in a future release. (boolean value)</span>
+<span class="c1"># This option is deprecated for removal since 2026.1.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: Migrate automated workflows that use admin-role trusts to access</span>
+<span class="c1"># credentials across multiple projects (e.g. Mistral cron triggers) to use non-</span>
+<span class="c1"># delegated service account credentials instead, then remove this option.</span>
+<span class="c1">#allow_insecure_admin_trust_cross_project_credentials_access = false</span>
+
+<span class="c1"># DEPRECATED: INSECURE: When enabled, application credential tokens (including</span>
+<span class="c1"># restricted ones) are allowed to create, delete, and list trusts. By default</span>
+<span class="c1"># (False), application credential tokens are blocked from all trust operations</span>
+<span class="c1"># regardless of the unrestricted flag, because allowing an application</span>
+<span class="c1"># credential to bootstrap a trust creates a new delegation context. A trust-</span>
+<span class="c1"># scoped token produced from that trust can then access authentication material</span>
+<span class="c1"># (EC2 credentials, TOTP seeds) and operate entirely outside the delegation</span>
+<span class="c1"># chain, breaking the audit trail. The 'unrestricted' flag governs credential</span>
+<span class="c1"># management, not trust management.  Enable this only if you have workflows</span>
+<span class="c1"># where application credentials must create trusts (e.g. Heat stacks</span>
+<span class="c1"># authenticated via application credentials). Use OIDC federation flows</span>
+<span class="c1"># (v3oidcclientcredentials, v3oidcdeviceauthz) as the proper long-term</span>
+<span class="c1"># alternative. This option is deprecated and will be removed in a future</span>
+<span class="c1"># release. (boolean value)</span>
+<span class="c1"># This option is deprecated for removal since 2026.1.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: Migrate workflows where application credentials create trusts to use</span>
+<span class="c1"># OIDC federation flows (v3oidcclientcredentials, v3oidcdeviceauthz) instead,</span>
+<span class="c1"># then remove this option.</span>
+<span class="c1">#allow_insecure_application_credential_trust_escalation = false</span>
+
+
+<span class="p">[</span><span class="n">shadow_users</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the shadow users backend driver in the</span>
+<span class="c1"># `keystone.identity.shadow_users` namespace. This driver is used for</span>
+<span class="c1"># persisting local user references to externally-managed identities (via</span>
+<span class="c1"># federation, LDAP, etc). Keystone only provides a `sql` driver, so there is no</span>
+<span class="c1"># reason to change this option unless you are providing a custom entry point.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#driver = sql</span>
+
+
+<span class="p">[</span><span class="n">token</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The amount of time that a token should remain valid (in seconds). Drastically</span>
+<span class="c1"># reducing this value may break "long-running" operations that involve multiple</span>
+<span class="c1"># services to coordinate together, and will force users to authenticate with</span>
+<span class="c1"># keystone more frequently. Drastically increasing this value will increase the</span>
+<span class="c1"># number of tokens that will be simultaneously valid. Keystone tokens are also</span>
+<span class="c1"># bearer tokens, so a shorter duration will also reduce the potential security</span>
+<span class="c1"># impact of a compromised token. (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 9223372036854775807</span>
+<span class="c1">#expiration = 3600</span>
+
+<span class="c1"># Entry point for the token provider in the `keystone.token.provider`</span>
+<span class="c1"># namespace. The token provider controls the token construction, validation,</span>
+<span class="c1"># and revocation operations. Supported upstream providers are `fernet` and</span>
+<span class="c1"># `jws`. Neither `fernet` or `jws` tokens require persistence and both require</span>
+<span class="c1"># additional setup. If using `fernet`, you're required to run `keystone-manage</span>
+<span class="c1"># fernet_setup`, which creates symmetric keys used to encrypt tokens. If using</span>
+<span class="c1"># `jws`, you're required to generate an ECDSA keypair using a SHA-256 hash</span>
+<span class="c1"># algorithm for signing and validating token, which can be done with `keystone-</span>
+<span class="c1"># manage create_jws_keypair`. Note that `fernet` tokens are encrypted and `jws`</span>
+<span class="c1"># tokens are only signed. Please be sure to consider this if your deployment</span>
+<span class="c1"># has security requirements regarding payload contents used to generate token</span>
+<span class="c1"># IDs. (string value)</span>
+<span class="c1">#provider = fernet</span>
+
+<span class="c1"># Toggle for caching token creation and validation data. This has no effect</span>
+<span class="c1"># unless global caching is enabled. (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># The number of seconds to cache token creation and validation data. This has</span>
+<span class="c1"># no effect unless both global and `[token] caching` are enabled. (integer</span>
+<span class="c1"># value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 9223372036854775807</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># This toggles support for revoking individual tokens by the token identifier</span>
+<span class="c1"># and thus various token enumeration operations (such as listing all tokens</span>
+<span class="c1"># issued to a specific user). These operations are used to determine the list</span>
+<span class="c1"># of tokens to consider revoked. Do not disable this option if you're using the</span>
+<span class="c1"># `kvs` `[revoke] driver`. (boolean value)</span>
+<span class="c1">#revoke_by_id = true</span>
+
+<span class="c1"># This toggles whether scoped tokens may be re-scoped to a new project or</span>
+<span class="c1"># domain, thereby preventing users from exchanging a scoped token (including</span>
+<span class="c1"># those with a default project scope) for any other token. This forces users to</span>
+<span class="c1"># either authenticate for unscoped tokens (and later exchange that unscoped</span>
+<span class="c1"># token for tokens with a more specific scope) or to provide their credentials</span>
+<span class="c1"># in every request for a scoped token to avoid re-scoping altogether. (boolean</span>
+<span class="c1"># value)</span>
+<span class="c1">#allow_rescope_scoped_token = true</span>
+
+<span class="c1"># DEPRECATED: Enable storing issued token data to token validation cache so</span>
+<span class="c1"># that first token validation doesn't actually cause full validation cycle.</span>
+<span class="c1"># This option has no effect unless global caching is enabled and will still</span>
+<span class="c1"># cache tokens even if `[token] caching = False`. (boolean value)</span>
+<span class="c1"># This option is deprecated for removal since S.</span>
+<span class="c1"># Its value may be silently ignored in the future.</span>
+<span class="c1"># Reason: Keystone already exposes a configuration option for caching tokens.</span>
+<span class="c1"># Having a separate configuration option to cache tokens when they are issued</span>
+<span class="c1"># is redundant, unnecessarily complicated, and is misleading if token caching</span>
+<span class="c1"># is disabled because tokens will still be pre-cached by default when they are</span>
+<span class="c1"># issued. The ability to pre-cache tokens when they are issued is going to rely</span>
+<span class="c1"># exclusively on the ``keystone.conf [token] caching`` option in the future.</span>
+<span class="c1">#cache_on_issue = true</span>
+
+<span class="c1"># This controls the number of seconds that a token can be retrieved for beyond</span>
+<span class="c1"># the built-in expiry time. This allows long running operations to succeed.</span>
+<span class="c1"># Defaults to two days. (integer value)</span>
+<span class="c1">#allow_expired_window = 172800</span>
+
+
+<span class="p">[</span><span class="n">tokenless_auth</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The list of distinguished names which identify trusted issuers of client</span>
+<span class="c1"># certificates allowed to use X.509 tokenless authorization. If the option is</span>
+<span class="c1"># absent then no certificates will be allowed. The format for the values of a</span>
+<span class="c1"># distinguished name (DN) must be separated by a comma and contain no spaces.</span>
+<span class="c1"># Furthermore, because an individual DN may contain commas, this configuration</span>
+<span class="c1"># option may be repeated multiple times to represent multiple values. For</span>
+<span class="c1"># example, keystone.conf would include two consecutive lines in order to trust</span>
+<span class="c1"># two different DNs, such as `trusted_issuer = CN=john,OU=keystone,O=openstack`</span>
+<span class="c1"># and `trusted_issuer = CN=mary,OU=eng,O=abc`. (multi valued)</span>
+<span class="c1">#trusted_issuer =</span>
+
+<span class="c1"># The federated protocol ID used to represent X.509 tokenless authorization.</span>
+<span class="c1"># This is used in combination with the value of `[tokenless_auth]</span>
+<span class="c1"># issuer_attribute` to find a corresponding federated mapping. In a typical</span>
+<span class="c1"># deployment, there is no reason to change this value. (string value)</span>
+<span class="c1">#protocol = x509</span>
+
+<span class="c1"># The name of the WSGI environment variable used to pass the issuer of the</span>
+<span class="c1"># client certificate to keystone. This attribute is used as an identity</span>
+<span class="c1"># provider ID for the X.509 tokenless authorization along with the protocol to</span>
+<span class="c1"># look up its corresponding mapping. In a typical deployment, there is no</span>
+<span class="c1"># reason to change this value. (string value)</span>
+<span class="c1">#issuer_attribute = SSL_CLIENT_I_DN</span>
+
+
+<span class="p">[</span><span class="n">totp</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># The number of previous windows to check when processing TOTP passcodes.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># Minimum value: 0</span>
+<span class="c1"># Maximum value: 10</span>
+<span class="c1">#included_previous_windows = 1</span>
+
+
+<span class="p">[</span><span class="n">trust</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Allows authorization to be redelegated from one user to another, effectively</span>
+<span class="c1"># chaining trusts together. When disabled, the `remaining_uses` attribute of a</span>
+<span class="c1"># trust is constrained to be zero. (boolean value)</span>
+<span class="c1">#allow_redelegation = false</span>
+
+<span class="c1"># Maximum number of times that authorization can be redelegated from one user</span>
+<span class="c1"># to another in a chain of trusts. This number may be reduced further for a</span>
+<span class="c1"># specific trust. (integer value)</span>
+<span class="c1">#max_redelegation_count = 3</span>
+
+<span class="c1"># Entry point for the trust backend driver in the `keystone.trust` namespace.</span>
+<span class="c1"># Keystone only provides a `sql` driver, so there is no reason to change this</span>
+<span class="c1"># unless you are providing a custom entry point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+
+<span class="p">[</span><span class="n">unified_limit</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># Entry point for the unified limit backend driver in the</span>
+<span class="c1"># `keystone.unified_limit` namespace. Keystone only provides a `sql` driver, so</span>
+<span class="c1"># there's no reason to change this unless you are providing a custom entry</span>
+<span class="c1"># point. (string value)</span>
+<span class="c1">#driver = sql</span>
+
+<span class="c1"># Toggle for unified limit caching. This has no effect unless global caching is</span>
+<span class="c1"># enabled. In a typical deployment, there is no reason to disable this.</span>
+<span class="c1"># (boolean value)</span>
+<span class="c1">#caching = true</span>
+
+<span class="c1"># Time to cache unified limit data, in seconds. This has no effect unless both</span>
+<span class="c1"># global caching and `[unified_limit] caching` are enabled. (integer value)</span>
+<span class="c1">#cache_time = &lt;None&gt;</span>
+
+<span class="c1"># Maximum number of entities that will be returned in a unified limit</span>
+<span class="c1"># collection. This may be useful to tune if you have a large number of unified</span>
+<span class="c1"># limits in your deployment. (integer value)</span>
+<span class="c1">#list_limit = &lt;None&gt;</span>
+
+<span class="c1"># The enforcement model to use when validating limits associated to projects.</span>
+<span class="c1"># Enforcement models will behave differently depending on the existing limits,</span>
+<span class="c1"># which may result in backwards incompatible changes if a model is switched in</span>
+<span class="c1"># a running deployment. (string value)</span>
+<span class="c1"># Possible values:</span>
+<span class="c1"># flat - &lt;No description provided&gt;</span>
+<span class="c1"># strict_two_level - &lt;No description provided&gt;</span>
+<span class="c1">#enforcement_model = flat</span>
+
+
+<span class="p">[</span><span class="n">wsgi</span><span class="p">]</span>
+
+<span class="c1">#</span>
+<span class="c1"># From keystone</span>
+<span class="c1">#</span>
+
+<span class="c1"># If set to true, this enables the oslo debug middleware in Keystone. This</span>
+<span class="c1"># Middleware prints a lot of information about the request and the response. It</span>
+<span class="c1"># is useful for getting information about the data on the wire (decoded) and</span>
+<span class="c1"># passed to the WSGI application pipeline. This middleware has no effect on the</span>
+<span class="c1"># "debug" setting in the [DEFAULT] section of the config file or setting</span>
+<span class="c1"># Keystone's log-level to "DEBUG"; it is specific to debugging the WSGI data as</span>
+<span class="c1"># it enters and leaves Keystone (specific request-related data). This option is</span>
+<span class="c1"># used for introspection on the request and response data between the web</span>
+<span class="c1"># server (apache, nginx, etc) and Keystone.  This middleware is inserted as the</span>
+<span class="c1"># first element in the middleware chain and will show the data closest to the</span>
+<span class="c1"># wire.  WARNING: NOT INTENDED FOR USE IN PRODUCTION. THIS MIDDLEWARE CAN AND</span>
+<span class="c1"># WILL EMIT SENSITIVE/PRIVILEGED DATA. (boolean value)</span>
+<span class="c1">#debug_middleware = false</span>
+</pre></div>
+</div>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект keystone. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/keystone/2025.1/configuration/samples/keystone-conf.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

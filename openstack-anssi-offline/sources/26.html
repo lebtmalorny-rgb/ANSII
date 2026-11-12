@@ -1,0 +1,190 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shadow users: Unified identity for multiple authentication sources — Identity Specs 0.0.1.dev624 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-26">Каталог источников</a> · [26] · <a href="https://specs.openstack.org/openstack/keystone-specs/specs/keystone/mitaka/shadow-users.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="shadow-users-unified-identity-for-multiple-authentication-sources">
+<h1>Shadow users: Unified identity for multiple authentication sources<a class="headerlink" href="#shadow-users-unified-identity-for-multiple-authentication-sources" title="Link to this heading">¶</a></h1>
+<p><a class="reference external" href="https://blueprints.launchpad.net/keystone/+spec/shadow-users">bp shadow-users</a></p>
+<p>Locally managed users are handled slightly differently than users backed by
+LDAP, which are handled significantly differently than users backed by
+federation. Available APIs, relevant APIs, and token validation responses all
+vary. For example, users receive different types of IDs, passwords may or may
+not be stored in keystone, and in the case of federation, may not be
+able to receive direct role assignments. Future additional authentication
+methods pose a risk of complicating things further.</p>
+<p>Instead of continuing down this path, we can refactor our user persistence to
+separate identities from their locally-managed credentials, if any. The result
+will be a unified experience for both end users and operators.</p>
+<section id="problem-description">
+<h2>Problem Description<a class="headerlink" href="#problem-description" title="Link to this heading">¶</a></h2>
+<p>Use cases:</p>
+<ul>
+<li><p><strong>A consistent user experience.</strong> A federated user should have the same user
+experience as a locally-managed user. For example, federated users should be
+able to consume local role assignments just like locally-managed users can.
+Today, federated users can only be mapped into user groups, and receive
+tokens with larger payloads to accommodate their ephemeral nature.</p></li>
+<li><p><strong>One user, multiple credentials.</strong> In the real world, a single person has
+multiple means of authenticating themselves. For example, a person might
+carry a driver’s license, have a passport, and know a secret, such as a
+credit card verification value (CVV). In terms of OpenStack, a user could
+have a password in keystone, a private identity provider (such as a
+corporate LDAP), a public identity provider (such as a social media profile),
+an X.509 certificate, and an existing account on a remote cloud. If all of
+these authentication sources are equally valid, then the resulting user and
+operator experience should not vary based on which is chosen. All of these
+means of authentications should be tied to the same user identity, rather
+than resulting in distinct identities.</p>
+<p>Note: We discussed the potential future need to tie privileges to
+authentication methods. This is out-of-scope for this spec, however the spec
+does not prevent or conflict from this feature being added in the future.</p>
+</li>
+<li><p><strong>Additionally: Facilitates multi-factor authentication &amp; account linking.</strong>
+With multiple types of credentials tied to the same user identity, users can
+authenticate themselves using more than one credential at a time. Keystone
+can then make stronger assertions about the identity of the user and the path
+to viable multi-factor authentication (MFA) is shortened. Likewise, the
+proposed changes support linking multiple accounts for the same user to a
+single account, as well as simplifies auditing around federated users. While
+this specification does not solve MFA or account linking, the refactoring
+done for this spec will make the development for those features easier.</p></li>
+</ul>
+</section>
+<section id="proposed-change">
+<h2>Proposed Change<a class="headerlink" href="#proposed-change" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Separate user identities from their local-managed credentials.</strong> Refactor
+<cite>user</cite> table into an <cite>identity</cite> table and a locally-managed <cite>password</cite>
+table. Migrate data from the user table to these new tables and ultimately
+remove the user table. Modify backend code to utilize the new tables.</p></li>
+<li><p><strong>Shadow LDAP and federated users.</strong> Create new shadow tables for mapping
+LDAP and federated users to local identities. Federated users have a
+<cite>idp_id</cite>, <cite>protocol_id</cite>, display name, and a unique ID asserted by the
+identity provider. These are the minimal pieces of data required to identify
+returning users and provide them with a consistent <cite>identity</cite>. Likewise,
+LDAP users have a ‘domain_id’ and ‘dn’ used to identify the user. That being
+said, there may be an opportunity to generalize LDAP and federated users
+a single table. This will be solved during development.</p></li>
+</ol>
+<section id="alternatives">
+<h3>Alternatives<a class="headerlink" href="#alternatives" title="Link to this heading">¶</a></h3>
+<p>We can continue treating federated users as ephemeral. In the long run, that’s
+either going to result in additional metadata being included in token payloads,
+ultimately bloating Fernet tokens beyond their intended capacity, or
+increasingly disparate user experiences depending on the user’s authentication
+source.</p>
+</section>
+<section id="security-impact">
+<h3>Security Impact<a class="headerlink" href="#security-impact" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>User IDs may be used as a source of authorization in OpenStack, and this spec
+will impact how they are controlled. We need to ensure that two unique users
+cannot be accidentally mapped to the same identity. The simplest solution to
+this is to always assign random UUIDs to serve as the OpenStack-facing user
+identity. We’ll have to carefully consider the implications of using any
+other source.</p></li>
+<li><p>We’ll gain the ability to remove information about federated users from
+tokens, thus eliminating the concept of “federated tokens” altogether.</p></li>
+<li><p>Federated user group membership will become persistent rather than ephemeral
+per authentication. A federated user might automatically receive a concrete
+role assignment as the result of the federation mapping and receive a Fernet
+token which reflects those roles. During the lifetime of that token, an
+operator might assign or revoke additional roles which will be immediately
+reflected in the user’s existing token. This behavior is already the case for
+locally-managed users, but will be new to federated users.</p></li>
+</ul>
+</section>
+<section id="notifications-impact">
+<h3>Notifications Impact<a class="headerlink" href="#notifications-impact" title="Link to this heading">¶</a></h3>
+<p>Auditing notifications which made use of federated identity information in
+tokens will no longer have access to that information, beyond multiple
+authentication methods presented by v3 tokens. All auditing notifications
+will effectively refer to a local user identity.</p>
+</section>
+<section id="other-end-user-impact">
+<h3>Other End User Impact<a class="headerlink" href="#other-end-user-impact" title="Link to this heading">¶</a></h3>
+<p>All end users will receive a consistent API experience: that of a
+locally-managed one.</p>
+</section>
+<section id="performance-impact">
+<h3>Performance Impact<a class="headerlink" href="#performance-impact" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>All user identities will need to be shadowed in keystone’s local backend.
+This means that if you have millions of users authenticating with keystone,
+even if it’s via identity federation, each of them will have a record in
+keystone.</p></li>
+<li><p>The code path for token validations will be simplified, because they will
+always refer to local users.</p></li>
+<li><p>Token formats requiring persistence will require less space on disk or in
+memory.</p></li>
+<li><p>Federated users will be able to consume local role assignments, slightly
+increasing the response time of token validation.</p></li>
+</ul>
+</section>
+<section id="other-deployer-impact">
+<h3>Other Deployer Impact<a class="headerlink" href="#other-deployer-impact" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>No new configuration options.</p></li>
+<li><p>Local identity persistence will need to be provided, even for deployments
+exclusively using identity federation.</p></li>
+<li><p>During the upgrade, a database migration will be required to split
+locally-managed users. At runtime, shadow records will be created
+automatically as LDAP and federated users successfully authenticate with
+keystone.</p></li>
+</ul>
+</section>
+<section id="developer-impact">
+<h3>Developer Impact<a class="headerlink" href="#developer-impact" title="Link to this heading">¶</a></h3>
+<p>Developers supporting alternative authentication methods will be able to
+reference the common user identity, and create shadow records themselves. It’s
+important to note that existing CRUD APIs will not be impacted; only the
+backend is being refactored.</p>
+<p>With federation being a more viable option, deployers supporting custom code to
+bootstrap new users with role assignments can take advantage of federated
+mappings to accomplish the same thing, if they move to federation.</p>
+</section>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">¶</a></h2>
+<section id="assignee-s">
+<h3>Assignee(s)<a class="headerlink" href="#assignee-s" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>Primary assignee:</dt><dd><p>dolph</p>
+</dd>
+<dt>Other contributors:</dt><dd><p>dstanek
+derosenet</p>
+</dd>
+</dl>
+</section>
+<section id="work-items">
+<h3>Work Items<a class="headerlink" href="#work-items" title="Link to this heading">¶</a></h3>
+<ol class="arabic simple">
+<li><p>Separate user identities from their local-managed credentials.</p></li>
+<li><p>Shadow federated and LDAP users in new database tables.</p></li>
+<li><p>Make concrete role assignments after federated mapping is evaluated.</p></li>
+<li><p>Notifications emitted when a federated users is authenticated will need to
+be updated.</p></li>
+<li><p>The mapping engine and other related backend logic will likely need some
+refactoring.</p></li>
+</ol>
+</section>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">¶</a></h2>
+<p>None.</p>
+</section>
+<section id="documentation-impact">
+<h2>Documentation Impact<a class="headerlink" href="#documentation-impact" title="Link to this heading">¶</a></h2>
+<p>Deployers need to understand the new local user persistence requirements, even
+in the case of federation.</p>
+<p>Documentation that suggests that federated users cannot receive local role
+assignments needs to be revised.</p>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Etherpad notes from the Mitaka summit <a class="reference external" href="https://etherpad.openstack.org/p/keystone-mitaka-summit-federation">federation session</a>.</p></li>
+</ul>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

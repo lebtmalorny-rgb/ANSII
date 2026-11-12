@@ -1,0 +1,98 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Use Cases — Security Guide  documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-44">Каталог источников</a> · [44] · <a href="https://docs.openstack.org/security-guide/secrets-management/secrets-management-use-cases.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="use-cases">
+<h1>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading">¶</a></h1>
+<section id="image-signature-verification">
+<h2>Image signature verification<a class="headerlink" href="#image-signature-verification" title="Link to this heading">¶</a></h2>
+<p>Verification of image signatures assures that an image is not replaced or
+changed since the time of original upload. The image signature verification
+feature uses Castellan as its key manager for storing cryptographic signatures.
+An image signature and certificate UUID is uploaded along with the image to the
+Image (glance) service. Glance verifies the signature after retrieving the
+certificate from the key manager. When the image is booted, the Compute
+service (nova) verifys the signature after it retrieves the certificate from
+the key manager.</p>
+<p>For more details, see the <a class="reference external" href="https://docs.openstack.org/security-guide/instance-management/security-services-for-instances.html#trusted-images/">Trusted Images documentation</a>.</p>
+</section>
+<section id="volume-encryption">
+<h2>Volume encryption<a class="headerlink" href="#volume-encryption" title="Link to this heading">¶</a></h2>
+<p>The volume encryption feature provides encryption of data-at-rest using
+Castellan. When a user creates an encrypted volume type, and creates a
+volume using that type, the Block Storage (cinder) service requests the key
+manager to create a key to be associated with that volume. When the volume is
+attached to an instance, nova retrieves the key.</p>
+<p>For more details, see the <a class="reference external" href="38.html">Data Encryption section</a>.
+and <a class="reference external" href="https://docs.openstack.org/ocata/config-reference/block-storage/volume-encryption.html">Volume encryption</a>.</p>
+</section>
+<section id="ephemeral-disk-encryption">
+<h2>Ephemeral disk encryption<a class="headerlink" href="#ephemeral-disk-encryption" title="Link to this heading">¶</a></h2>
+<p>The ephemeral disk encryption feature addresses data privacy. The
+ephemeral disk is a temporary work space used by the virtual host
+operating system. Without encryption, sensitive user information could
+be accessed on this disk, and vestigial information could remain after
+the disk is unmounted.</p>
+<p>The ephemeral disk encryption feature, can interface with a key
+management service through a secure wrapper and support data isolation
+by providing ephemeral disk encryption keys on a per-tenant basis.
+Back-end key storage is recommended for enhanced security (for example,
+an HSM or KMIP server can be used as a barbican back-end secret store).</p>
+<p>For more details, see the <a class="reference external" href="38.html#ephemeral-disk-encryption">Ephemeral disk encryption documentation</a>.</p>
+</section>
+<section id="sahara">
+<h2>Sahara<a class="headerlink" href="#sahara" title="Link to this heading">¶</a></h2>
+<p>Sahara generates and stores several passwords during the course of
+operation. To harden sahara’s usage of passwords it can be instructed
+to use an external key manager for storage and retrieval of these
+secrets. To enable this feature, there must first be an OpenStack Key
+Manager service deployed within the stack.</p>
+<p>With a Key Manager service deployed on the stack, sahara must be
+configured to enable the external storage of secrets. Sahara uses the
+Castellan library to interface with the OpenStack Key Manager service.
+This library provides configurable access to a key manager.</p>
+<p>For more information, see the <a class="reference external" href="https://docs.openstack.org/sahara/latest/admin/advanced-configuration-guide.html#external-key-manager-usage">Sahara advanced configuration guide</a>.</p>
+</section>
+<section id="magnum">
+<h2>Magnum<a class="headerlink" href="#magnum" title="Link to this heading">¶</a></h2>
+<p>To provide access to Docker Swarm or Kubernetes using the native clients
+(<code class="docutils literal notranslate"><span class="pre">docker</span></code> or <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> respectively) magnum uses TLS certificates. To store
+the certificates, it is recommended to use Barbican , or the Magnum
+Database (<code class="docutils literal notranslate"><span class="pre">x590keypair</span></code>).</p>
+<p>A local directory can also be used (<code class="docutils literal notranslate"><span class="pre">local</span></code>), but is considered insecure and
+not suitable for a production environment.</p>
+<p>For more details on setting up a certificate manager for Magnum, see the
+<a class="reference external" href="https://docs.openstack.org/magnum/latest/install/">Container Infrastructure Management service</a>
+documentation.</p>
+</section>
+<section id="octavia-lbaas">
+<h2>Octavia/LBaaS<a class="headerlink" href="#octavia-lbaas" title="Link to this heading">¶</a></h2>
+<p>The LBaaS (Load-Balancer-as-a-Service) feature of Neutron and the
+Octavia project need certificates and their private keys to provide
+load balancing for TLS connections. Barbican can be used to store this
+sensitive information.</p>
+<p>For more details, see
+<a class="reference external" href="https://wiki.openstack.org/wiki/Network/LBaaS/docs/how-to-create-tls-loadbalancer">How to create a TLS Loadbalancer</a>
+and <a class="reference external" href="https://docs.openstack.org/octavia/latest/user/guides/basic-cookbook.html#deploy-a-tls-terminated-https-load-balancer">Deploy a TLS-terminated HTTPS load balancer</a>.</p>
+</section>
+<section id="swift">
+<h2>Swift<a class="headerlink" href="#swift" title="Link to this heading">¶</a></h2>
+<p>Symmetric keys can be used to encrypt Swift containers to mitigate the risk of
+users data being read if an unauthorised party were to gain physical access to
+a disk.</p>
+<p>For more details, see <a class="reference external" href="https://docs.openstack.org/swift/pike/overview_encryption.html">Object Encryption</a>
+within the official swift documentation.</p>
+</section>
+<section id="passwords-in-config-files">
+<h2>Passwords in Config Files<a class="headerlink" href="#passwords-in-config-files" title="Link to this heading">¶</a></h2>
+<p>The configuration files for the OpenStack services contain a number of
+passwords which are in plain text. These include, for instance, the
+passwords used by service users to authenticate to keystone to validate
+keystone tokens.</p>
+<p>There is no current solution to obfuscate these passwords. It is recommended
+that these files be appropriately secured by file permissions.</p>
+<p>There is currently an effort underway to store these secrets in a Castellan
+back-end and then have oslo.config use Castellan to retrieve these secrets.</p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Data encryption — Security Guide  documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-38">Каталог источников</a> · [38] · <a href="https://docs.openstack.org/security-guide/tenant-data/data-encryption.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="data-encryption">
+<h1>Data encryption<a class="headerlink" href="#data-encryption" title="Link to this heading">¶</a></h1>
+<p>The option exists for implementers to encrypt tenant data wherever it is stored
+on disk or transported over a network, such as the OpenStack volume encryption
+feature described below. This is above and beyond the general recommendation
+that users encrypt their own data before sending it to their provider.</p>
+<p>The importance of encrypting data on behalf of tenants is largely related to
+the risk assumed by a provider that an attacker could access tenant data. There
+may be requirements here in government, as well as requirements per-policy, in
+private contract, or even in case law in regard to private contracts for public
+cloud providers. It is recommended that a risk assessment and legal consul
+advised before choosing tenant encryption policies.</p>
+<p>Per-instance or per-object encryption is preferable over, in descending order,
+per-project, per-tenant, per-host, and per-cloud aggregations. This
+recommendation is inverse to the complexity and difficulty of implementation.
+Presently, in some projects it is difficult or impossible to implement
+encryption as loosely granular as even per-tenant. We recommend implementors
+make a best-effort in encrypting tenant data.</p>
+<p>Often, data encryption relates positively to the ability to reliably destroy
+tenant and per-instance data, simply by throwing away the keys. It should be
+noted that in doing so, it becomes of great importance to destroy those keys in
+a reliable and secure manner.</p>
+<p>Opportunities to encrypt data for users are present:</p>
+<ul class="simple">
+<li><p>Object Storage objects</p></li>
+<li><p>Network data</p></li>
+</ul>
+<section id="volume-encryption">
+<h2>Volume encryption<a class="headerlink" href="#volume-encryption" title="Link to this heading">¶</a></h2>
+<p>A volume encryption feature in OpenStack supports privacy on a per-tenant
+basis. As of the Kilo release, the following features are supported:</p>
+<ul class="simple">
+<li><p>Creation and usage of encrypted volume types, initiated through the
+dashboard or a command line interface</p>
+<ul>
+<li><p>Enable encryption and select parameters such as encryption
+algorithm and key size</p></li>
+</ul>
+</li>
+<li><p>Volume data contained within iSCSI packets is encrypted</p></li>
+<li><p>Supports encrypted backups if the original volume is encrypted</p></li>
+<li><p>Dashboard indication of volume encryption status. Includes indication
+that a volume is encrypted, and includes the encryption parameters
+such as algorithm and key size</p></li>
+<li><p>Interface with the Key management service through a secure wrapper</p>
+<ul>
+<li><p>Volume encryption is supported by back-end key storage for
+enhanced security (for example, a Hardware Security Module (HSM)
+or a KMIP server can be used as a barbican back-end secret store)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="ephemeral-disk-encryption">
+<h2>Ephemeral disk encryption<a class="headerlink" href="#ephemeral-disk-encryption" title="Link to this heading">¶</a></h2>
+<p>An ephemeral disk encryption feature addresses data privacy. The ephemeral disk
+is a temporary work space used by the virtual host operating system. Without
+encryption, sensitive user information could be accessed on this disk, and
+vestigial information could remain after the disk is unmounted. As of the Kilo
+release, the following ephemeral disk encryption features are supported:</p>
+<ul class="simple">
+<li><p>Creation and usage of encrypted LVM ephemeral disks (note: At this time
+OpenStack Compute service only supports encrypting ephemeral disks in the
+LVM format)</p>
+<ul>
+<li><p>The compute configuration, <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code>, has the following default
+parameters within the “[ephemeral_storage_encryption]” section</p>
+<ul>
+<li><p><strong>option</strong>: ‘cipher = aes-xts-plain64’</p>
+<ul>
+<li><p>This field sets the cipher and mode used to encrypt ephemeral
+storage. AES-XTS is recommended by <a class="reference external" href="http://csrc.nist.gov/publications/nistpubs/800-38E/nist-sp-800-38E.pdf">NIST</a> specifically for disk
+storage, and the name is shorthand for AES encryption using the
+XTS encryption mode. Available ciphers depend on kernel support.
+At the command line, type ‘cryptsetup benchmark’ to determine the
+available options (and see benchmark results), or go to
+<em>/proc/crypto</em></p></li>
+</ul>
+</li>
+<li><p><strong>option</strong>: ‘enabled = false’</p>
+<ul>
+<li><p>To use ephemeral disk encryption, set <strong>option</strong>: ‘enabled = true’</p></li>
+</ul>
+</li>
+<li><p><strong>option</strong>: ‘key_size = 512’</p>
+<ul>
+<li><p>Note that there may be a key size limitation from the backend key
+manager that could require the use of ‘key_size = 256’, which would
+only provide an AES key size of 128-bits. XTS requires it’s own
+“tweak key” in addition to the encryption key AES requires.
+This is typically expressed as a single large key. In this case,
+using the 512-bit setting, 256 bits will be used by AES and 256 bits
+by XTS. (see <a class="reference external" href="http://csrc.nist.gov/publications/nistpubs/800-38E/nist-sp-800-38E.pdf">NIST</a>)</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Interface with the Key management service through a secure wrapper</p>
+<ul>
+<li><p>Key management service will support data isolation by providing
+ephemeral disk encryption keys on a per-tenant basis</p></li>
+<li><p>Ephemeral disk encryption is supported by back-end key storage for
+enhanced security (for example, an HSM or a KMIP server can be
+used as a barbican back-end secret store)</p></li>
+<li><p>With the Key management service, when an ephemeral disk is no
+longer needed, simply deleting the key may take the place of
+overwriting the ephemeral disk storage area</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="object-storage-objects">
+<h2>Object Storage objects<a class="headerlink" href="#object-storage-objects" title="Link to this heading">¶</a></h2>
+<p>Object Storage (swift) supports the optional encryption of object data at rest
+on storage nodes. The encryption of object data is intended to mitigate the
+risk of users’ data being read if an unauthorized party were to gain
+physical access to a disk.</p>
+<p>Encryption of data at rest is implemented by middleware that may be included in
+the proxy server WSGI pipeline. The feature is internal to a swift cluster and
+not exposed through the API. Clients are unaware that data is encrypted by
+this feature internally to the swift service; internally encrypted data
+should never be returned to clients through the swift API.</p>
+<p>The following data are encrypted while at rest in swift:</p>
+<ul class="simple">
+<li><p>Object content. For example, the content of an object PUT request’s body</p></li>
+<li><p>The entity tag (ETag) of objects that have non-zero content</p></li>
+<li><p>All custom user object metadata values. For example, metadata sent using
+<code class="docutils literal notranslate"><span class="pre">X-Object-Meta-</span></code> prefixed headers with PUT or POST requests</p></li>
+</ul>
+<p>Any data or metadata not included in the list above are not encrypted,
+including:</p>
+<ul class="simple">
+<li><p>Account, container, and object names</p></li>
+<li><p>Account and container custom user metadata values</p></li>
+<li><p>All custom user metadata names</p></li>
+<li><p>Object Content-Type values</p></li>
+<li><p>Object size</p></li>
+<li><p>System metadata</p></li>
+</ul>
+<p>For more information on the deployment, operation, or implementation of
+Object Storage encryption, see the swift Developer Documentation on
+<a class="reference external" href="49.html">Object Encryption</a>.</p>
+</section>
+<section id="block-storage-performance-and-backends">
+<h2>Block Storage performance and backends<a class="headerlink" href="#block-storage-performance-and-backends" title="Link to this heading">¶</a></h2>
+<p>When enabling the operating system, OpenStack Volume Encryption
+performance can be enhanced by using the hardware acceleration features
+currently available in both Intel and AMD processors. Both the OpenStack Volume
+Encryption feature and the OpenStack Ephemeral Disk Encryption feature use
+<code class="docutils literal notranslate"><span class="pre">dm-crypt</span></code> to secure volume data. <code class="docutils literal notranslate"><span class="pre">dm-crypt</span></code> is a transparent disk
+encryption capability in Linux kernel versions 2.6 and later.  When the Volume
+Encryption is enabled, encrypted data is sent over iSCSI to Block Storage,
+securing data in transit and data at rest simultaneously. When using hardware
+acceleration, the performance impact of both of the encryption features is
+minimized.</p>
+<p>Although we recommend using the OpenStack Volume Encryption feature, Block
+Storage supports a large variety of alternative back-ends for supplying
+mountable volumes, and some of these may also provide volume encryption.
+Since there are so many <a class="reference external" href="https://docs.openstack.org/cinder/latest/drivers.html">back-ends</a>, and since
+information from each vendor must be obtained, it is outside the scope of this
+guide to specify recommendations for implementing encryption in any of them.</p>
+</section>
+<section id="network-data">
+<h2>Network data<a class="headerlink" href="#network-data" title="Link to this heading">¶</a></h2>
+<p>Tenant data for compute could be encrypted over IPsec or other tunnels. This
+is not functionality common or standard in OpenStack, but is an option
+available to motivated and interested implementors.</p>
+<p>Likewise, encrypted data will remain encrypted as it is transferred over the
+network.</p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

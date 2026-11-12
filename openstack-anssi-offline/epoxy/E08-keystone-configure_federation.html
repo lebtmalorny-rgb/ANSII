@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configuring Keystone for Federation · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="configuring-keystone-for-federation">
+<h1>Configuring Keystone for Federation<a class="headerlink" href="#configuring-keystone-for-federation" title="Link to this heading">¶</a></h1>
+<section id="keystone-as-a-service-provider-sp">
+<span id="keystone-as-sp"></span><h2>Keystone as a Service Provider (SP)<a class="headerlink" href="#keystone-as-a-service-provider-sp" title="Link to this heading">¶</a></h2>
+<section id="prerequisites">
+<span id="sp-prerequisites"></span><h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h3>
+<p>If you are not familiar with the idea of federated identity, see the
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/federation/introduction.html#federation-introduction"><span class="std std-ref">Introduction to Keystone Federation</span></a> first.</p>
+<p>In this section, we will configure keystone as a Service Provider, consuming
+identity properties issued by an external Identity Provider, such as SAML
+assertions or OpenID Connect claims. For testing purposes, we recommend using
+<a class="reference external" href="https://samltest.id">samltest.id</a>  as a SAML Identity Provider, or Google as an OpenID Connect
+Identity Provider, and the examples here will references those providers. If you
+plan to set up <a class="reference internal" href="#keystone-as-an-identity-provider-idp">Keystone as an Identity Provider (IdP)</a>, it is easiest to set
+up keystone with a dummy SAML provider first and then reconfigure it to point to
+the keystone Identity Provider later.</p>
+<p>The following configuration steps were performed on a machine running
+Ubuntu 16.04 and Apache 2.4.18.</p>
+<p>To enable federation, you’ll need to run keystone behind a web server such as
+Apache rather than running the WSGI application directly with uWSGI or Gunicorn.
+See the installation guide for <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-obs.html#suse-configure-apache"><span class="std std-ref">SUSE</span></a>,
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-rdo.html#redhat-configure-apache"><span class="std std-ref">RedHat</span></a> or <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-ubuntu.html#ubuntu-configure-apache"><span class="std std-ref">Ubuntu</span></a> to configure the Apache web server for
+keystone.</p>
+<p>Throughout the rest of the guide, you will need to decide on three pieces of
+information and use them consistently throughout your configuration:</p>
+<ol class="arabic simple">
+<li><p>The protocol name. This must be a valid keystone auth method and must match
+one of: <code class="docutils literal notranslate"><span class="pre">saml2</span></code>, <code class="docutils literal notranslate"><span class="pre">openid</span></code>, <code class="docutils literal notranslate"><span class="pre">mapped</span></code> or a <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/contributor/auth-plugins.html#auth-plugins"><span class="std std-ref">custom auth
+method</span></a> for which
+you must <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/contributor/developing-drivers.html#developing-drivers"><span class="std std-ref">register as an external driver</span></a>.</p></li>
+<li><p>The identity provider name. This can be arbitrary.</p></li>
+<li><p>The entity ID of the service provider. This should be a URN but need not
+resolve to anything.</p></li>
+</ol>
+<p>You will also need to decide what HTTPD module to use as a Service Provider.
+This guide provides examples for <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code> and <code class="docutils literal notranslate"><span class="pre">mod_auth_mellon</span></code> as SAML
+service providers, and <code class="docutils literal notranslate"><span class="pre">mod_auth_openidc</span></code> as an OpenID Connect Relying
+Party.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In this guide, the keystone Service Provider is configured on a host called
+sp.keystone.example.org listening on the standard HTTPS port. All keystone
+paths will start with the keystone version prefix, <code class="docutils literal notranslate"><span class="pre">/v3</span></code>. If you have
+configured keystone to listen on port 5000, or to respond on the path
+<code class="docutils literal notranslate"><span class="pre">/identity</span></code> (for example), take this into account in your own
+configuration.</p>
+</div>
+</section>
+<section id="creating-federation-resources-in-keystone">
+<h3>Creating federation resources in keystone<a class="headerlink" href="#creating-federation-resources-in-keystone" title="Link to this heading">¶</a></h3>
+<p>You need to create three resources via the keystone API to identify the Identity
+Provider to keystone and align remote user attributes with keystone objects:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#create-an-identity-provider">Create an Identity Provider</a></p></li>
+<li><p><a class="reference internal" href="#id1">Create a Mapping</a></p></li>
+<li><p><a class="reference internal" href="#create-a-protocol">Create a Protocol</a></p></li>
+</ul>
+<p>See also the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/#os-federation-api">keystone federation API reference</a>.</p>
+<section id="create-an-identity-provider">
+<h4>Create an Identity Provider<a class="headerlink" href="#create-an-identity-provider" title="Link to this heading">¶</a></h4>
+<p>Create an Identity Provider object in keystone, which represents the Identity
+Provider we will use to authenticate end users:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>identity<span class="w"> </span>provider<span class="w"> </span>create<span class="w"> </span>--remote-id<span class="w"> </span>https://samltest.id/saml/idp<span class="w"> </span>samltest
+</pre></div>
+</div>
+<p>The value for the <code class="docutils literal notranslate"><span class="pre">remote-id</span></code> option is the unique identifier provided by the
+Identity Provider, called the <cite>entity ID</cite> or the <cite>remote ID</cite>. For a SAML
+Identity Provider, it can found by querying its metadata endpoint:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>curl<span class="w"> </span>-s<span class="w"> </span>https://samltest.id/saml/idp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-o<span class="w"> </span><span class="s1">'entityID=".*"'</span>
+<span class="go">entityID="https://samltest.id/saml/idp"</span>
+</pre></div>
+</div>
+<p>For an OpenID Connect IdP, it is the Identity Provider’s Issuer Identifier.
+A remote ID must be globally unique: two identity providers cannot be associated
+with the same remote ID. The remote ID will usually appear as a URN but need
+not be a resolvable URL.</p>
+<p>The local name, called <code class="docutils literal notranslate"><span class="pre">samltest</span></code> in our example, is decided by you and will
+be used by the mapping and protocol, and later for authentication.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>An identity provider keystone object may have multiple <code class="docutils literal notranslate"><span class="pre">remote-ids</span></code>
+specified, this allows the same <em>keystone</em> identity provider resource to be
+used with multiple external identity providers. For example, an identity
+provider resource <code class="docutils literal notranslate"><span class="pre">university-idp</span></code>, may have the following <code class="docutils literal notranslate"><span class="pre">remote_ids</span></code>:
+<code class="docutils literal notranslate"><span class="pre">['university-x',</span> <span class="pre">'university-y',</span> <span class="pre">'university-z']</span></code>.
+This removes the need to configure N identity providers in keystone.</p>
+</div>
+<p>See also the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/#identity-providers">API reference on identity providers</a>.</p>
+</section>
+<section id="create-a-mapping">
+<span id="id1"></span><h4>Create a Mapping<a class="headerlink" href="#create-a-mapping" title="Link to this heading">¶</a></h4>
+<p>Next, create a mapping. A mapping is a set of rules that link the attributes of
+a remote user to user properties that keystone understands. It is especially
+useful for granting remote users authorization to keystone resources, either by
+associating them with a local keystone group and inheriting its role
+assignments, or dynamically provisioning projects within keystone based on these
+rules.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, group memberships that a user gets from a mapping are only valid
+for the duration of the token. It is possible to persist these groups
+memberships for a limited period of time. To enable this, either
+set the <code class="docutils literal notranslate"><span class="pre">authorization_ttl`</span> <span class="pre">attribute</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">identity</span> <span class="pre">provider,</span> <span class="pre">or</span> <span class="pre">the</span>
+<span class="pre">``[federation]</span> <span class="pre">default_authorization_ttl</span></code> in the keystone.conf file. This
+value is in minutes, and will result in a lag from when a user is removed
+from a group in the identity provider, and when that will happen in keystone.
+Please consider your security requirements carefully.</p>
+</div>
+<p>An Identity Provider has exactly one mapping specified per protocol.
+Mapping objects can be used multiple times by different combinations of Identity
+Provider and Protocol.</p>
+<p>As a simple example, create a mapping with a single rule to map all remote users
+to a local user in a single group in keystone:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>&gt;<span class="w"> </span>rules.json<span class="w"> </span>&lt;&lt;EOF
+<span class="go">[</span>
+<span class="go">    {</span>
+<span class="go">        "local": [</span>
+<span class="go">            {</span>
+<span class="go">                "user": {</span>
+<span class="go">                    "name": "{0}"</span>
+<span class="go">                },</span>
+<span class="go">                "group": {</span>
+<span class="go">                    "domain": {</span>
+<span class="go">                        "name": "Default"</span>
+<span class="go">                    },</span>
+<span class="go">                    "name": "federated_users"</span>
+<span class="go">                }</span>
+<span class="go">            }</span>
+<span class="go">        ],</span>
+<span class="go">        "remote": [</span>
+<span class="go">            {</span>
+<span class="go">                "type": "REMOTE_USER"</span>
+<span class="go">            }</span>
+<span class="go">        ]</span>
+<span class="go">    }</span>
+<span class="go">]</span>
+<span class="go">EOF</span>
+<span class="gp">$ </span>openstack<span class="w"> </span>mapping<span class="w"> </span>create<span class="w"> </span>--rules<span class="w"> </span>rules.json<span class="w"> </span>samltest_mapping
+</pre></div>
+</div>
+<p>This mapping rule evaluates the <code class="docutils literal notranslate"><span class="pre">REMOTE_USER</span></code> variable set by the HTTPD auth
+module and uses it to fill in the name of the local user in keystone. It also
+ensures all remote users become effective members of the <code class="docutils literal notranslate"><span class="pre">federated_users</span></code>
+group, thereby inheriting the group’s role assignments.</p>
+<p>In this example, the <code class="docutils literal notranslate"><span class="pre">federated_users</span></code> group must exist in the keystone
+Identity backend and must have a role assignment on some project, domain, or
+system in order for federated users to have an authorization in keystone. For
+example, to create the group:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>group<span class="w"> </span>create<span class="w"> </span>federated_users
+</pre></div>
+</div>
+<p>Create a project these users should be assigned to:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>project<span class="w"> </span>create<span class="w"> </span>federated_project
+</pre></div>
+</div>
+<p>Assign the group a <code class="docutils literal notranslate"><span class="pre">member</span></code> role in the project:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>role<span class="w"> </span>add<span class="w"> </span>--group<span class="w"> </span>federated_users<span class="w"> </span>--project<span class="w"> </span>federated_project<span class="w"> </span>member
+</pre></div>
+</div>
+<p>Mappings can be quite complex. A detailed guide can be found on the
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/federation/mapping_combinations.html"><span class="doc">Mapping Combinations</span></a> page.</p>
+<p>See also the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/#mappings">API reference on mapping rules</a>.</p>
+</section>
+<section id="create-a-protocol">
+<h4>Create a Protocol<a class="headerlink" href="#create-a-protocol" title="Link to this heading">¶</a></h4>
+<p>Now create a federation protocol. A federation protocol object links the
+Identity Provider to a mapping.</p>
+<p>You can create a protocol like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>federation<span class="w"> </span>protocol<span class="w"> </span>create<span class="w"> </span>saml2<span class="w"> </span><span class="se">\</span>
+--mapping<span class="w"> </span>samltest_mapping<span class="w"> </span>--identity-provider<span class="w"> </span>samltest
+</pre></div>
+</div>
+<p>As mentioned in <a class="reference internal" href="#sp-prerequisites"><span class="std std-ref">Prerequisites</span></a>, the name you give the protocol is not
+arbitrary, it must be a valid auth method.</p>
+<p>See also the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/#protocols">API reference for federation protocols</a>.</p>
+</section>
+</section>
+<section id="configuring-an-httpd-auth-module">
+<h3>Configuring an HTTPD auth module<a class="headerlink" href="#configuring-an-httpd-auth-module" title="Link to this heading">¶</a></h3>
+<p>This guide currently only includes examples for the Apache web server, but it
+possible to use SAML, OpenIDC, and other auth modules in other web servers. See
+the installation guides for running keystone behind Apache for
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-obs.html#suse-configure-apache"><span class="std std-ref">SUSE</span></a>, <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-rdo.html#redhat-configure-apache"><span class="std std-ref">RedHat</span></a> or <a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-ubuntu.html#ubuntu-configure-apache"><span class="std std-ref">Ubuntu</span></a>.</p>
+<section id="configure-protected-endpoints">
+<h4>Configure protected endpoints<a class="headerlink" href="#configure-protected-endpoints" title="Link to this heading">¶</a></h4>
+<p>There is a minimum of one endpoint that must be protected in the VirtualHost
+configuration for the keystone service:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/OS-FEDERATION/identity_providers/IDENTITYPROVIDER/protocols/PROTOCOL/auth</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>This is the endpoint for federated users to request an unscoped token.</p>
+<p>If configuring WebSSO, you should also protect one or both of the following
+endpoints:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/websso/PROTOCOL</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/identity_providers/IDENTITYPROVIDER/protocols/PROTOCOL/websso</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>The first example only specifies a protocol, and keystone will use the incoming
+remote ID to determine the Identity Provider. The second specifies the Identity
+Provider directly, which must then be supplied to horizon when configuring
+<a class="reference internal" href="#configuring-horizon-as-a-websso-frontend">horizon for WebSSO</a>.</p>
+<p>The path must exactly match the path that will be used to access the keystone
+service. For example, if the identity provider you created in <a class="reference internal" href="#create-an-identity-provider">Create an
+Identity Provider</a> is <code class="docutils literal notranslate"><span class="pre">samltest</span></code> and the protocol you created in <a class="reference internal" href="#create-a-protocol">Create a
+Protocol</a> is <code class="docutils literal notranslate"><span class="pre">saml2</span></code>, then the Locations will be:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/OS-FEDERATION/identity_providers/samltest/protocols/saml2/auth</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/websso/saml2</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/identity_providers/samltest/protocols/saml2/websso</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>However, if you have configured the keystone service to use a virtual path such as
+<code class="docutils literal notranslate"><span class="pre">/identity</span></code>, that part of the path should be included:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/identity/v3/OS-FEDERATION/identity_providers/samltest/protocols/saml2/auth</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">  </span><span class="nb">AuthType</span><span class="w"> </span>[...]
+<span class="w">  </span>...
+<span class="nt">&lt;/Location&gt;</span>
+...
+</pre></div>
+</div>
+</section>
+<section id="configure-the-auth-module">
+<h4>Configure the auth module<a class="headerlink" href="#configure-the-auth-module" title="Link to this heading">¶</a></h4>
+<p>If your Identity Provider is a SAML IdP, there are two main Apache modules that
+can be used as a SAML Service Provider: <cite>mod_shib</cite> and <cite>mod_auth_mellon</cite>. For
+an OpenID Connect Identity Provider, <cite>mod_auth_openidc</cite> is used. You can also
+use other auth modules such as kerberos, X.509, or others. Check the
+documentation for the provider you choose for detailed installation and
+configuration guidance.</p>
+<p>Depending on the Service Provider module you’ve chosen, you will need to install
+the applicable Apache module package and follow additional configuration steps.
+This guide contains examples for two major federation protocols:</p>
+<ul class="simple">
+<li><p>SAML2.0 - see guides for the following implementations:</p>
+<ul>
+<li><p><a class="reference internal" href="#shibboleth"><span class="std std-ref">Set up mod_shib</span></a>.</p></li>
+<li><p><a class="reference internal" href="#mellon"><span class="std std-ref">Set up mod_auth_mellon</span></a>.</p></li>
+</ul>
+</li>
+<li><p>OpenID Connect: <a class="reference internal" href="#federation-openidc"><span class="std std-ref">Set up mod_auth_openidc</span></a>.</p></li>
+</ul>
+</section>
+</section>
+<section id="configuring-keystone">
+<span id="federation-configuring-keystone"></span><h3>Configuring Keystone<a class="headerlink" href="#configuring-keystone" title="Link to this heading">¶</a></h3>
+<p>While the Apache module does the majority of the heavy lifting, minor changes
+are needed to allow keystone to allow and understand federated authentication.</p>
+<section id="add-the-auth-method">
+<h4>Add the Auth Method<a class="headerlink" href="#add-the-auth-method" title="Link to this heading">¶</a></h4>
+<p>Add the authentication methods to the <code class="docutils literal notranslate"><span class="pre">[auth]</span></code> section in <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code>.
+The auth method here must have the same name as the protocol you created in
+<a class="reference internal" href="#create-a-protocol">Create a Protocol</a>. You should also remove <code class="docutils literal notranslate"><span class="pre">external</span></code> as an allowable
+method.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">[auth]</span>
+<span class="go">methods = password,token,saml2,openid</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-the-remote-id-attribute">
+<h4>Configure the Remote ID Attribute<a class="headerlink" href="#configure-the-remote-id-attribute" title="Link to this heading">¶</a></h4>
+<p>Keystone is mostly apathetic about what HTTPD auth module you choose to
+configure for your Service Provider, but must know what header key to look for
+from the auth module to determine the Identity Provider’s remote ID so it can
+associate the incoming request with the Identity Provider resource. The key name
+is decided by the auth module choice:</p>
+<ul class="simple">
+<li><p>For <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code>: use <code class="docutils literal notranslate"><span class="pre">Shib-Identity-Provider</span></code></p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">mod_auth_mellon</span></code>: the attribute name is configured with the
+<code class="docutils literal notranslate"><span class="pre">MellonIdP</span></code> parameter in the VirtualHost configuration, if set to e.g.
+<code class="docutils literal notranslate"><span class="pre">IDP</span></code> then use <code class="docutils literal notranslate"><span class="pre">MELLON_IDP</span></code></p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">mod_auth_openidc</span></code>: the attribute name is related to the
+<code class="docutils literal notranslate"><span class="pre">OIDCClaimPrefix</span></code> parameter in the Apache configuration, if set to e.g.
+<code class="docutils literal notranslate"><span class="pre">OIDC-</span></code> use <code class="docutils literal notranslate"><span class="pre">HTTP_OIDC_ISS</span></code></p></li>
+</ul>
+<p>It is recommended that this option be set on a per-protocol basis by creating a
+new section named after the protocol:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[saml2]</span>
+<span class="na">remote_id_attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">Shib-Identity-Provider</span>
+<span class="k">[openid]</span>
+<span class="na">remote_id_attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">HTTP_OIDC_ISS</span>
+</pre></div>
+</div>
+<p>Alternatively, a generic option may be set at the <code class="docutils literal notranslate"><span class="pre">[federation]</span></code> level.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[federation]</span>
+<span class="na">remote_id_attribute</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">HTTP_OIDC_ISS</span>
+</pre></div>
+</div>
+</section>
+<section id="add-a-trusted-dashboard-websso">
+<h4>Add a Trusted Dashboard (WebSSO)<a class="headerlink" href="#add-a-trusted-dashboard-websso" title="Link to this heading">¶</a></h4>
+<p>If you intend to configure horizon as a WebSSO frontend, you must specify the
+URLs of trusted horizon servers. This value may be repeated multiple times. This
+setting ensures that keystone only sends token data back to trusted servers.
+This is performed as a precaution, specifically to prevent man-in-the-middle
+(MITM) attacks. The value must exactly match the origin address sent by the
+horizon server, including any trailing slashes.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[federation]</span>
+<span class="na">trusted_dashboard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">https://horizon1.example.org/auth/websso/</span>
+<span class="na">trusted_dashboard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">https://horizon2.example.org/auth/websso/</span>
+</pre></div>
+</div>
+</section>
+<section id="add-the-callback-template-websso">
+<h4>Add the Callback Template (WebSSO)<a class="headerlink" href="#add-the-callback-template-websso" title="Link to this heading">¶</a></h4>
+<p>If you intend to configure horizon as a WebSSO frontend,  and if not already
+done for you by your distribution’s keystone package, copy the
+<a class="reference external" href="https://opendev.org/openstack/keystone/raw/branch/master/etc/sso_callback_template.html">sso_callback_template.html</a> template into the location specified by the
+<code class="docutils literal notranslate"><span class="pre">[federation]/sso_callback_template</span></code> option in <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code>. You can also
+use this template as an example to create your own custom HTML redirect page.</p>
+<p>Restart the keystone WSGI service or the Apache frontend service after making
+changes to your keystone configuration.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>restart<span class="w"> </span>apache2
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuring-horizon-as-a-websso-frontend">
+<span id="horizon-websso"></span><h3>Configuring Horizon as a WebSSO Frontend<a class="headerlink" href="#configuring-horizon-as-a-websso-frontend" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Consult <a class="reference external" href="https://docs.openstack.org/horizon/latest/configuration/settings.html">horizon’s official documentation</a> for details on configuring
+horizon.</p>
+</div>
+<p>Keystone on its own is not capable of supporting a browser-based Single Sign-on
+authentication flow such as the SAML2.0 WebSSO profile, therefore we must enlist
+horizon’s assistance. Horizon can be configured to support SSO by enabling it in
+horizon’s <code class="docutils literal notranslate"><span class="pre">local_settings.py</span></code> configuration file and adding the possible
+authentication choices that will be presented to the user on the login screen.</p>
+<p>Ensure the <cite>WEBSSO_ENABLED</cite> option is set to <cite>True</cite> in horizon’s local_settings.py file,
+this will provide users with an updated login screen for horizon.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">WEBSSO_ENABLED</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>Configure the options for authenticating that a user may choose from at the
+login screen. The pairs configured in this list map a user-friendly string to an
+authentication option, which may be one of:</p>
+<ul class="simple">
+<li><p>The string <code class="docutils literal notranslate"><span class="pre">credentials</span></code> which forces horizon to present its own username
+and password fields that the user will use to authenticate as a local keystone
+user</p></li>
+<li><p>The name of a protocol that you created in <a class="reference internal" href="#create-a-protocol">Create a Protocol</a>, such as
+<code class="docutils literal notranslate"><span class="pre">saml2</span></code> or <code class="docutils literal notranslate"><span class="pre">openid</span></code>, which will cause horizon to call keystone’s <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/index.html#web-single-sign-on-authentication-new-in-version-1-2">WebSSO
+API without an Identity Provider</a> to authenticate the user</p></li>
+<li><p>A string that maps to an Identity Provider and Protocol combination configured
+in <code class="docutils literal notranslate"><span class="pre">WEBSSO_IDP_MAPPING</span></code> which will cause horizon to call keystone’s <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/index.html#web-single-sign-on-authentication-new-in-version-1-3">WebSSO
+API specific to the given Identity Provider</a>.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">WEBSSO_CHOICES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="s2">"credentials"</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s2">"Keystone Credentials"</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">"openid"</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s2">"OpenID Connect"</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">"saml2"</span><span class="p">,</span> <span class="n">_</span><span class="p">(</span><span class="s2">"Security Assertion Markup Language"</span><span class="p">)),</span>
+    <span class="p">(</span><span class="s2">"myidp_openid"</span><span class="p">,</span> <span class="s2">"Acme Corporation - OpenID Connect"</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">"myidp_saml2"</span><span class="p">,</span> <span class="s2">"Acme Corporation - SAML2"</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">WEBSSO_IDP_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"myidp_openid"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"myidp"</span><span class="p">,</span> <span class="s2">"openid"</span><span class="p">),</span>
+    <span class="s2">"myidp_saml2"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"myidp"</span><span class="p">,</span> <span class="s2">"saml2"</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The initial selection of the dropdown menu can also be configured:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">WEBSSO_INITIAL_CHOICE</span> <span class="o">=</span> <span class="s2">"credentials"</span>
+</pre></div>
+</div>
+<p>Remember to restart the web server when finished configuring horizon:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>restart<span class="w"> </span>apache2
+</pre></div>
+</div>
+</section>
+<section id="authenticating">
+<h3>Authenticating<a class="headerlink" href="#authenticating" title="Link to this heading">¶</a></h3>
+<section id="use-the-cli-to-authenticate-with-a-saml2-0-identity-provider">
+<h4>Use the CLI to authenticate with a SAML2.0 Identity Provider<a class="headerlink" href="#use-the-cli-to-authenticate-with-a-saml2-0-identity-provider" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">python-openstackclient</span></code> can be used to authenticate a federated user in a
+SAML Identity Provider to keystone.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The SAML Identity Provider must be configured to support the ECP
+authentication profile.</p>
+</div>
+<p>To use the CLI tool, you must have the name of the Identity Provider
+resource in keystone, the name of the federation protocol configured in
+keystone, and the ECP endpoint for the Identity Provider. If you are the cloud
+administrator, the name of the Identity Provider and protocol was configured in
+<a class="reference internal" href="#create-an-identity-provider">Create an Identity Provider</a> and <a class="reference internal" href="#create-a-protocol">Create a Protocol</a> respectively. If you are
+not the administrator, you must obtain this information from the administrator.</p>
+<p>The ECP endpoint for the Identity Provider can be obtained from its metadata
+without involving an administrator. This endpoint is the
+<code class="docutils literal notranslate"><span class="pre">urn:oasis:names:tc:SAML:2.0:bindings:SOAP</span></code> binding in the metadata document:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>curl<span class="w"> </span>-s<span class="w"> </span>https://samltest.id/saml/idp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>urn:oasis:names:tc:SAML:2.0:bindings:SOAP
+<span class="go">     &lt;SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://samltest.id/idp/profile/SAML2/SOAP/ECP"/&gt;</span>
+</pre></div>
+</div>
+<section id="find-available-scopes">
+<h5>Find available scopes<a class="headerlink" href="#find-available-scopes" title="Link to this heading">¶</a></h5>
+<p>If you are a new user and are not aware of what resources you have access to,
+you can use an unscoped query to list the projects or domains you have been
+granted a role assignment on:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">OS_AUTH_TYPE</span><span class="o">=</span>v3samlpassword
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_PROVIDER</span><span class="o">=</span>samltest
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_PROVIDER_URL</span><span class="o">=</span>https://samltest.id/idp/profile/SAML2/SOAP/ECP
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PROTOCOL</span><span class="o">=</span>saml2
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_USERNAME</span><span class="o">=</span>morty
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PASSWORD</span><span class="o">=</span>panic
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_AUTH_URL</span><span class="o">=</span>https://sp.keystone.example.org/v3
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_API_VERSION</span><span class="o">=</span><span class="m">3</span>
+openstack<span class="w"> </span>federation<span class="w"> </span>project<span class="w"> </span>list
+openstack<span class="w"> </span>federation<span class="w"> </span>domain<span class="w"> </span>list
+</pre></div>
+</div>
+</section>
+<section id="get-a-scoped-token">
+<h5>Get a scoped token<a class="headerlink" href="#get-a-scoped-token" title="Link to this heading">¶</a></h5>
+<p>If you already know the project, domain or system you wish to scope to, you can
+directly request a scoped token:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">OS_AUTH_TYPE</span><span class="o">=</span>v3samlpassword
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_PROVIDER</span><span class="o">=</span>samltest
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_PROVIDER_URL</span><span class="o">=</span>https://samltest.id/idp/profile/SAML2/SOAP/ECP
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PROTOCOL</span><span class="o">=</span>saml2
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_USERNAME</span><span class="o">=</span>morty
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PASSWORD</span><span class="o">=</span>panic
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_AUTH_URL</span><span class="o">=</span>https://sp.keystone.example.org/v3
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_IDENTITY_API_VERSION</span><span class="o">=</span><span class="m">3</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PROJECT_NAME</span><span class="o">=</span>federated_project
+<span class="nb">export</span><span class="w"> </span><span class="nv">OS_PROJECT_DOMAIN_NAME</span><span class="o">=</span>Default
+openstack<span class="w"> </span>token<span class="w"> </span>issue
+</pre></div>
+</div>
+</section>
+</section>
+<section id="use-horizon-to-authenticate-with-an-external-identity-provider">
+<h4>Use horizon to authenticate with an external Identity Provider<a class="headerlink" href="#use-horizon-to-authenticate-with-an-external-identity-provider" title="Link to this heading">¶</a></h4>
+<p>When horizon is configured to enable WebSSO, a dropdown menu will appear on the
+login screen before the user has authenticated. Select an authentication method
+from the menu to be redirected to your Identity Provider for authentication.</p>
+<a class="reference internal image-reference" href="images/horizon-login-sp.png"><img alt="Horizon login screen using external authentication" src="images/horizon-login-sp.png">
+</a>
+</section>
+</section>
+</section>
+<section id="keystone-as-an-identity-provider-idp">
+<span id="keystone-as-idp"></span><h2>Keystone as an Identity Provider (IdP)<a class="headerlink" href="#keystone-as-an-identity-provider-idp" title="Link to this heading">¶</a></h2>
+<section id="id2">
+<h3>Prerequisites<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>When keystone is configured as an Identity Provider, it is often referred to as
+<cite>Keystone to Keystone</cite>, because it enables federation between multiple OpenStack
+clouds using the SAML2.0 protocol.</p>
+<p>If you are not familiar with the idea of federated identity, see the
+<a class="reference internal" href="https://docs.openstack.org/keystone/2025.1/admin/federation/introduction.html#federation-introduction"><span class="std std-ref">introduction</span></a> first.</p>
+<p>When setting up <cite>Keystone to Keystone</cite>, it is easiest to
+<a class="reference internal" href="#keystone-as-sp"><span class="std std-ref">configure a keystone Service Provider</span></a>  first
+with a sandbox Identity Provider such as
+<a class="reference external" href="https://samltest.id">samltest.id</a>.</p>
+<p>This feature requires installation of the xmlsec1 tool via your distribution
+packaging system (for instance apt or yum)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>apt-get<span class="w"> </span>install<span class="w"> </span>xmlsec1
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In this guide, the keystone Identity Provider is configured on a host called
+idp.keystone.example.org listening on the standard HTTPS port. All keystone
+paths will start with the keystone version prefix, <code class="docutils literal notranslate"><span class="pre">/v3</span></code>. If you have
+configured keystone to listen on port 5000, or to respond on the path
+<code class="docutils literal notranslate"><span class="pre">/identity</span></code> (for example), take this into account in your own
+configuration.</p>
+</div>
+</section>
+<section id="configuring-metadata">
+<h3>Configuring Metadata<a class="headerlink" href="#configuring-metadata" title="Link to this heading">¶</a></h3>
+<p>Since keystone is acting as a SAML Identity Provider, its metadata must be
+configured in the <code class="docutils literal notranslate"><span class="pre">[saml]</span></code> section (not to be confused with an optional
+<code class="docutils literal notranslate"><span class="pre">[saml2]</span></code> section which you may have configured in <a class="reference internal" href="#configure-the-remote-id-attribute">Configure the Remote Id
+Attribute</a> while setting up keystone as Service Provider) of <code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code>
+so that it can served by the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/index.html#retrieve-metadata-properties">metadata API</a>.</p>
+<p>The two parameters that <strong>must</strong> be set in order for keystone to generate
+metadata are <code class="docutils literal notranslate"><span class="pre">idp_entity_id</span></code> and <code class="docutils literal notranslate"><span class="pre">idp_sso_endpoint</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[saml]</span>
+<span class="na">idp_entity_id</span><span class="o">=</span><span class="s">https://idp.keystone.example.org/v3/OS-FEDERATION/saml2/idp</span>
+<span class="na">idp_sso_endpoint</span><span class="o">=</span><span class="s">https://idp.keystone.example.org/v3/OS-FEDERATION/saml2/sso</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">idp_entity_id</span></code> sets the Identity Provider entity ID, which is a string of
+your choosing that uniquely identifies the Identity Provider to any Service
+Provider.</p>
+<p><code class="docutils literal notranslate"><span class="pre">idp_sso_endpoint</span></code> is required to generate valid metadata, but its value is
+currently not used because keystone as an Identity Provider does not support the
+SAML2.0 WebSSO auth profile. This may change in the future which is why there is
+no default value provided and must be set by the operator.</p>
+<p>For completeness, the following Organization and Contact configuration options
+should also be updated to reflect your organization and administrator contact
+details.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">idp_organization_name</span><span class="o">=</span><span class="s">example_company</span>
+<span class="na">idp_organization_display_name</span><span class="o">=</span><span class="s">Example Corp.</span>
+<span class="na">idp_organization_url</span><span class="o">=</span><span class="s">example.com</span>
+<span class="na">idp_contact_company</span><span class="o">=</span><span class="s">example_company</span>
+<span class="na">idp_contact_name</span><span class="o">=</span><span class="s">John</span>
+<span class="na">idp_contact_surname</span><span class="o">=</span><span class="s">Smith</span>
+<span class="na">idp_contact_email</span><span class="o">=</span><span class="s">jsmith@example.com</span>
+<span class="na">idp_contact_telephone</span><span class="o">=</span><span class="s">555-555-5555</span>
+<span class="na">idp_contact_type</span><span class="o">=</span><span class="s">technical</span>
+</pre></div>
+</div>
+<p>It is important to take note of the default <code class="docutils literal notranslate"><span class="pre">certfile</span></code> and <code class="docutils literal notranslate"><span class="pre">keyfile</span></code>
+options, and adjust them if necessary:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">certfile</span><span class="o">=</span><span class="s">/etc/keystone/ssl/certs/signing_cert.pem</span>
+<span class="na">keyfile</span><span class="o">=</span><span class="s">/etc/keystone/ssl/private/signing_key.pem</span>
+</pre></div>
+</div>
+<p>You must generate a PKI key pair and copy the files to these paths. You can use
+the <code class="docutils literal notranslate"><span class="pre">openssl</span></code> tool to do so. Keystone does not provide a utility for this.</p>
+<p>Check the <code class="docutils literal notranslate"><span class="pre">idp_metadata_path</span></code> setting and adjust it if necessary:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">idp_metadata_path</span><span class="o">=</span><span class="s">/etc/keystone/saml2_idp_metadata.xml</span>
+</pre></div>
+</div>
+<p>To create metadata for your keystone IdP, run the <code class="docutils literal notranslate"><span class="pre">keystone-manage</span></code> command
+and redirect the output to a file. For example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>keystone-manage<span class="w"> </span>saml_idp_metadata<span class="w"> </span>&gt;<span class="w"> </span>/etc/keystone/saml2_idp_metadata.xml
+</pre></div>
+</div>
+<p>Finally, restart the keystone WSGI service or the web server frontend:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>restart<span class="w"> </span>apache2
+</pre></div>
+</div>
+</section>
+<section id="creating-a-service-provider-resource">
+<h3>Creating a Service Provider Resource<a class="headerlink" href="#creating-a-service-provider-resource" title="Link to this heading">¶</a></h3>
+<p>Create a Service Provider resource to represent your Service Provider as an
+object in keystone:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>provider<span class="w"> </span>create<span class="w"> </span>keystonesp<span class="w"> </span><span class="se">\</span>
+--service-provider-url<span class="w"> </span>https://sp.keystone.example.org/Shibboleth.sso/SAML2/ECP
+<span class="go">--auth-url https://sp.keystone.example.org/v3/OS-FEDERATION/identity_providers/keystoneidp/protocols/saml2/auth</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">--auth-url</span></code> is the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3-ext/index.html#request-an-unscoped-os-federation-token">federated auth endpoint</a> for a specific Identity
+Provider and protocol name, here named <code class="docutils literal notranslate"><span class="pre">keystoneidp</span></code> and <code class="docutils literal notranslate"><span class="pre">saml2</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--service-provider-url</span></code> is the
+<code class="docutils literal notranslate"><span class="pre">urn:oasis:names:tc:SAML:2.0:bindings:PAOS</span></code> binding for the Assertion Consumer
+Service of the Service Provider. It can be obtained from the Service Provider
+metadata:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>curl<span class="w"> </span>-s<span class="w"> </span>https://sp.keystone.example.org/Shibboleth.sso/Metadata<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>urn:oasis:names:tc:SAML:2.0:bindings:PAOS
+<span class="go">&lt;md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="https://sp.keystone.example.org/Shibboleth.sso/SAML2/ECP" index="4"/&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Authenticating<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<section id="use-the-cli-to-authenticate-with-keystone-to-keystone">
+<h4>Use the CLI to authenticate with Keystone-to-Keystone<a class="headerlink" href="#use-the-cli-to-authenticate-with-keystone-to-keystone" title="Link to this heading">¶</a></h4>
+<p>Use <code class="docutils literal notranslate"><span class="pre">python-openstackclient</span></code> to authenticate with the IdP and then get a
+scoped token from the SP.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">export OS_USERNAME=demo</span>
+<span class="go">export OS_PASSWORD=nomoresecret</span>
+<span class="go">export OS_AUTH_URL=https://idp.keystone.example.org/v3</span>
+<span class="go">export OS_IDENTITY_API_VERSION=3</span>
+<span class="go">export OS_PROJECT_NAME=federated_project</span>
+<span class="go">export OS_PROJECT_DOMAIN_NAME=Default</span>
+<span class="go">export OS_SERVICE_PROVIDER=keystonesp</span>
+<span class="go">export OS_REMOTE_PROJECT_NAME=federated_project</span>
+<span class="go">export OS_REMOTE_PROJECT_DOMAIN_NAME=Default</span>
+<span class="go">openstack token issue</span>
+</pre></div>
+</div>
+</section>
+<section id="use-horizon-to-switch-clouds">
+<h4>Use Horizon to switch clouds<a class="headerlink" href="#use-horizon-to-switch-clouds" title="Link to this heading">¶</a></h4>
+<p>No additional configuration is necessary to enable horizon for
+Keystone to Keystone. Log into the horizon instance for the Identity Provider
+using your regular local keystone credentials. Once logged in, you will see a
+Service Provider dropdown menu which you can use to switch your dashboard view
+to another cloud.</p>
+<a class="reference internal image-reference" href="images/horizon-login-idp.png"><img alt="Horizon dropdown menu for switching between keystone providers" src="images/horizon-login-idp.png">
+</a>
+</section>
+</section>
+</section>
+<section id="setting-up-openid-connect">
+<span id="federation-openidc"></span><h2>Setting Up OpenID Connect<a class="headerlink" href="#setting-up-openid-connect" title="Link to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="#keystone-as-sp"><span class="std std-ref">Keystone as a Service Provider (SP)</span></a> before proceeding with these OpenIDC-specific
+instructions.</p>
+<p>When using OpenID Connect, you must have a third party <a class="reference external" href="https://openid.net/developers/how-connect-works/">OpenID Provider or
+Identity Provider</a>. Some examples of OpenID Connect Providers are Google,
+Keycloak, Microsoft Entra, and GitLab. Keystone will use <a class="reference external" href="https://github.com/OpenIDC/mod_auth_openidc">mod_auth_openidc</a>
+to enable Keystone to act as an OpenID Connect Relying Party, which is
+the name of an application that depends on an OpenID Connect Provider for
+identity. You must add an OpenID Connect Client representing the Keystone
+Service Provider in your OpenID Connect Provider.</p>
+<p>Claims are pieces of user details or attributes provided by the OpenID
+Connect Provider to the OpenID Connect Relying Party. Claims can be
+retrieved from the ID token or from the UserInfo endpoint. Claims are
+requested by specifying scopes, which map to sets of claims.</p>
+<p>For the purposes of consistency with the rest of the Keystone documentation,
+the term Service Provider will be used which means Keystone acting as
+a Service Provider and is equivilent to OpenID Connect Relying Party.</p>
+<p>These examples use Google as an OpenID Connect Provider. The Service
+Provider must be added to the Identity Provider in the <a class="reference external" href="https://console.developers.google.com/">Google API console</a>.</p>
+<section id="configuring-apache-httpd-for-mod-auth-openidc">
+<h3>Configuring Apache HTTPD for mod_auth_openidc<a class="headerlink" href="#configuring-apache-httpd-for-mod-auth-openidc" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You are advised to carefully examine the <a class="reference external" href="https://github.com/zmartzone/mod_auth_openidc#how-to-use-it">mod_auth_openidc documentation</a>.</p>
+</div>
+<section id="install-the-module">
+<h4>Install the Module<a class="headerlink" href="#install-the-module" title="Link to this heading">¶</a></h4>
+<p>Install the Apache module package. For example, on Ubuntu:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>apt-get<span class="w"> </span>install<span class="w"> </span>libapache2-mod-auth-openidc
+</pre></div>
+</div>
+<p>The package and module name will differ between distributions.</p>
+</section>
+<section id="configure-mod-auth-openidc">
+<h4>Configure mod_auth_openidc<a class="headerlink" href="#configure-mod-auth-openidc" title="Link to this heading">¶</a></h4>
+<p>In the Apache configuration for the keystone VirtualHost, set the following OIDC
+options:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nb">OIDCClaimPrefix</span><span class="w"> </span><span class="s2">"OIDC-"</span>
+<span class="nb">OIDCClaimDelimiter</span><span class="w"> </span><span class="s2">";"</span>
+<span class="nb">OIDCResponseType</span><span class="w"> </span><span class="s2">"id_token"</span>
+<span class="nb">OIDCScope</span><span class="w"> </span><span class="s2">"openid email profile"</span>
+<span class="nb">OIDCProviderMetadataURL</span><span class="w"> </span>https://accounts.google.com/.well-known/openid-configuration
+<span class="nb">OIDCOAuthVerifyJwksUri</span><span class="w"> </span>https://www.googleapis.com/oauth2/v3/certs
+<span class="nb">OIDCClientID</span><span class="w"> </span>&lt;openid_client_id&gt;
+<span class="nb">OIDCClientSecret</span><span class="w"> </span>&lt;openid_client_secret&gt;
+<span class="nb">OIDCCryptoPassphrase</span><span class="w"> </span>&lt;random<span class="w"> </span>string&gt;
+<span class="nb">OIDCRedirectURI</span><span class="w"> </span>https://sp.keystone.example.org/v3/redirect_uri
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">OIDCClaimPrefix</span></code> prefixes all claims with the value, which will then
+be prefixed with <code class="docutils literal notranslate"><span class="pre">HTTP_</span></code> when presented to Keystone, with dashes (“-“)
+converted to underscores (“_”) and uppercased. Resulting in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> claim
+being presented to Keystone as <code class="docutils literal notranslate"><span class="pre">HTTP_OIDC_ISS</span></code> using the <code class="docutils literal notranslate"><span class="pre">OIDCClaimPrefix</span></code>
+from above. Claims are pieces of JSON data but Apache only forwards on string
+data to Keystone. So by default lists are converted to comma (“,”) separated
+strings while Keystone’s mapping code expects them to be semi-colon (“;”)
+separated. To properly support this set the <code class="docutils literal notranslate"><span class="pre">OIDCClaimDelimiter</span></code> to utilize
+semi-colons (“;”). <code class="docutils literal notranslate"><span class="pre">OIDCResponseType</span></code> specifies the OpenID Connect Flow
+which will be used. To use the Implicit Flow then specify the value <code class="docutils literal notranslate"><span class="pre">id_token</span></code>
+and to use the Authorization Code Flow, specify the value <code class="docutils literal notranslate"><span class="pre">code</span></code>. Some OpenID
+Connect Providers do not enable Implicit Flow by default.
+<code class="docutils literal notranslate"><span class="pre">OIDCScope</span></code> is the list of attributes or claims that the user will authorize the
+Identity Provider to send to the Service Provider. <code class="docutils literal notranslate"><span class="pre">OIDCClientID</span></code> and
+<code class="docutils literal notranslate"><span class="pre">OIDCClientSecret</span></code> must be generated and obtained from the Identity Provider,
+<code class="docutils literal notranslate"><span class="pre">OIDCProviderMetadataURL</span></code> is a URL from which the Service Provider will fetch
+the Identity Provider’s metadata. <code class="docutils literal notranslate"><span class="pre">OIDCOAuthVerifyJwksUri</span></code> is a URL from
+which the Service Provider will download the public key from the Identity
+Provider to check if the user’s access token is valid or not, this configuration
+must be used while using the AuthType <code class="docutils literal notranslate"><span class="pre">auth-openidc</span></code>, when using the AuthType
+<code class="docutils literal notranslate"><span class="pre">openid-connect</span></code> and the OIDCProviderMetadataURL is configured, this property
+will not be necessary.
+<code class="docutils literal notranslate"><span class="pre">OIDCRedirectURI</span></code> is a vanity URL that must
+point to a protected path that does not have any content, such as an extension
+of the protected federated auth path. It should not match any Keystone API endpoints
+or mod_auth_openidc will handle requests to the endpoint instead of Keystone. This
+can lead to unusual errors and behaviors from Keystone.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If using a mod_wsgi version less than 4.3.0, then the <cite>OIDCClaimPrefix</cite> must
+be specified to have only alphanumerics or a dash (“-“). This is because
+<a class="reference external" href="http://modwsgi.readthedocs.org/en/latest/release-notes/version-4.3.0.html#bugs-fixed">mod_wsgi blocks headers that do not fit this criteria</a>.</p>
+</div>
+</section>
+<section id="id5">
+<h4>Configure Protected Endpoints<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
+<p>Configure each protected path to use the <code class="docutils literal notranslate"><span class="pre">openid-connect</span></code> AuthType:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">~ "/redirect_uri"</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>openid-connect
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/OS-FEDERATION/identity_providers/google/protocols/openid/auth</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>openid-connect
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To add support to Bearer Access Token authentication flow that is used by
+applications that do not adopt the browser flow, such the OpenStack CLI, you
+will need to change the AuthType from <code class="docutils literal notranslate"><span class="pre">openid-connect</span></code> to
+<code class="docutils literal notranslate"><span class="pre">auth-openidc</span></code>.</p>
+</div>
+<p>Do the same for the WebSSO auth paths if using horizon:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/websso/openid</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>openid-connect
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/identity_providers/google/protocols/openid/websso</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>openid-connect
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>Remember to reload Apache after altering the VirtualHost:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>reload<span class="w"> </span>apache2
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When creating <a class="reference internal" href="#create-a-mapping"><span class="std std-ref">mapping rules</span></a>, in keystone, note that the ‘remote’
+attributes will be prefixed, with <code class="docutils literal notranslate"><span class="pre">HTTP_</span></code>, so for instance, if you set
+<code class="docutils literal notranslate"><span class="pre">OIDCClaimPrefix</span></code> to <code class="docutils literal notranslate"><span class="pre">OIDC-</span></code>, then a typical remote value to check for
+is: <code class="docutils literal notranslate"><span class="pre">HTTP_OIDC_ISS</span></code>.</p>
+</div>
+</section>
+<section id="configuring-multiple-identity-providers">
+<h4>Configuring Multiple Identity Providers<a class="headerlink" href="#configuring-multiple-identity-providers" title="Link to this heading">¶</a></h4>
+<p>To configure multiples Identity Providers in your environment you will need to
+set your OIDC options like the following options:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nb">OIDCClaimPrefix</span><span class="w"> </span><span class="s2">"OIDC-"</span>
+<span class="nb">OIDCClaimDelimiter</span><span class="w"> </span><span class="s2">";"</span>
+<span class="nb">OIDCResponseType</span><span class="w"> </span><span class="s2">"id_token"</span>
+<span class="nb">OIDCScope</span><span class="w"> </span><span class="s2">"openid email profile"</span>
+<span class="nb">OIDCMetadataDir</span><span class="w"> </span>&lt;IDP<span class="w"> </span>metadata<span class="w"> </span>directory&gt;
+<span class="nb">OIDCCryptoPassphrase</span><span class="w"> </span>&lt;random<span class="w"> </span>string&gt;
+<span class="nb">OIDCRedirectURI</span><span class="w"> </span>https://sp.keystone.example.org/redirect_uri
+<span class="nb">OIDCOAuthVerifyCertFiles</span><span class="w"> </span>&lt;kid&gt;#&lt;/path/to-cert.pem&gt;<span class="w"> </span>&lt;kid2&gt;#&lt;/path/to-cert2.pem&gt;<span class="w"> </span>&lt;kidN&gt;#&lt;/path/to-certN.pem&gt;
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">OIDCOAuthVerifyCertFiles</span></code> is a tuple separated with <cite>space</cite>
+containing the key-id (kid) of the Issuer’s public key and a path to
+the Issuer certificate. The separator <code class="docutils literal notranslate"><span class="pre">#</span></code> is used to split the (<code class="docutils literal notranslate"><span class="pre">kid</span></code>)
+and the public certificate address</p>
+<p>The metadata folder configured in the option <code class="docutils literal notranslate"><span class="pre">OIDCMetadataDir</span></code> must have all
+your Identity Providers configurations, the name of the files will be
+the name (with path) of the Issuers like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="o">&lt;</span><span class="n">IDP</span> <span class="n">metadata</span> <span class="n">directory</span><span class="o">&gt;</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">accounts</span><span class="o">.</span><span class="n">google</span><span class="o">.</span><span class="n">com</span><span class="o">.</span><span class="n">client</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">accounts</span><span class="o">.</span><span class="n">google</span><span class="o">.</span><span class="n">com</span><span class="o">.</span><span class="n">conf</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">accounts</span><span class="o">.</span><span class="n">google</span><span class="o">.</span><span class="n">com</span><span class="o">.</span><span class="n">provider</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">client</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">conf</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">provider</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The name of the file must be url-encoded if needed, as the Apache2 mod_auth_openidc
+will get the raw value from the query parameter <code class="docutils literal notranslate"><span class="pre">iss</span></code> from the http request
+and check if there is a metadata with this name, as the query parameter is
+url-encoded, so the metadata file name need to be encoded too. For example, if you have an
+Issuer with <code class="docutils literal notranslate"><span class="pre">/</span></code> in the URL, then you need to escape it to <code class="docutils literal notranslate"><span class="pre">%2F</span></code> by
+applying a URL escape in the file name.</p>
+</div>
+<p>The content of these files must be a JSON like</p>
+<p><code class="docutils literal notranslate"><span class="pre">accounts.google.com.client</span></code>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"client_id"</span><span class="p">:</span><span class="s2">"&lt;openid_client_id&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"client_secret"</span><span class="p">:</span><span class="s2">"&lt;openid_client_secret&gt;"</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">.client</span></code> file handles the SP credentials in the Issuer.</p>
+<p><code class="docutils literal notranslate"><span class="pre">accounts.google.com.conf</span></code>:</p>
+<p>This file will be a JSON that overrides some of OIDC options. The options
+that are able to be overridden are listed in the
+<a class="reference external" href="https://github.com/zmartzone/mod_auth_openidc/wiki/Multiple-Providers#opclient-configuration">OpenID Connect Apache2 plugin documentation</a>.</p>
+<p>If you do not want to override the config values, you can leave this file as
+an empty JSON like <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">accounts.google.com.provider</span></code>:</p>
+<p>This file will contain all specifications about the IdentityProvider. To
+simplify, you can just use the JSON returned in the <code class="docutils literal notranslate"><span class="pre">.well-known</span></code> endpoint:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"issuer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://accounts.google.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"authorization_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://accounts.google.com/o/oauth2/v2/auth"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"token_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://oauth2.googleapis.com/token"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"userinfo_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://openidconnect.googleapis.com/v1/userinfo"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"revocation_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://oauth2.googleapis.com/revoke"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"jwks_uri"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://www.googleapis.com/oauth2/v3/certs"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"response_types_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"code"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"token id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code token id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"none"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"subject_types_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"public"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"id_token_signing_alg_values_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"RS256"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"scopes_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"openid"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"profile"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"token_endpoint_auth_methods_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"client_secret_post"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"client_secret_basic"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"claims_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"aud"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email_verified"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"exp"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"family_name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"given_name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"iat"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"iss"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"locale"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"picture"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"sub"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"code_challenge_methods_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"plain"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"S256"</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="continue-configuring-keystone">
+<h4>Continue configuring keystone<a class="headerlink" href="#continue-configuring-keystone" title="Link to this heading">¶</a></h4>
+<p><a class="reference internal" href="#federation-configuring-keystone"><span class="std std-ref">Continue configuring keystone</span></a></p>
+</section>
+</section>
+</section>
+<section id="setting-up-mellon">
+<span id="mellon"></span><h2>Setting Up Mellon<a class="headerlink" href="#setting-up-mellon" title="Link to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="#keystone-as-sp"><span class="std std-ref">Keystone as a Service Provider (SP)</span></a> before proceeding with these Mellon-specific
+instructions.</p>
+<section id="configuring-apache-httpd-for-mod-auth-mellon">
+<h3>Configuring Apache HTTPD for mod_auth_mellon<a class="headerlink" href="#configuring-apache-httpd-for-mod-auth-mellon" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You are advised to carefully examine the <a class="reference external" href="https://github.com/Uninett/mod_auth_mellon/blob/master/doc/user_guide/mellon_user_guide.adoc#installing-configuring-mellon">mod_auth_mellon documentation</a>.</p>
+</div>
+<p>Follow the steps outlined at: Keystone install guide for <a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-obs.html#configure-the-apache-http-server">SUSE</a>, <a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-rdo.html#configure-the-apache-http-server">RedHat</a> or
+<a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-ubuntu.html#configure-the-apache-http-server">Ubuntu</a>.</p>
+<section id="id6">
+<h4>Install the Module<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
+<p>Install the Apache module package. For example, on Ubuntu:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>apt-get<span class="w"> </span>install<span class="w"> </span>libapache2-mod-auth-mellon
+</pre></div>
+</div>
+<p>The package and module name will differ between distributions.</p>
+</section>
+<section id="configure-mod-auth-mellon">
+<h4>Configure mod_auth_mellon<a class="headerlink" href="#configure-mod-auth-mellon" title="Link to this heading">¶</a></h4>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code>, all of <code class="docutils literal notranslate"><span class="pre">mod_auth_mellon</span></code>’s configuration is done in
+Apache, not in a separate config file. Set up the shared settings in a single
+<code class="docutils literal notranslate"><span class="pre">&lt;Location&gt;</span></code> directive near the top in your keystone VirtualHost file, before
+your protected endpoints:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">MellonEnable</span><span class="w"> </span><span class="s2">"info"</span>
+<span class="w">    </span><span class="nb">MellonSPPrivateKeyFile</span><span class="w"> </span><span class="sx">/etc/apache2/mellon/sp.keystone.example.org.key</span>
+<span class="w">    </span><span class="nb">MellonSPCertFile</span><span class="w"> </span><span class="sx">/etc/apache2/mellon/sp.keystone.example.org.cert</span>
+<span class="w">    </span><span class="nb">MellonSPMetadataFile</span><span class="w"> </span><span class="sx">/etc/apache2/mellon/sp-metadata.xml</span>
+<span class="w">    </span><span class="nb">MellonIdPMetadataFile</span><span class="w"> </span><span class="sx">/etc/apache2/mellon/idp-metadata.xml</span>
+<span class="w">    </span><span class="nb">MellonEndpointPath</span><span class="w"> </span><span class="sx">/v3/mellon</span>
+<span class="w">    </span><span class="nb">MellonIdP</span><span class="w"> </span><span class="s2">"IDP"</span>
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h4>Configure Protected Endpoints<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<p>Configure each protected path to use the <code class="docutils literal notranslate"><span class="pre">Mellon</span></code> AuthType:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/OS-FEDERATION/identity_providers/samltest/protocols/saml2/auth</span><span class="nt">&gt;</span>
+<span class="w">   </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">   </span><span class="nb">AuthType</span><span class="w"> </span>Mellon
+<span class="w">   </span><span class="nb">MellonEnable</span><span class="w"> </span>auth
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>Do the same for the WebSSO auth paths if using horizon as a single sign-on
+frontend:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/websso/saml2</span><span class="nt">&gt;</span>
+<span class="w">   </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">   </span><span class="nb">AuthType</span><span class="w"> </span>Mellon
+<span class="w">   </span><span class="nb">MellonEnable</span><span class="w"> </span>auth
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/identity_providers/samltest/protocols/saml2/websso</span><span class="nt">&gt;</span>
+<span class="w">   </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">   </span><span class="nb">AuthType</span><span class="w"> </span>Mellon
+<span class="w">   </span><span class="nb">MellonEnable</span><span class="w"> </span>auth
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-the-mellon-service-provider-metadata">
+<h4>Configure the Mellon Service Provider Metadata<a class="headerlink" href="#configure-the-mellon-service-provider-metadata" title="Link to this heading">¶</a></h4>
+<p>Mellon provides a script called <code class="docutils literal notranslate"><span class="pre">mellon_create_metadata.sh``_</span> <span class="pre">which</span> <span class="pre">generates</span>
+<span class="pre">the</span> <span class="pre">values</span> <span class="pre">for</span> <span class="pre">the</span> <span class="pre">config</span> <span class="pre">directives</span> <span class="pre">``MellonSPPrivateKeyFile</span></code>,
+<code class="docutils literal notranslate"><span class="pre">MellonSPCertFile</span></code>, and <code class="docutils literal notranslate"><span class="pre">MellonSPMetadataFile</span></code>. Run the script:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./mellon_create_metadata.sh<span class="w"> </span><span class="se">\</span>
+https://sp.keystone.example.org/mellon<span class="w"> </span><span class="se">\</span>
+http://sp.keystone.example.org/v3/OS-FEDERATION/identity_providers/samltest/protocols/saml2/auth/mellon
+</pre></div>
+</div>
+<p>The first parameter is used as the entity ID, a URN of your choosing that must
+uniquely identify the Service Provider to the Identity Provider. The second
+parameter is the full URL for the endpoint path corresponding to the parameter
+<code class="docutils literal notranslate"><span class="pre">MellonEndpointPath</span></code>.</p>
+<p>After generating the keypair and metadata, copy the files to the locations
+given by the <code class="docutils literal notranslate"><span class="pre">MellonSPPrivateKeyFile</span></code> and <code class="docutils literal notranslate"><span class="pre">MellonSPCertFile</span></code> settings in
+your Apache configuration.</p>
+<p>Upload the Service Provider’s Metadata file which you just generated to your
+Identity Provider. This is the file used as the value of the
+<cite>MellonSPMetadataFile</cite> in the config. The IdP may provide a webpage where you
+can upload the file, or you may be required to submit the file using <cite>wget</cite> or
+<cite>curl</cite>. Please check your IdP documentation for details.</p>
+</section>
+<section id="exchange-metadata">
+<h4>Exchange Metadata<a class="headerlink" href="#exchange-metadata" title="Link to this heading">¶</a></h4>
+<p>Fetch your Identity Provider’s Metadata file and copy it to the path specified
+by the <code class="docutils literal notranslate"><span class="pre">MellonIdPMetadataFile</span></code> setting in your Apache configuration.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>wget<span class="w"> </span>-O<span class="w"> </span>/etc/apache2/mellon/idp-metadata.xml<span class="w"> </span>https://samltest.id/saml/idp
+</pre></div>
+</div>
+<p>Remember to reload Apache after finishing configuring Mellon:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>reload<span class="w"> </span>apache2
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h4>Continue configuring keystone<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
+<p><a class="reference internal" href="#federation-configuring-keystone"><span class="std std-ref">Continue configuring keystone</span></a></p>
+</section>
+</section>
+</section>
+<section id="setting-up-shibboleth">
+<span id="shibboleth"></span><h2>Setting up Shibboleth<a class="headerlink" href="#setting-up-shibboleth" title="Link to this heading">¶</a></h2>
+<p>See <a class="reference internal" href="#keystone-as-sp"><span class="std std-ref">Keystone as a Service Provider (SP)</span></a> before proceeding with these Shibboleth-specific
+instructions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The examples below are for Ubuntu 16.04, for which only version 2 of the
+Shibboleth Service Provider is available. Version 3 is available for other
+distributions and the configuration should be identical to version 2.</p>
+</div>
+<section id="configuring-apache-httpd-for-mod-shib">
+<h3>Configuring Apache HTTPD for mod_shib<a class="headerlink" href="#configuring-apache-httpd-for-mod-shib" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You are advised to carefully examine the <a class="reference external" href="https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPApacheConfig">mod_shib Apache configuration
+documentation</a>.</p>
+</div>
+<p>Configure keystone under Apache, following the steps in the install guide for
+<a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-obs.html#configure-the-apache-http-server">SUSE</a>, <a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-rdo.html#configure-the-apache-http-server">RedHat</a> or <a class="reference external" href="https://docs.openstack.org/keystone/2025.1/install/keystone-install-ubuntu.html#configure-the-apache-http-server">Ubuntu</a>.</p>
+<section id="id12">
+<h4>Install the Module<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h4>
+<p>Install the Apache module package. For example, on Ubuntu:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>apt-get<span class="w"> </span>install<span class="w"> </span>libapache2-mod-shib2
+</pre></div>
+</div>
+<p>The package and module name will differ between distributions.</p>
+</section>
+<section id="id13">
+<h4>Configure Protected Endpoints<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h4>
+<p>In the Apache configuration for the keystone VirtualHost, set an additional
+<code class="docutils literal notranslate"><span class="pre">&lt;Location&gt;</span></code> which is not part of keystone’s API:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/Shibboleth.sso</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">SetHandler</span><span class="w"> </span>shib
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>If you are using <code class="docutils literal notranslate"><span class="pre">mod_proxy</span></code>, for example to proxy requests to the
+<code class="docutils literal notranslate"><span class="pre">/identity</span></code> path to keystone’s UWSGI service, you must exempt this Shibboleth
+endpoint from it:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nb">Proxypass</span><span class="w"> </span>Shibboleth.sso<span class="w"> </span>!
+</pre></div>
+</div>
+<p>Configure each protected path to use the <code class="docutils literal notranslate"><span class="pre">shibboleth</span></code> AuthType:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/OS-FEDERATION/identity_providers/samltest/protocols/saml2/auth</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>shibboleth
+<span class="w">    </span><span class="nb">ShibRequestSetting</span><span class="w"> </span>requireSession<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span><span class="nb">ShibExportAssertion</span><span class="w"> </span><span class="k">off</span>
+<span class="w">    </span><span class="nt">&lt;IfVersion</span><span class="w"> </span><span class="s">&lt; 2.4</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nb">ShibRequireSession</span><span class="w"> </span><span class="k">On</span>
+<span class="w">        </span><span class="nb">ShibRequireAll</span><span class="w"> </span><span class="k">On</span>
+<span class="w">    </span><span class="nt">&lt;/IfVersion&gt;</span>
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>Do the same for the WebSSO auth paths if using horizon as a single sign-on
+frontend:</p>
+<div class="highlight-apache notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/websso/saml2</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>shibboleth
+<span class="w">    </span><span class="nb">ShibRequestSetting</span><span class="w"> </span>requireSession<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span><span class="nb">ShibExportAssertion</span><span class="w"> </span><span class="k">off</span>
+<span class="w">    </span><span class="nt">&lt;IfVersion</span><span class="w"> </span><span class="s">&lt; 2.4</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nb">ShibRequireSession</span><span class="w"> </span><span class="k">On</span>
+<span class="w">        </span><span class="nb">ShibRequireAll</span><span class="w"> </span><span class="k">On</span>
+<span class="w">    </span><span class="nt">&lt;/IfVersion&gt;</span>
+<span class="nt">&lt;/Location&gt;</span>
+<span class="nt">&lt;Location</span><span class="w"> </span><span class="s">/v3/auth/OS-FEDERATION/identity_providers/samltest/protocols/saml2/websso</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nb">Require</span><span class="w"> </span>valid-user
+<span class="w">    </span><span class="nb">AuthType</span><span class="w"> </span>shibboleth
+<span class="w">    </span><span class="nb">ShibRequestSetting</span><span class="w"> </span>requireSession<span class="w"> </span><span class="m">1</span>
+<span class="w">    </span><span class="nb">ShibExportAssertion</span><span class="w"> </span><span class="k">off</span>
+<span class="w">    </span><span class="nt">&lt;IfVersion</span><span class="w"> </span><span class="s">&lt; 2.4</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nb">ShibRequireSession</span><span class="w"> </span><span class="k">On</span>
+<span class="w">        </span><span class="nb">ShibRequireAll</span><span class="w"> </span><span class="k">On</span>
+<span class="w">    </span><span class="nt">&lt;/IfVersion&gt;</span>
+<span class="nt">&lt;/Location&gt;</span>
+</pre></div>
+</div>
+<p>Remember to reload Apache after altering the VirtualHost:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>reload<span class="w"> </span>apache2
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuring-mod-shib">
+<h3>Configuring mod_shib<a class="headerlink" href="#configuring-mod-shib" title="Link to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You are advised to examine <a class="reference external" href="https://wiki.shibboleth.net/confluence/display/SHIB2/Configuration">Shibboleth Service Provider Configuration
+documentation</a></p>
+</div>
+<section id="generate-a-keypair">
+<h4>Generate a keypair<a class="headerlink" href="#generate-a-keypair" title="Link to this heading">¶</a></h4>
+<p>For all SAML Service Providers, a PKI key pair must be generated and exchanged
+with the Identity Provider. The <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code> package on the Ubuntu distribution
+provides a utility to generate the key pair:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>shib-keygen<span class="w"> </span>-y<span class="w"> </span>&lt;number<span class="w"> </span>of<span class="w"> </span>years&gt;
+</pre></div>
+</div>
+<p>which will generate a key pair under <code class="docutils literal notranslate"><span class="pre">/etc/shibboleth</span></code>. In other cases, the
+package might generate the key pair automatically upon installation.</p>
+</section>
+<section id="configure-metadata">
+<h4>Configure metadata<a class="headerlink" href="#configure-metadata" title="Link to this heading">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">mod_shib</span></code> also has its own configuration file at
+<code class="docutils literal notranslate"><span class="pre">/etc/shibboleth/shibboleth2.xml</span></code> that must be altered, as well
+as its own daemon. First, give the Service Provider an entity ID. This is a URN
+that you choose that must be globally unique to the Identity Provider:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;ApplicationDefaults</span><span class="w"> </span><span class="na">entityID=</span><span class="s">"https://sp.keystone.example.org/shibboleth"</span>
+<span class="w">    </span><span class="na">REMOTE_USER=</span><span class="s">"eppn persistent-id targeted-id"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+<p>Depending on your Identity Provider, you may also want to change the REMOTE_USER
+setting, more on that in a moment.</p>
+<p>Set the entity ID of the Identity Provider (this is the same as the value you
+provided for <code class="docutils literal notranslate"><span class="pre">--remote-id</span></code> in <cite>Identity Provider</cite>):</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;SSO</span><span class="w"> </span><span class="na">entityID=</span><span class="s">"https://samltest.id/saml/idp"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+<p>Additionally, if you want to enable ECP (required for Keystone-to-Keystone),
+the SSO tag for this entity must also have the ECP flag set:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;SSO</span><span class="w"> </span><span class="na">entityID=</span><span class="s">"https://samltest.id/saml/idp"</span><span class="w"> </span><span class="na">ECP=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+<p>Tell Shibboleth where to find the metadata of the Identity Provider. You could
+either tell it to fetch it from a URI or point it to a local file. For example,
+pointing to a local file:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;MetadataProvider</span><span class="w"> </span><span class="na">type=</span><span class="s">"XML"</span><span class="w"> </span><span class="na">file=</span><span class="s">"/etc/shibboleth/samltest-metadata.xml"</span><span class="w"> </span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>or pointing to a remote location:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;MetadataProvider</span><span class="w"> </span><span class="na">type=</span><span class="s">"XML"</span><span class="w"> </span><span class="na">url=</span><span class="s">"https://samltest.id/saml/idp"</span>
+<span class="w">    </span><span class="na">backingFile=</span><span class="s">"samltest-metadata.xml"</span><span class="w"> </span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>When you are finished configuring <code class="docutils literal notranslate"><span class="pre">shibboleth2.xml</span></code>, restart the <code class="docutils literal notranslate"><span class="pre">shibd</span></code>
+daemon:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>restart<span class="w"> </span>shibd
+</pre></div>
+</div>
+<p>Check the <code class="docutils literal notranslate"><span class="pre">shibd</span></code> logs in <code class="docutils literal notranslate"><span class="pre">/var/log/shibboleth/shibd.log</span></code> and
+<code class="docutils literal notranslate"><span class="pre">/var/log/shibboleth/shibd_warn.log</span></code> for errors or warnings.</p>
+</section>
+<section id="configure-allowed-attributes">
+<h4>Configure allowed attributes<a class="headerlink" href="#configure-allowed-attributes" title="Link to this heading">¶</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more information see the <a class="reference external" href="https://wiki.shibboleth.net/confluence/display/SHIB2/NativeSPAddAttribute">attributes documentation</a></p>
+</div>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code> does not pass all attributes received from the Identity
+Provider to keystone. If your Identity Provider does not use attributes known to
+<code class="docutils literal notranslate"><span class="pre">shibd</span></code>, you must configure them. For example, <cite>samltest.id</cite> uses a custom UID
+attribute.  It is not discoverable in the Identity Provider metadata, but the
+attribute name and type is logged in the <code class="docutils literal notranslate"><span class="pre">mod_shib</span></code> logs when an
+authentication attempt is made. To allow the attribute, add it to
+<code class="docutils literal notranslate"><span class="pre">/etc/shibboleth/attribute-map.xml</span></code>:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"urn:oid:0.9.2342.19200300.100.1.1"</span><span class="w"> </span><span class="na">id=</span><span class="s">"uid"</span><span class="w"> </span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>You may also want to use that attribute as a value for the <code class="docutils literal notranslate"><span class="pre">REMOTE_USER</span></code>
+variable, which will make the <code class="docutils literal notranslate"><span class="pre">REMOTE_USER</span></code> variable usable as a parameter to
+your mapping rules. To do so, add it to <code class="docutils literal notranslate"><span class="pre">/etc/shibboleth/shibboleth2.xml</span></code>:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;ApplicationDefaults</span><span class="w"> </span><span class="na">entityID=</span><span class="s">"https://sp.keystone.example.org/shibboleth"</span>
+<span class="w">    </span><span class="na">REMOTE_USER=</span><span class="s">"uid"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+<p>Similarly, if using keystone as your Identity Provider, several custom
+attributes will be needed in <code class="docutils literal notranslate"><span class="pre">/etc/shibboleth/attribute-map.xml</span></code>:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_user"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_user"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_roles"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_roles"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_project"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_project"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_user_domain"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_user_domain"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_project_domain"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_project_domain"</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;Attribute</span><span class="w"> </span><span class="na">name=</span><span class="s">"openstack_groups"</span><span class="w"> </span><span class="na">id=</span><span class="s">"openstack_groups"</span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>And update the <code class="docutils literal notranslate"><span class="pre">REMOTE_USER</span></code> variable in <code class="docutils literal notranslate"><span class="pre">/etc/shibboleth/shibboleth2.xml</span></code>
+if desired:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;ApplicationDefaults</span><span class="w"> </span><span class="na">entityID=</span><span class="s">"https://sp.keystone.example.org/shibboleth"</span>
+<span class="w">    </span><span class="na">REMOTE_USER=</span><span class="s">"openstack_user"</span><span class="nt">&gt;</span>
+</pre></div>
+</div>
+<p>Restart the <code class="docutils literal notranslate"><span class="pre">shibd</span></code> daemon after making these changes:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>systemctl<span class="w"> </span>restart<span class="w"> </span>shibd
+</pre></div>
+</div>
+</section>
+<section id="id14">
+<h4>Exchange Metadata<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<p>Once configured, the Service Provider metadata is available to download:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>wget<span class="w"> </span>https://sp.keystone.example.org/Shibboleth.sso/Metadata
+</pre></div>
+</div>
+<p>Upload your Service Provider’s metadata to your Identity Provider. This step
+depends on your Identity Provider choice and is not covered here. If keystone
+is your Identity Provider you do not need to upload this file.</p>
+</section>
+<section id="id15">
+<h4>Continue configuring keystone<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h4>
+<p><a class="reference internal" href="#federation-configuring-keystone"><span class="std std-ref">Continue configuring keystone</span></a></p>
+</section>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект keystone. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/keystone/2025.1/admin/federation/configure_federation.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

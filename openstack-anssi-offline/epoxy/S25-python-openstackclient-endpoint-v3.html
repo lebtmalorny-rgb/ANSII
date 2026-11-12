@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>endpoint (Identity v3) · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="endpoint-identity-v3">
+<h1>endpoint (Identity v3)<a class="headerlink" href="#endpoint-identity-v3" title="Link to this heading">¶</a></h1>
+<section id="endpoint-add-project">
+<h2>endpoint add project<a class="headerlink" href="#endpoint-add-project" title="Link to this heading">¶</a></h2>
+<p>Associate a project to an endpoint</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>add<span class="w"> </span>project
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span>&lt;endpoint&gt;
+<span class="w">    </span>&lt;project&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-add-project-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-add-project-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-add-project-arg-endpoint">
+<span class="sig-name descname"><span class="pre">endpoint</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-add-project-arg-endpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint to associate with specified project (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-add-project-arg-project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-add-project-arg-project" title="Link to this definition">¶</a></dt>
+<dd><p>Project to associate with specified endpoint name or ID)</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-create">
+<h2>endpoint create<a class="headerlink" href="#endpoint-create" title="Link to this heading">¶</a></h2>
+<p>Create new endpoint</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>create
+<span class="w">    </span><span class="o">[</span>--region<span class="w"> </span>&lt;region-id&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--enable<span class="w"> </span><span class="p">|</span><span class="w"> </span>--disable<span class="o">]</span>
+<span class="w">    </span>&lt;service&gt;
+<span class="w">    </span>&lt;interface&gt;
+<span class="w">    </span>&lt;url&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-region">
+<span class="sig-name descname"><span class="pre">--region</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;region-id&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-region" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint region ID</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-enable">
+<span class="sig-name descname"><span class="pre">--enable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-enable" title="Link to this definition">¶</a></dt>
+<dd><p>Enable endpoint (default)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-disable">
+<span class="sig-name descname"><span class="pre">--disable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-disable" title="Link to this definition">¶</a></dt>
+<dd><p>Disable endpoint</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-arg-service">
+<span class="sig-name descname"><span class="pre">service</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-arg-service" title="Link to this definition">¶</a></dt>
+<dd><p>Service to be associated with new endpoint (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-arg-interface">
+<span class="sig-name descname"><span class="pre">interface</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-arg-interface" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint interface type (admin, public or internal)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-create-arg-url">
+<span class="sig-name descname"><span class="pre">url</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-create-arg-url" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint URL</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-delete">
+<h2>endpoint delete<a class="headerlink" href="#endpoint-delete" title="Link to this heading">¶</a></h2>
+<p>Delete endpoint(s)</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>delete<span class="w"> </span>&lt;endpoint-id&gt;<span class="w"> </span><span class="o">[</span>&lt;endpoint-id&gt;<span class="w"> </span>...<span class="o">]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-delete-arg-endpoint-id">
+<span class="sig-name descname"><span class="pre">endpoint-id</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-delete-arg-endpoint-id" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint(s) to delete (ID only)</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-list">
+<h2>endpoint list<a class="headerlink" href="#endpoint-list" title="Link to this heading">¶</a></h2>
+<p>List endpoints</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>list
+<span class="w">    </span><span class="o">[</span>--sort-column<span class="w"> </span>SORT_COLUMN<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--sort-ascending<span class="w"> </span><span class="p">|</span><span class="w"> </span>--sort-descending<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--service<span class="w"> </span>&lt;service&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--interface<span class="w"> </span>&lt;interface&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--region<span class="w"> </span>&lt;region-id&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--endpoint<span class="w"> </span>&lt;endpoint-group&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>--project<span class="w"> </span>&lt;project&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-sort-column">
+<span class="sig-name descname"><span class="pre">--sort-column</span></span><span class="sig-prename descclassname"> <span class="pre">SORT_COLUMN</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-sort-column" title="Link to this definition">¶</a></dt>
+<dd><p>specify the column(s) to sort the data (columns specified first have a priority, non-existing columns are ignored), can be repeated</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-sort-ascending">
+<span class="sig-name descname"><span class="pre">--sort-ascending</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-sort-ascending" title="Link to this definition">¶</a></dt>
+<dd><p>sort the column(s) in ascending order</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-sort-descending">
+<span class="sig-name descname"><span class="pre">--sort-descending</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-sort-descending" title="Link to this definition">¶</a></dt>
+<dd><p>sort the column(s) in descending order</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-service">
+<span class="sig-name descname"><span class="pre">--service</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;service&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-service" title="Link to this definition">¶</a></dt>
+<dd><p>Filter by service (type, name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-interface">
+<span class="sig-name descname"><span class="pre">--interface</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;interface&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-interface" title="Link to this definition">¶</a></dt>
+<dd><p>Filter by interface type (admin, public or internal)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-region">
+<span class="sig-name descname"><span class="pre">--region</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;region-id&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-region" title="Link to this definition">¶</a></dt>
+<dd><p>Filter by region ID</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-endpoint">
+<span class="sig-name descname"><span class="pre">--endpoint</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;endpoint-group&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-endpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint to list filters</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-project">
+<span class="sig-name descname"><span class="pre">--project</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-project" title="Link to this definition">¶</a></dt>
+<dd><p>Project to list filters (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-list-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-list-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-remove-project">
+<h2>endpoint remove project<a class="headerlink" href="#endpoint-remove-project" title="Link to this heading">¶</a></h2>
+<p>Dissociate a project from an endpoint</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>remove<span class="w"> </span>project
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span>&lt;endpoint&gt;
+<span class="w">    </span>&lt;project&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-remove-project-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-remove-project-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-remove-project-arg-endpoint">
+<span class="sig-name descname"><span class="pre">endpoint</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-remove-project-arg-endpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint to dissociate from specified project (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-remove-project-arg-project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-remove-project-arg-project" title="Link to this definition">¶</a></dt>
+<dd><p>Project to dissociate from specified endpoint name or ID)</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-set">
+<h2>endpoint set<a class="headerlink" href="#endpoint-set" title="Link to this heading">¶</a></h2>
+<p>Set endpoint properties</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span><span class="nb">set</span>
+<span class="w">    </span><span class="o">[</span>--region<span class="w"> </span>&lt;region-id&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--interface<span class="w"> </span>&lt;interface&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--url<span class="w"> </span>&lt;url&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--service<span class="w"> </span>&lt;service&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--enable<span class="w"> </span><span class="p">|</span><span class="w"> </span>--disable<span class="o">]</span>
+<span class="w">    </span>&lt;endpoint-id&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-region">
+<span class="sig-name descname"><span class="pre">--region</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;region-id&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-region" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint region ID</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-interface">
+<span class="sig-name descname"><span class="pre">--interface</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;interface&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-interface" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint interface type (admin, public or internal)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-url">
+<span class="sig-name descname"><span class="pre">--url</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;url&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-url" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint URL</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-service">
+<span class="sig-name descname"><span class="pre">--service</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;service&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-service" title="Link to this definition">¶</a></dt>
+<dd><p>New endpoint service (name or ID)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-enable">
+<span class="sig-name descname"><span class="pre">--enable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-enable" title="Link to this definition">¶</a></dt>
+<dd><p>Enable endpoint</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-disable">
+<span class="sig-name descname"><span class="pre">--disable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-disable" title="Link to this definition">¶</a></dt>
+<dd><p>Disable endpoint</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-set-arg-endpoint-id">
+<span class="sig-name descname"><span class="pre">endpoint-id</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-set-arg-endpoint-id" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint to modify (ID only)</p>
+</dd></dl>
+
+</section>
+<section id="endpoint-show">
+<h2>endpoint show<a class="headerlink" href="#endpoint-show" title="Link to this heading">¶</a></h2>
+<p>Display endpoint details</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>endpoint<span class="w"> </span>show<span class="w"> </span>&lt;endpoint&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-endpoint-show-arg-endpoint">
+<span class="sig-name descname"><span class="pre">endpoint</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-endpoint-show-arg-endpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Endpoint to display (endpoint ID, service ID, service name, service type)</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект python-openstackclient. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/endpoint-v3.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

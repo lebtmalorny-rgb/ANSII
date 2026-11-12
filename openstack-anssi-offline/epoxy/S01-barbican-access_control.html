@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Access Control · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="access-control">
+<h1>Access Control<a class="headerlink" href="#access-control" title="Link to this heading">¶</a></h1>
+<section id="role-based-access-control-rbac">
+<h2>Role Based Access Control (RBAC)<a class="headerlink" href="#role-based-access-control-rbac" title="Link to this heading">¶</a></h2>
+<p>Like many other services, the Key Manager service supports the protection of its
+APIs by enforcing policy rules defined in a policy file.  The Key Manager
+service stores a reference to a policy JSON file in its configuration file,
+<code class="file docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code>.  Typically this file is named
+<code class="docutils literal notranslate"><span class="pre">policy.yaml</span></code> and it is stored in <code class="file docutils literal notranslate"><span class="pre">/etc/barbican/policy.yaml</span></code>.</p>
+<p>Each Key Manager API call has a line in the policy file that dictates which
+level of access applies:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">API_NAME</span><span class="o">:</span><span class="w"> </span><span class="s">RULE_STATEMENT or MATCH_STATEMENT</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">RULE_STATEMENT</span></code> can be another <code class="docutils literal notranslate"><span class="pre">RULE_STATEMENT</span></code> or a
+<code class="docutils literal notranslate"><span class="pre">MATCH_STATEMENT</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">RULE_STATEMENT</span><span class="o">:</span><span class="w"> </span><span class="s">RULE_STATEMENT or MATCH_STATEMENT</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">MATCH_STATEMENT</span></code> is a set of identifiers that must match between the token
+provided by the caller of the API and the parameters or target entities of the
+API in question.  For example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">"secrets:post"</span><span class="o">:</span><span class="w"> </span><span class="s">"role:admin or role:creator"</span>
+</pre></div>
+</div>
+<p>indicates that to create a new secret via a POST request, you must have either
+the admin or creator role in your token.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The Key Manager service scopes the ownership of a secret at
+the project level.  This means that many calls in the API will perform an
+additional check to ensure that the project_id of the token matches the
+project_id stored as the secret owner.</p>
+</div>
+<section id="default-policy">
+<h3>Default Policy<a class="headerlink" href="#default-policy" title="Link to this heading">¶</a></h3>
+<p>The policy engine in OpenStack is very flexible and allows for customized
+policies that make sense for your particular cloud.  The Key Manager service
+comes with a sample <code class="docutils literal notranslate"><span class="pre">policy.yaml</span></code> file which can be used as the starting
+point for a customized policy.  The sample policy defines 5 distinct roles:</p>
+<dl class="simple">
+<dt>key-manager:service-admin</dt><dd><p>The cloud administrator in charge of the Key Manager service.  This user
+has access to all management APIs like the project-quotas.</p>
+</dd>
+<dt>admin</dt><dd><p>Project administrator.  This user has full access to all resources owned
+by the project for which the admin role is scoped.</p>
+</dd>
+<dt>creator</dt><dd><p>Users with this role are allowed to create new resources and can also
+delete resources which are owned by the project for which the creator role
+is scoped.  They are also allowed full access to existing secrets owned by
+the project in scope.</p>
+</dd>
+<dt>observer</dt><dd><p>Users with this role are allowed to access to existing resources but are
+not allowed to upload new secrets or delete existing secrets.</p>
+</dd>
+<dt>audit</dt><dd><p>Users with this role are only allowed access to the resource metadata.
+So users with this role are unable to decrypt secrets.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="access-control-list-api">
+<h2>Access Control List API<a class="headerlink" href="#access-control-list-api" title="Link to this heading">¶</a></h2>
+<p>There are some limitations that result from scoping ownership of a secret at the
+project level.  For example, it is not possible to grant a user access to a
+single secret, as granting a role on a project would allow access to all
+all secrets owned by that project.</p>
+<p>Additionally, there is no easy way to upload a private secret (i.e. a secret
+that only you have access to) without creating a new project for which only
+you have roles assigned on it.</p>
+<p>To address these limitations the Key Manager service includes an Access Control
+List (ACL) API.  For full details see the
+<a class="reference external" href="https://docs.openstack.org/api-guide/key-manager/acls.html">ACL API User Guide</a></p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект barbican. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/barbican/2025.1/admin/access_control.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

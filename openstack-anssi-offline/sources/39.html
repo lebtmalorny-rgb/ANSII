@@ -1,0 +1,1195 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configuration Options — oslo.messaging 18.4.0.dev52 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-39">Каталог источников</a> · [39] · <a href="https://docs.openstack.org/oslo.messaging/latest/configuration/opts.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="configuration-options">
+<h1>Configuration Options<a class="headerlink" href="#configuration-options" title="Link to this heading">¶</a></h1>
+<p>oslo.messaging uses oslo.config to define and manage configuration
+options to allow the deployer to control how an application uses the
+underlying messaging system.</p>
+<section id="default">
+<span id="DEFAULT"></span><h2>DEFAULT<a class="headerlink" href="#default" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="DEFAULT.executor_thread_pool_size">
+<span class="sig-name descname"><span class="pre">executor_thread_pool_size</span></span><a class="headerlink" href="#DEFAULT.executor_thread_pool_size" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">64</span></code></p>
+</dd>
+</dl>
+<p>Size of executor thread pool when executor is threading or eventlet.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Deprecated Variations</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Group</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DEFAULT</p></td>
+<td><p>rpc_thread_pool_size</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="DEFAULT.rpc_response_timeout">
+<span class="sig-name descname"><span class="pre">rpc_response_timeout</span></span><a class="headerlink" href="#DEFAULT.rpc_response_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p>Seconds to wait for a response from a call.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="DEFAULT.transport_url">
+<span class="sig-name descname"><span class="pre">transport_url</span></span><a class="headerlink" href="#DEFAULT.transport_url" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rabbit://</span></code></p>
+</dd>
+</dl>
+<p>The network address and optional user credentials for connecting to the messaging backend, in URL format. The expected format is:</p>
+<p>driver://[user:pass@]host:port[,[userN:passN@]hostN:portN]/virtual_host?query</p>
+<p>Example: rabbit://rabbitmq:password@127.0.0.1:5672//</p>
+<p>For full details on the fields in the URL see the documentation of oslo_messaging.TransportURL at <a class="reference external" href="https://docs.openstack.org/oslo.messaging/latest/reference/transport.html">https://docs.openstack.org/oslo.messaging/latest/reference/transport.html</a></p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="DEFAULT.control_exchange">
+<span class="sig-name descname"><span class="pre">control_exchange</span></span><a class="headerlink" href="#DEFAULT.control_exchange" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">openstack</span></code></p>
+</dd>
+</dl>
+<p>The default exchange under which topics are scoped. May be overridden by an exchange name specified in the transport_url option.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="DEFAULT.rpc_ping_enabled">
+<span class="sig-name descname"><span class="pre">rpc_ping_enabled</span></span><a class="headerlink" href="#DEFAULT.rpc_ping_enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Add an endpoint to answer to ping calls. Endpoint is named oslo_rpc_server_ping</p>
+</dd></dl>
+
+<section id="oslo-messaging-kafka">
+<span id="oslo_messaging_kafka"></span><h2>oslo_messaging_kafka<a class="headerlink" href="#oslo-messaging-kafka" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.kafka_max_fetch_bytes">
+<span class="sig-name descname"><span class="pre">kafka_max_fetch_bytes</span></span><a class="headerlink" href="#oslo_messaging_kafka.kafka_max_fetch_bytes" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1048576</span></code></p>
+</dd>
+</dl>
+<p>Max fetch bytes of Kafka consumer</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.kafka_consumer_timeout">
+<span class="sig-name descname"><span class="pre">kafka_consumer_timeout</span></span><a class="headerlink" href="#oslo_messaging_kafka.kafka_consumer_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+</dd>
+</dl>
+<p>Default timeout(s) for Kafka consumers</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.consumer_group">
+<span class="sig-name descname"><span class="pre">consumer_group</span></span><a class="headerlink" href="#oslo_messaging_kafka.consumer_group" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">oslo_messaging_consumer</span></code></p>
+</dd>
+</dl>
+<p>Group id for Kafka consumer. Consumers in one group will coordinate message consumption</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.producer_batch_timeout">
+<span class="sig-name descname"><span class="pre">producer_batch_timeout</span></span><a class="headerlink" href="#oslo_messaging_kafka.producer_batch_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p>
+</dd>
+</dl>
+<p>Upper bound on the delay for KafkaProducer batching in seconds</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.producer_batch_size">
+<span class="sig-name descname"><span class="pre">producer_batch_size</span></span><a class="headerlink" href="#oslo_messaging_kafka.producer_batch_size" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">16384</span></code></p>
+</dd>
+</dl>
+<p>Size of batch for the producer async send</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.compression_codec">
+<span class="sig-name descname"><span class="pre">compression_codec</span></span><a class="headerlink" href="#oslo_messaging_kafka.compression_codec" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">none</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>none, gzip, snappy, lz4, zstd</p>
+</dd>
+</dl>
+<p>The compression codec for all data generated by the producer. If not set, compression will not be used. Note that the allowed values of this depend on the kafka version</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.enable_auto_commit">
+<span class="sig-name descname"><span class="pre">enable_auto_commit</span></span><a class="headerlink" href="#oslo_messaging_kafka.enable_auto_commit" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Enable asynchronous consumer commits</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.max_poll_records">
+<span class="sig-name descname"><span class="pre">max_poll_records</span></span><a class="headerlink" href="#oslo_messaging_kafka.max_poll_records" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">500</span></code></p>
+</dd>
+</dl>
+<p>The maximum number of records returned in a poll call</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.security_protocol">
+<span class="sig-name descname"><span class="pre">security_protocol</span></span><a class="headerlink" href="#oslo_messaging_kafka.security_protocol" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">PLAINTEXT</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PLAINTEXT, SASL_PLAINTEXT, SSL, SASL_SSL</p>
+</dd>
+</dl>
+<p>Protocol used to communicate with brokers</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.sasl_mechanism">
+<span class="sig-name descname"><span class="pre">sasl_mechanism</span></span><a class="headerlink" href="#oslo_messaging_kafka.sasl_mechanism" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">PLAIN</span></code></p>
+</dd>
+</dl>
+<p>Mechanism when security protocol is SASL</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.ssl_cafile">
+<span class="sig-name descname"><span class="pre">ssl_cafile</span></span><a class="headerlink" href="#oslo_messaging_kafka.ssl_cafile" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>CA certificate PEM file used to verify the server certificate</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.ssl_client_cert_file">
+<span class="sig-name descname"><span class="pre">ssl_client_cert_file</span></span><a class="headerlink" href="#oslo_messaging_kafka.ssl_client_cert_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>Client certificate PEM file used for authentication.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.ssl_client_key_file">
+<span class="sig-name descname"><span class="pre">ssl_client_key_file</span></span><a class="headerlink" href="#oslo_messaging_kafka.ssl_client_key_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>Client key PEM file used for authentication.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_kafka.ssl_client_key_password">
+<span class="sig-name descname"><span class="pre">ssl_client_key_password</span></span><a class="headerlink" href="#oslo_messaging_kafka.ssl_client_key_password" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>Client key password file used for authentication.</p>
+</dd></dl>
+
+<section id="oslo-messaging-metrics">
+<span id="oslo_messaging_metrics"></span><h2>oslo_messaging_metrics<a class="headerlink" href="#oslo-messaging-metrics" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_metrics.metrics_enabled">
+<span class="sig-name descname"><span class="pre">metrics_enabled</span></span><a class="headerlink" href="#oslo_messaging_metrics.metrics_enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Boolean to send rpc metrics to oslo.metrics.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_metrics.metrics_buffer_size">
+<span class="sig-name descname"><span class="pre">metrics_buffer_size</span></span><a class="headerlink" href="#oslo_messaging_metrics.metrics_buffer_size" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p>
+</dd>
+</dl>
+<p>Buffer size to store in oslo.messaging.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_metrics.metrics_socket_file">
+<span class="sig-name descname"><span class="pre">metrics_socket_file</span></span><a class="headerlink" href="#oslo_messaging_metrics.metrics_socket_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">/var/tmp/metrics_collector.sock</span></code></p>
+</dd>
+</dl>
+<p>Unix domain socket file to be used to send rpc related metrics</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_metrics.metrics_process_name">
+<span class="sig-name descname"><span class="pre">metrics_process_name</span></span><a class="headerlink" href="#oslo_messaging_metrics.metrics_process_name" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;process_name&gt;</span></code></p>
+</dd>
+</dl>
+<p>This option has a sample default set, which means that
+its actual default value may vary from the one documented
+above.</p>
+<p>Process name which is used to identify which process produce metrics</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_metrics.metrics_thread_stop_timeout">
+<span class="sig-name descname"><span class="pre">metrics_thread_stop_timeout</span></span><a class="headerlink" href="#oslo_messaging_metrics.metrics_thread_stop_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p>Sending thread stop once metrics_thread_stop_timeout seconds after the last successful metrics send. So that this thread will not be the blocker when process is shutting down. If the process is still running, sending thread will be restarted at the next metrics queueing time</p>
+</dd></dl>
+
+<section id="oslo-messaging-notifications">
+<span id="oslo_messaging_notifications"></span><h2>oslo_messaging_notifications<a class="headerlink" href="#oslo-messaging-notifications" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_notifications.driver">
+<span class="sig-name descname"><span class="pre">driver</span></span><a class="headerlink" href="#oslo_messaging_notifications.driver" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>multi-valued</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>The Drivers(s) to handle sending notifications. Possible values are messaging, messagingv2, routing, log, test, noop</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_notifications.transport_url">
+<span class="sig-name descname"><span class="pre">transport_url</span></span><a class="headerlink" href="#oslo_messaging_notifications.transport_url" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>A URL representing the messaging driver to use for notifications. If not set, we fall back to the same configuration used for RPC.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_notifications.topics">
+<span class="sig-name descname"><span class="pre">topics</span></span><a class="headerlink" href="#oslo_messaging_notifications.topics" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">['notifications']</span></code></p>
+</dd>
+</dl>
+<p>AMQP topic used for OpenStack notifications.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_notifications.retry">
+<span class="sig-name descname"><span class="pre">retry</span></span><a class="headerlink" href="#oslo_messaging_notifications.retry" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">-1</span></code></p>
+</dd>
+</dl>
+<p>The maximum number of attempts to re-send a notification message which failed to be delivered due to a recoverable error. 0 - No retry, -1 - indefinite</p>
+</dd></dl>
+
+<section id="oslo-messaging-rabbit">
+<span id="oslo_messaging_rabbit"></span><h2>oslo_messaging_rabbit<a class="headerlink" href="#oslo-messaging-rabbit" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.amqp_durable_queues">
+<span class="sig-name descname"><span class="pre">amqp_durable_queues</span></span><a class="headerlink" href="#oslo_messaging_rabbit.amqp_durable_queues" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Use durable queues in AMQP. If rabbit_quorum_queue is enabled, queues will be durable and this value will be ignored.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.amqp_auto_delete">
+<span class="sig-name descname"><span class="pre">amqp_auto_delete</span></span><a class="headerlink" href="#oslo_messaging_rabbit.amqp_auto_delete" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Auto-delete queues in AMQP.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rpc_conn_pool_size">
+<span class="sig-name descname"><span class="pre">rpc_conn_pool_size</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rpc_conn_pool_size" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Size of RPC connection pool.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.conn_pool_min_size">
+<span class="sig-name descname"><span class="pre">conn_pool_min_size</span></span><a class="headerlink" href="#oslo_messaging_rabbit.conn_pool_min_size" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+</dl>
+<p>The pool size limit for connections expiration policy.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.conn_pool_ttl">
+<span class="sig-name descname"><span class="pre">conn_pool_ttl</span></span><a class="headerlink" href="#oslo_messaging_rabbit.conn_pool_ttl" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1200</span></code></p>
+</dd>
+</dl>
+<p>The time-to-live in sec of idle connections in the pool.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl">
+<span class="sig-name descname"><span class="pre">ssl</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Connect over SSL.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_version">
+<span class="sig-name descname"><span class="pre">ssl_version</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_version" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>SSL version to use (valid only if SSL enabled). Valid values are TLSv1 and SSLv23. SSLv2, SSLv3, TLSv1_1, and TLSv1_2 may be available on some distributions.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This option is deprecated for removal.
+Its value may be silently ignored 
+in the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Reason<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TLS version negotiation is now handled automatically by py-amqp via ssl.SSLContext.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.tls_minimum_version">
+<span class="sig-name descname"><span class="pre">tls_minimum_version</span></span><a class="headerlink" href="#oslo_messaging_rabbit.tls_minimum_version" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1.2, 1.3</p>
+</dd>
+</dl>
+<p>The lowest supported TLS version</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.tls_maximum_version">
+<span class="sig-name descname"><span class="pre">tls_maximum_version</span></span><a class="headerlink" href="#oslo_messaging_rabbit.tls_maximum_version" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1.2, 1.3</p>
+</dd>
+</dl>
+<p>The highest supported TLS version</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_key_file">
+<span class="sig-name descname"><span class="pre">ssl_key_file</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_key_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>SSL key file (valid only if SSL enabled).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_cert_file">
+<span class="sig-name descname"><span class="pre">ssl_cert_file</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_cert_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>SSL cert file (valid only if SSL enabled).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_ca_file">
+<span class="sig-name descname"><span class="pre">ssl_ca_file</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_ca_file" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>SSL certification authority file (valid only if SSL enabled).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_enforce_hostname_verification">
+<span class="sig-name descname"><span class="pre">ssl_enforce_hostname_verification</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_enforce_hostname_verification" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p>When true, verify the broker hostname against the certificate when <code class="docutils literal notranslate"><span class="pre">ssl_ca_file</span></code> is set. When false, <code class="docutils literal notranslate"><span class="pre">ssl</span></code> with <code class="docutils literal notranslate"><span class="pre">ssl_ca_file</span></code> still validates the certificate chain but does not verify the broker hostname. <code class="docutils literal notranslate"><span class="pre">ssl=true</span></code> without <code class="docutils literal notranslate"><span class="pre">ssl_ca_file</span></code> never enables hostname verification.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This option is deprecated for removal.
+Its value may be silently ignored 
+in the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Reason<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Verification is always enabled now</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.ssl_enforce_fips_mode">
+<span class="sig-name descname"><span class="pre">ssl_enforce_fips_mode</span></span><a class="headerlink" href="#oslo_messaging_rabbit.ssl_enforce_fips_mode" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle for enforcing the OpenSSL FIPS mode. This feature requires Python support. This is available in Python 3.9 in all environments and may have been backported to older Python versions on select environments. If the Python executable used does not support OpenSSL FIPS mode, an exception will be raised.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This option is deprecated for removal.
+Its value may be silently ignored 
+in the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Reason<span class="colon">:</span></dt>
+<dd class="field-odd"><p>FIPS_mode_set API was removed in OpenSSL 3.0.0. This option has no effect now.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.kombu_reconnect_delay">
+<span class="sig-name descname"><span class="pre">kombu_reconnect_delay</span></span><a class="headerlink" href="#oslo_messaging_rabbit.kombu_reconnect_delay" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0.0</p>
+</dd>
+<dt class="field-even">Maximum Value<span class="colon">:</span></dt>
+<dd class="field-even"><p>4.5</p>
+</dd>
+</dl>
+<p>How long to wait (in seconds) before reconnecting in response to an AMQP consumer cancel notification.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.kombu_reconnect_splay">
+<span class="sig-name descname"><span class="pre">kombu_reconnect_splay</span></span><a class="headerlink" href="#oslo_messaging_rabbit.kombu_reconnect_splay" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0.0</p>
+</dd>
+</dl>
+<p>Random time to wait for when reconnecting in response to an AMQP consumer cancel notification.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.kombu_compression">
+<span class="sig-name descname"><span class="pre">kombu_compression</span></span><a class="headerlink" href="#oslo_messaging_rabbit.kombu_compression" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>EXPERIMENTAL: Possible values are: gzip, bz2. If not set compression will not be used. This option may not be available in future versions.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.kombu_missing_consumer_retry_timeout">
+<span class="sig-name descname"><span class="pre">kombu_missing_consumer_retry_timeout</span></span><a class="headerlink" href="#oslo_messaging_rabbit.kombu_missing_consumer_retry_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p>How long to wait a missing client before abandoning to send it its replies. This value should not be longer than rpc_response_timeout.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Deprecated Variations</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Group</p></th>
+<th class="head"><p>Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>oslo_messaging_rabbit</p></td>
+<td><p>kombu_reconnect_timeout</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.kombu_failover_strategy">
+<span class="sig-name descname"><span class="pre">kombu_failover_strategy</span></span><a class="headerlink" href="#oslo_messaging_rabbit.kombu_failover_strategy" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">round-robin</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>round-robin, shuffle</p>
+</dd>
+</dl>
+<p>Determines how the next RabbitMQ node is chosen in case the one we are currently connected to becomes unavailable. Takes effect only if more than one RabbitMQ node is provided in config.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_login_method">
+<span class="sig-name descname"><span class="pre">rabbit_login_method</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_login_method" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">AMQPLAIN</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>PLAIN, AMQPLAIN, EXTERNAL, RABBIT-CR-DEMO</p>
+</dd>
+</dl>
+<p>The RabbitMQ login method.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_retry_interval">
+<span class="sig-name descname"><span class="pre">rabbit_retry_interval</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_retry_interval" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>How frequently to retry connecting with RabbitMQ.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_retry_backoff">
+<span class="sig-name descname"><span class="pre">rabbit_retry_backoff</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_retry_backoff" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>How long to backoff for between retries when connecting to RabbitMQ.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_interval_max">
+<span class="sig-name descname"><span class="pre">rabbit_interval_max</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_interval_max" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">30</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Maximum interval of RabbitMQ connection retries.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_ha_queues">
+<span class="sig-name descname"><span class="pre">rabbit_ha_queues</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_ha_queues" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Try to use HA queues in RabbitMQ (x-ha-policy: all). If you change this option, you must wipe the RabbitMQ database. In RabbitMQ 3.0, queue mirroring is no longer controlled by the x-ha-policy argument when declaring a queue. If you just want to make sure that all queues (except those with auto-generated names) are mirrored across all nodes, run: “rabbitmqctl set_policy HA ‘^(?!amq.).*’ ‘{“ha-mode”: “all”}’ “</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_quorum_queue">
+<span class="sig-name descname"><span class="pre">rabbit_quorum_queue</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_quorum_queue" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Use quorum queues in RabbitMQ (x-queue-type: quorum). The quorum queue is a modern queue type for RabbitMQ implementing a durable, replicated FIFO queue based on the Raft consensus algorithm. It is available as of RabbitMQ 3.8.0. If set this option will conflict with the HA queues (<code class="docutils literal notranslate"><span class="pre">rabbit_ha_queues</span></code>) aka mirrored queues, in other words the HA queues should be disabled. Quorum queues are also durable by default so the amqp_durable_queues option is ignored when this option is enabled. When disabled, the RPC and notification queues are non-durable non-exclusive queues (unless amqp_durable_queues is set), which RabbitMQ 4.3.0 and later refuse to create by default. This option will default to True in a future release.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_transient_quorum_queue">
+<span class="sig-name descname"><span class="pre">rabbit_transient_quorum_queue</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_transient_quorum_queue" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Use quorum queues for transients queues in RabbitMQ. Enabling this option will then make sure those queues are also using quorum kind of rabbit queues, which are HA by default. When disabled, the reply and fanout queues are non-durable non-exclusive queues, which RabbitMQ 4.3.0 and later refuse to create by default. This option will default to True in a future release.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_quorum_delivery_limit">
+<span class="sig-name descname"><span class="pre">rabbit_quorum_delivery_limit</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_quorum_delivery_limit" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p>Each time a message is redelivered to a consumer, a counter is incremented. Once the redelivery count exceeds the delivery limit the message gets dropped or dead-lettered (if a DLX exchange has been configured). Used only when rabbit_quorum_queue is enabled. The default of 0 leaves the x-delivery-limit queue argument unset, so RabbitMQ applies its own default (20 on RabbitMQ 4.0 and later). Set to -1 to disable the limit and allow unlimited redeliveries. See <a class="reference external" href="https://www.rabbitmq.com/docs/quorum-queues">https://www.rabbitmq.com/docs/quorum-queues</a></p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_quorum_max_memory_length">
+<span class="sig-name descname"><span class="pre">rabbit_quorum_max_memory_length</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_quorum_max_memory_length" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p>By default all messages are maintained in memory if a quorum queue grows in length it can put memory pressure on a cluster. This option can limit the number of messages in the quorum queue. Used only when rabbit_quorum_queue is enabled. Default 0 which means dont set a limit.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_quorum_max_memory_bytes">
+<span class="sig-name descname"><span class="pre">rabbit_quorum_max_memory_bytes</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_quorum_max_memory_bytes" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p>By default all messages are maintained in memory if a quorum queue grows in length it can put memory pressure on a cluster. This option can limit the number of memory bytes used by the quorum queue. Used only when rabbit_quorum_queue is enabled. Default 0 which means dont set a limit.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_transient_queues_ttl">
+<span class="sig-name descname"><span class="pre">rabbit_transient_queues_ttl</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_transient_queues_ttl" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1800</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>Positive integer representing duration in seconds for queue TTL (x-expires). Queues which are unused for the duration of the TTL are automatically deleted. The parameter affects only reply and fanout queues. Setting 0 as value will disable the x-expires. If doing so, make sure you have a rabbitmq policy to delete the queues or you deployment will create an infinite number of queue over time.In case rabbit_stream_fanout is set to True, this option will control data retention policy (x-max-age) for messages in the fanout queue rather then the queue duration itself. So the oldest data in the stream queue will be discarded from it once reaching TTL Setting to 0 will disable x-max-age for stream which make stream grow indefinitely filling up the diskspace.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_qos_prefetch_count">
+<span class="sig-name descname"><span class="pre">rabbit_qos_prefetch_count</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_qos_prefetch_count" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p>Specifies the number of messages to prefetch. Setting to zero allows unlimited messages.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.heartbeat_timeout_threshold">
+<span class="sig-name descname"><span class="pre">heartbeat_timeout_threshold</span></span><a class="headerlink" href="#oslo_messaging_rabbit.heartbeat_timeout_threshold" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p>Number of seconds after which the Rabbit broker is considered down if heartbeat’s keep-alive fails (0 disables heartbeat).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.heartbeat_rate">
+<span class="sig-name descname"><span class="pre">heartbeat_rate</span></span><a class="headerlink" href="#oslo_messaging_rabbit.heartbeat_rate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p>
+</dd>
+</dl>
+<p>How often times during the heartbeat_timeout_threshold we check the heartbeat.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.direct_mandatory_flag">
+<span class="sig-name descname"><span class="pre">direct_mandatory_flag</span></span><a class="headerlink" href="#oslo_messaging_rabbit.direct_mandatory_flag" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+<p>(DEPRECATED) Enable/Disable the RabbitMQ mandatory flag for direct send. The direct send is used as reply, so the MessageUndeliverable exception is raised in case the client queue does not exist.MessageUndeliverable exception will be used to loop for a timeout to lets a chance to sender to recover.This flag is deprecated and it will not be possible to deactivate this functionality anymore.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This option is deprecated for removal.
+Its value may be silently ignored 
+in the future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Reason<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Mandatory flag no longer deactivable.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.enable_cancel_on_failover">
+<span class="sig-name descname"><span class="pre">enable_cancel_on_failover</span></span><a class="headerlink" href="#oslo_messaging_rabbit.enable_cancel_on_failover" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Enable x-cancel-on-ha-failover flag so that rabbitmq server will cancel and notify consumerswhen queue is down.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.use_queue_manager">
+<span class="sig-name descname"><span class="pre">use_queue_manager</span></span><a class="headerlink" href="#oslo_messaging_rabbit.use_queue_manager" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Should we use consistant queue names or random ones.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.hostname">
+<span class="sig-name descname"><span class="pre">hostname</span></span><a class="headerlink" href="#oslo_messaging_rabbit.hostname" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">node1.example.com</span></code></p>
+</dd>
+</dl>
+<p>This option has a sample default set, which means that
+its actual default value may vary from the one documented
+above.</p>
+<p>Hostname used by queue manager. Defaults to the value returned by socket.gethostname().</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.processname">
+<span class="sig-name descname"><span class="pre">processname</span></span><a class="headerlink" href="#oslo_messaging_rabbit.processname" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">nova-api</span></code></p>
+</dd>
+</dl>
+<p>This option has a sample default set, which means that
+its actual default value may vary from the one documented
+above.</p>
+<p>Process name used by queue manager.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_rabbit.rabbit_stream_fanout">
+<span class="sig-name descname"><span class="pre">rabbit_stream_fanout</span></span><a class="headerlink" href="#oslo_messaging_rabbit.rabbit_stream_fanout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Use stream queues in RabbitMQ (x-queue-type: stream). Streams are a new persistent and replicated data structure (“queue type”) in RabbitMQ which models an append-only log with non-destructive consumer semantics. It is available as of RabbitMQ 3.9.0. If set this option will replace all fanout queues with only one stream queue.</p>
+</dd></dl>
+
+<section id="oslo-messaging-tracing">
+<span id="oslo_messaging_tracing"></span><h2>oslo_messaging_tracing<a class="headerlink" href="#oslo-messaging-tracing" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_tracing.tracing_enabled">
+<span class="sig-name descname"><span class="pre">tracing_enabled</span></span><a class="headerlink" href="#oslo_messaging_tracing.tracing_enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Enable OpenTelemetry tracing for RPC calls.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_tracing.tracing_service_name">
+<span class="sig-name descname"><span class="pre">tracing_service_name</span></span><a class="headerlink" href="#oslo_messaging_tracing.tracing_service_name" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">openstack</span></code></p>
+</dd>
+</dl>
+<p>Service name reported in trace spans.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_tracing.otel_exporter_otlp_endpoint">
+<span class="sig-name descname"><span class="pre">otel_exporter_otlp_endpoint</span></span><a class="headerlink" href="#oslo_messaging_tracing.otel_exporter_otlp_endpoint" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">http://localhost:4318</span></code></p>
+</dd>
+</dl>
+<p>OTLP exporter endpoint URL. For HTTP/protobuf protocol, traces are sent to &lt;endpoint&gt;/v1/traces.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_tracing.otlp_protocol">
+<span class="sig-name descname"><span class="pre">otlp_protocol</span></span><a class="headerlink" href="#oslo_messaging_tracing.otlp_protocol" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">http/protobuf</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>http/protobuf, grpc</p>
+</dd>
+</dl>
+<p>OTLP transport protocol.</p>
+<p class="rubric">Possible values</p>
+<dl class="simple">
+<dt>http/protobuf</dt><dd><p>OTLP over HTTP with Protocol Buffers</p>
+</dd>
+<dt>grpc</dt><dd><p>OTLP over gRPC</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="oslo_messaging_tracing.insecure">
+<span class="sig-name descname"><span class="pre">insecure</span></span><a class="headerlink" href="#oslo_messaging_tracing.insecure" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Disable TLS verification for the OTLP endpoint. Only relevant when using the gRPC protocol.</p>
+</dd></dl>
+
+<section id="api">
+<h2>API<a class="headerlink" href="#api" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="oslo_messaging.opts.list_opts">
+<span class="sig-prename descclassname"><span class="pre">oslo_messaging.opts.</span></span><span class="sig-name descname"><span class="pre">list_opts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#oslo_messaging.opts.list_opts" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of oslo.config options available in the library.</p>
+<p>The returned list includes all oslo.config options which may be registered
+at runtime by the library.</p>
+<p>Each element of the list is a tuple. The first element is the name of the
+group under which the list of elements in the second element will be
+registered. A group name of None corresponds to the [DEFAULT] group in
+config files.</p>
+<p>This function is also discoverable via the ‘oslo_messaging’ entry point
+under the ‘oslo.config.opts’ namespace.</p>
+<p>The purpose of this is to allow tools like the Oslo sample config file
+generator to discover the options exposed to users by this library.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a list of (group_name, opts) tuples</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

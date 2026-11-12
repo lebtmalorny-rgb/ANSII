@@ -1,0 +1,329 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logs — Swift 2.39.0.dev118 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-50">Каталог источников</a> · [50] · <a href="https://docs.openstack.org/swift/latest/logs.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="logs">
+<h1>Logs<a class="headerlink" href="#logs" title="Link to this heading">¶</a></h1>
+<p>Swift has quite verbose logging, and the generated logs can be used for
+cluster monitoring, utilization calculations, audit records, and more. As an
+overview, Swift’s logs are sent to syslog and organized by log level and
+syslog facility. All log lines related to the same request have the same
+transaction id. This page documents the log formats used in the system.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, Swift will log full log lines. However, with the
+<code class="docutils literal notranslate"><span class="pre">log_max_line_length</span></code> setting and depending on your logging server
+software, lines may be truncated or shortened. With <code class="docutils literal notranslate"><span class="pre">log_max_line_length</span> <span class="pre">&lt;</span>
+<span class="pre">7</span></code>, the log line will be truncated. With <code class="docutils literal notranslate"><span class="pre">log_max_line_length</span> <span class="pre">&gt;=</span> <span class="pre">7</span></code>, the
+log line will be “shortened”: about half the max length followed by “ … ”
+followed by the other half the max length. Unless you use exceptionally
+short values, you are unlikely to run across this with the following
+documented log lines, but you may see it with debugging and error log
+lines.</p>
+</div>
+<section id="proxy-logs">
+<h2>Proxy Logs<a class="headerlink" href="#proxy-logs" title="Link to this heading">¶</a></h2>
+<p>The proxy logs contain the record of all external API requests made to the
+proxy server. Swift’s proxy servers log requests using a custom format
+designed to provide robust information and simple processing. It is possible
+to change this format with  the <code class="docutils literal notranslate"><span class="pre">log_msg_template</span></code> config parameter.
+The default log format is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">client_ip</span><span class="p">}</span> <span class="p">{</span><span class="n">remote_addr</span><span class="p">}</span> <span class="p">{</span><span class="n">end_time</span><span class="o">.</span><span class="n">datetime</span><span class="p">}</span> <span class="p">{</span><span class="n">method</span><span class="p">}</span> <span class="p">{</span><span class="n">path</span><span class="p">}</span> <span class="p">{</span><span class="n">protocol</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">status_int</span><span class="p">}</span> <span class="p">{</span><span class="n">referer</span><span class="p">}</span> <span class="p">{</span><span class="n">user_agent</span><span class="p">}</span> <span class="p">{</span><span class="n">auth_token</span><span class="p">}</span> <span class="p">{</span><span class="n">bytes_recvd</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">bytes_sent</span><span class="p">}</span> <span class="p">{</span><span class="n">client_etag</span><span class="p">}</span> <span class="p">{</span><span class="n">transaction_id</span><span class="p">}</span> <span class="p">{</span><span class="n">headers</span><span class="p">}</span> <span class="p">{</span><span class="n">request_time</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">source</span><span class="p">}</span> <span class="p">{</span><span class="n">log_info</span><span class="p">}</span> <span class="p">{</span><span class="n">start_time</span><span class="p">}</span> <span class="p">{</span><span class="n">end_time</span><span class="p">}</span> <span class="p">{</span><span class="n">policy_index</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">access_user_id</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Some keywords, signaled by the (anonymizable) flag, can be anonymized by
+using the transformer ‘anonymized’. The data are applied the hashing method of
+<code class="docutils literal notranslate"><span class="pre">log_anonymization_method</span></code> and an optional salt <code class="docutils literal notranslate"><span class="pre">log_anonymization_salt</span></code>.</p>
+<p>Some keywords, signaled by the (timestamp) flag, can be converted to standard
+dates formats using the matching transformers: ‘datetime’, ‘asctime’ or
+‘iso8601’. Other transformers for timestamps are ‘s’, ‘ms’, ‘us’ and ‘ns’ for
+seconds, milliseconds, microseconds and nanoseconds. Python’s strftime
+directives can also be used as transformers (a, A, b, B, c, d, H, I, j, m, M, p,
+S, U, w, W, x, X, y, Y, Z).</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">client_ip</span><span class="o">.</span><span class="n">anonymized</span><span class="p">}</span> <span class="p">{</span><span class="n">remote_addr</span><span class="o">.</span><span class="n">anonymized</span><span class="p">}</span> <span class="p">{</span><span class="n">start_time</span><span class="o">.</span><span class="n">iso8601</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">end_time</span><span class="o">.</span><span class="n">H</span><span class="p">}:{</span><span class="n">end_time</span><span class="o">.</span><span class="n">M</span><span class="p">}</span> <span class="p">{</span><span class="n">method</span><span class="p">}</span> <span class="n">acc</span><span class="p">:{</span><span class="n">account</span><span class="p">}</span> <span class="n">cnt</span><span class="p">:{</span><span class="n">container</span><span class="p">}</span>
+    <span class="n">obj</span><span class="p">:{</span><span class="nb">object</span><span class="o">.</span><span class="n">anonymized</span><span class="p">}</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Log Field</strong></p></td>
+<td><p><strong>Value</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>client_ip</p></td>
+<td><p>Swift’s guess at the end-client IP, taken from various
+headers in the request. (anonymizable)</p></td>
+</tr>
+<tr class="row-odd"><td><p>remote_addr</p></td>
+<td><p>The IP address of the other end of the TCP connection.
+(anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>end_time</p></td>
+<td><p>Timestamp of the request. (timestamp)</p></td>
+</tr>
+<tr class="row-odd"><td><p>method</p></td>
+<td><p>The HTTP verb in the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>domain</p></td>
+<td><p>The domain in the request. (anonymizable)</p></td>
+</tr>
+<tr class="row-odd"><td><p>path</p></td>
+<td><p>The path portion of the request. (anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>protocol</p></td>
+<td><p>The transport protocol used (currently one of http or
+https).</p></td>
+</tr>
+<tr class="row-odd"><td><p>status_int</p></td>
+<td><p>The response code for the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>referer</p></td>
+<td><p>The value of the HTTP Referer header. (anonymizable)</p></td>
+</tr>
+<tr class="row-odd"><td><p>user_agent</p></td>
+<td><p>The value of the HTTP User-Agent header. (anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>auth_token</p></td>
+<td><p>The value of the auth token. This may be truncated or
+otherwise obscured.</p></td>
+</tr>
+<tr class="row-odd"><td><p>bytes_recvd</p></td>
+<td><p>The number of bytes read from the client for this request.</p></td>
+</tr>
+<tr class="row-even"><td><p>bytes_sent</p></td>
+<td><p>The number of bytes sent to the client in the body of the
+response. This is how many bytes were yielded to the WSGI
+server.</p></td>
+</tr>
+<tr class="row-odd"><td><p>client_etag</p></td>
+<td><p>The etag header value given by the client. (anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>transaction_id</p></td>
+<td><p>The transaction id of the request.</p></td>
+</tr>
+<tr class="row-odd"><td><p>headers</p></td>
+<td><p>The headers given in the request. (anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>request_time</p></td>
+<td><p>The duration of the request.</p></td>
+</tr>
+<tr class="row-odd"><td><p>source</p></td>
+<td><p>The “source” of the request. This may be set for requests
+that are generated in order to fulfill client requests,
+e.g. bulk uploads.</p></td>
+</tr>
+<tr class="row-even"><td><p>log_info</p></td>
+<td><p>Various info that may be useful for diagnostics, e.g. the
+value of any x-delete-at header.</p></td>
+</tr>
+<tr class="row-odd"><td><p>start_time</p></td>
+<td><p>High-resolution timestamp from the start of the request.
+(timestamp)</p></td>
+</tr>
+<tr class="row-even"><td><p>end_time</p></td>
+<td><p>High-resolution timestamp from the end of the request.
+(timestamp)</p></td>
+</tr>
+<tr class="row-odd"><td><p>ttfb</p></td>
+<td><p>Duration between the request and the first bytes is sent.</p></td>
+</tr>
+<tr class="row-even"><td><p>policy_index</p></td>
+<td><p>The value of the storage policy index.</p></td>
+</tr>
+<tr class="row-odd"><td><p>account</p></td>
+<td><p>The account part extracted from the path of the request.
+(anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>container</p></td>
+<td><p>The container part extracted from the path of the request.
+(anonymizable)</p></td>
+</tr>
+<tr class="row-odd"><td><p>object</p></td>
+<td><p>The object part extracted from the path of the request.
+(anonymizable)</p></td>
+</tr>
+<tr class="row-even"><td><p>pid</p></td>
+<td><p>PID of the process emitting the log line.</p></td>
+</tr>
+<tr class="row-odd"><td><p>wire_status_int</p></td>
+<td><p>The status sent to the client, which may be different than
+the logged response code if there was an error during the
+body of the request or a disconnect.</p></td>
+</tr>
+<tr class="row-even"><td><p>access_user_id</p></td>
+<td><p>The user ID for logging. Middlewares should set
+environ[‘swift.access_logging’][‘user_id’] to identify the user
+for logging purposes. For S3 API requests, this contains the S3
+access key ID. Other auth middlewares should set user-specific
+identifiers. For requests without auth middleware support, this
+field will be “-“.</p></td>
+</tr>
+</tbody>
+</table>
+<p>In one log line, all of the above fields are space-separated and url-encoded.
+If any value is empty, it will be logged as a “-”. This allows for simple
+parsing by splitting each line on whitespace. New values may be placed at the
+end of the log line from time to time, but the order of the existing values
+will not change. Swift log processing utilities should look for the first N
+fields they require (e.g. in Python using something like
+<code class="docutils literal notranslate"><span class="pre">log_line.split()[:14]</span></code> to get up through the transaction id).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Some log fields (like the request path) are already url quoted, so the
+logged value will be double-quoted. For example, if a client uploads an
+object name with a <code class="docutils literal notranslate"><span class="pre">:</span></code> in it, it will be url-quoted as <code class="docutils literal notranslate"><span class="pre">%3A</span></code>. The log
+module will then quote this value as <code class="docutils literal notranslate"><span class="pre">%253A</span></code>.</p>
+</div>
+<section id="swift-source">
+<h3>Swift Source<a class="headerlink" href="#swift-source" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">source</span></code> value in the proxy logs is used to identify the originator of a
+request in the system. For example, if the client initiates a bulk upload, the
+proxy server may end up doing many requests. The initial bulk upload request
+will be logged as normal, but all of the internal “child requests” will have a
+source value indicating they came from the bulk functionality.</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Logged Source Value</strong></p></td>
+<td><p><strong>Originator of the Request</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>FP</p></td>
+<td><p><a class="reference internal" href="13.html#formpost"><span class="std std-ref">FormPost</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SLO</p></td>
+<td><p><a class="reference internal" href="https://docs.openstack.org/swift/latest/overview_large_objects.html#static-large-objects"><span class="std std-ref">Static Large Objects</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SW</p></td>
+<td><p><a class="reference internal" href="13.html#staticweb"><span class="std std-ref">StaticWeb</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>TU</p></td>
+<td><p><a class="reference internal" href="13.html#tempurl"><span class="std std-ref">TempURL</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>BD</p></td>
+<td><p><a class="reference internal" href="13.html#bulk"><span class="std std-ref">Bulk Operations (Delete and Archive Auto Extraction)</span></a> (delete)</p></td>
+</tr>
+<tr class="row-odd"><td><p>EA</p></td>
+<td><p><a class="reference internal" href="13.html#bulk"><span class="std std-ref">Bulk Operations (Delete and Archive Auto Extraction)</span></a> (extract)</p></td>
+</tr>
+<tr class="row-even"><td><p>AQ</p></td>
+<td><p><a class="reference internal" href="13.html#account-quotas"><span class="std std-ref">Account Quotas</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>CQ</p></td>
+<td><p><a class="reference internal" href="13.html#container-quotas"><span class="std std-ref">Container Quotas</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>CS</p></td>
+<td><p><a class="reference internal" href="13.html#container-sync"><span class="std std-ref">Container Sync Middleware</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>TA</p></td>
+<td><p><a class="reference internal" href="13.html#common-tempauth"><span class="std std-ref">TempAuth</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>DLO</p></td>
+<td><p><a class="reference internal" href="https://docs.openstack.org/swift/latest/overview_large_objects.html#dynamic-large-objects"><span class="std std-ref">Dynamic Large Objects</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>LE</p></td>
+<td><p><a class="reference internal" href="13.html#list-endpoints"><span class="std std-ref">List Endpoints</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>KS</p></td>
+<td><p><a class="reference internal" href="13.html#keystoneauth"><span class="std std-ref">KeystoneAuth</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>RL</p></td>
+<td><p><a class="reference internal" href="https://docs.openstack.org/swift/latest/ratelimit.html#ratelimit"><span class="std std-ref">Rate Limiting</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>RO</p></td>
+<td><p><a class="reference internal" href="13.html#read-only"><span class="std std-ref">Read Only</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>VW</p></td>
+<td><p><a class="reference internal" href="13.html#versioned-writes"><span class="std std-ref">Versioned Writes</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SSC</p></td>
+<td><p><a class="reference internal" href="13.html#copy"><span class="std std-ref">Server Side Copy</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>SYM</p></td>
+<td><p><a class="reference internal" href="13.html#symlink"><span class="std std-ref">Symlink</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>SH</p></td>
+<td><p><a class="reference internal" href="https://docs.openstack.org/swift/latest/overview_container_sharding.html#sharding-doc"><span class="std std-ref">Container Sharding</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>S3</p></td>
+<td><p><a class="reference internal" href="13.html#s3api"><span class="std std-ref">AWS S3 Api</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>OV</p></td>
+<td><p><a class="reference internal" href="13.html#object-versioning"><span class="std std-ref">Object Versioning</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>EQ</p></td>
+<td><p><a class="reference internal" href="13.html#etag-quoter"><span class="std std-ref">Etag Quoter</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="storage-node-logs">
+<h2>Storage Node Logs<a class="headerlink" href="#storage-node-logs" title="Link to this heading">¶</a></h2>
+<p>Swift’s account, container, and object server processes each log requests
+that they receive, if they have been configured to do so with the
+<code class="docutils literal notranslate"><span class="pre">log_requests</span></code> config parameter (which defaults to true). The format for
+these log lines is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">remote_addr</span> <span class="o">-</span> <span class="o">-</span> <span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="s2">"request_method request_path"</span> <span class="n">status_int</span>
+    <span class="n">content_length</span> <span class="s2">"referer"</span> <span class="s2">"transaction_id"</span> <span class="s2">"user_agent"</span> <span class="n">request_time</span>
+    <span class="n">additional_info</span> <span class="n">server_pid</span> <span class="n">policy_index</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>Log Field</strong></p></td>
+<td><p><strong>Value</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>remote_addr</p></td>
+<td><p>The IP address of the other end of the TCP connection.</p></td>
+</tr>
+<tr class="row-odd"><td><p>datetime</p></td>
+<td><p>Timestamp of the request, in
+“day/month/year:hour:minute:second +0000” format.</p></td>
+</tr>
+<tr class="row-even"><td><p>request_method</p></td>
+<td><p>The HTTP verb in the request.</p></td>
+</tr>
+<tr class="row-odd"><td><p>request_path</p></td>
+<td><p>The path portion of the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>status_int</p></td>
+<td><p>The response code for the request.</p></td>
+</tr>
+<tr class="row-odd"><td><p>content_length</p></td>
+<td><p>The value of the Content-Length header in the response.</p></td>
+</tr>
+<tr class="row-even"><td><p>referer</p></td>
+<td><p>The value of the HTTP Referer header.</p></td>
+</tr>
+<tr class="row-odd"><td><p>transaction_id</p></td>
+<td><p>The transaction id of the request.</p></td>
+</tr>
+<tr class="row-even"><td><p>user_agent</p></td>
+<td><p>The value of the HTTP User-Agent header. Swift services
+report a user-agent string of the service name followed by
+the process ID, such as <code class="docutils literal notranslate"><span class="pre">"proxy-server</span> <span class="pre">&lt;pid</span> <span class="pre">of</span> <span class="pre">the</span>
+<span class="pre">proxy&gt;"</span></code> or <code class="docutils literal notranslate"><span class="pre">"object-updater</span> <span class="pre">&lt;pid</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">object</span>
+<span class="pre">updater&gt;"</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>request_time</p></td>
+<td><p>The time between request received and response started.
+<strong>Note</strong>: This includes transfer time on PUT, but not GET.</p></td>
+</tr>
+<tr class="row-even"><td><p>additional_info</p></td>
+<td><p>Additional useful information.</p></td>
+</tr>
+<tr class="row-odd"><td><p>server_pid</p></td>
+<td><p>The process id of the server</p></td>
+</tr>
+<tr class="row-even"><td><p>policy_index</p></td>
+<td><p>The value of the storage policy index.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

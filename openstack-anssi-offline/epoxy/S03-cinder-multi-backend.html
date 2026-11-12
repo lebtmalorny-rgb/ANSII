@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configure multiple-storage back ends · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="configure-multiple-storage-back-ends">
+<span id="multi-backend"></span><h1>Configure multiple-storage back ends<a class="headerlink" href="#configure-multiple-storage-back-ends" title="Link to this heading">¶</a></h1>
+<p>When you configure multiple-storage back ends, you can create several
+back-end storage solutions that serve the same OpenStack Compute
+configuration and one <code class="docutils literal notranslate"><span class="pre">cinder-volume</span></code> is launched for each back-end
+storage or back-end storage pool.</p>
+<p>In a multiple-storage back-end configuration, each back end has a name
+(<code class="docutils literal notranslate"><span class="pre">volume_backend_name</span></code>). Several back ends can have the same name.
+In that case, the scheduler properly decides which back end the volume
+has to be created in.</p>
+<p>The name of the back end is declared as an extra-specification of a
+volume type (such as, <code class="docutils literal notranslate"><span class="pre">volume_backend_name=LVM</span></code>). When a volume
+is created, the scheduler chooses an appropriate back end to handle the
+request, according to the volume type specified by the user.</p>
+<section id="enable-multiple-storage-back-ends">
+<h2>Enable multiple-storage back ends<a class="headerlink" href="#enable-multiple-storage-back-ends" title="Link to this heading">¶</a></h2>
+<p>To enable a multiple-storage back ends, you must set the
+<cite>enabled_backends</cite> flag in the <code class="docutils literal notranslate"><span class="pre">cinder.conf</span></code> file.
+This flag defines the names (separated by a comma) of the configuration
+groups for the different back ends: one name is associated to one
+configuration group for a back end (such as, <code class="docutils literal notranslate"><span class="pre">[lvmdriver-1]</span></code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The configuration group name is not related to the <code class="docutils literal notranslate"><span class="pre">volume_backend_name</span></code>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After setting the <code class="docutils literal notranslate"><span class="pre">enabled_backends</span></code> flag on an existing cinder
+service, and restarting the Block Storage services, the original <code class="docutils literal notranslate"><span class="pre">host</span></code>
+service is replaced with a new host service. The new service appears
+with a name like <code class="docutils literal notranslate"><span class="pre">host@backend</span></code>. Use:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cinder-manage<span class="w"> </span>volume<span class="w"> </span>update_host<span class="w"> </span>--currenthost<span class="w"> </span>CURRENTHOST<span class="w"> </span>--newhost<span class="w"> </span>CURRENTHOST@BACKEND
+</pre></div>
+</div>
+<p>to convert current block devices to the new host name.</p>
+</div>
+<p>The options for a configuration group must be defined in the group
+(or default options are used). All the standard Block Storage
+configuration options (<code class="docutils literal notranslate"><span class="pre">volume_group</span></code>, <code class="docutils literal notranslate"><span class="pre">volume_driver</span></code>, and so on)
+might be used in a configuration group. Configuration values in
+the <code class="docutils literal notranslate"><span class="pre">[DEFAULT]</span></code> configuration group are not used.</p>
+<p>These examples show three back ends:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">enabled_backends</span><span class="o">=</span><span class="s">lvmdriver-1,lvmdriver-2,lvmdriver-3</span>
+<span class="k">[lvmdriver-1]</span>
+<span class="na">volume_group</span><span class="o">=</span><span class="s">cinder-volumes-1</span>
+<span class="na">volume_driver</span><span class="o">=</span><span class="s">cinder.volume.drivers.lvm.LVMVolumeDriver</span>
+<span class="na">volume_backend_name</span><span class="o">=</span><span class="s">LVM</span>
+<span class="k">[lvmdriver-2]</span>
+<span class="na">volume_group</span><span class="o">=</span><span class="s">cinder-volumes-2</span>
+<span class="na">volume_driver</span><span class="o">=</span><span class="s">cinder.volume.drivers.lvm.LVMVolumeDriver</span>
+<span class="na">volume_backend_name</span><span class="o">=</span><span class="s">LVM</span>
+<span class="k">[lvmdriver-3]</span>
+<span class="na">volume_group</span><span class="o">=</span><span class="s">cinder-volumes-3</span>
+<span class="na">volume_driver</span><span class="o">=</span><span class="s">cinder.volume.drivers.lvm.LVMVolumeDriver</span>
+<span class="na">volume_backend_name</span><span class="o">=</span><span class="s">LVM_b</span>
+</pre></div>
+</div>
+<p>In this configuration, <code class="docutils literal notranslate"><span class="pre">lvmdriver-1</span></code> and <code class="docutils literal notranslate"><span class="pre">lvmdriver-2</span></code> have the same
+<code class="docutils literal notranslate"><span class="pre">volume_backend_name</span></code>. If a volume creation requests the <code class="docutils literal notranslate"><span class="pre">LVM</span></code>
+back end name, the scheduler uses the capacity filter scheduler to choose
+the most suitable driver, which is either <code class="docutils literal notranslate"><span class="pre">lvmdriver-1</span></code> or <code class="docutils literal notranslate"><span class="pre">lvmdriver-2</span></code>.
+The capacity filter scheduler is enabled by default. The next section
+provides more information. In addition, this example presents a
+<code class="docutils literal notranslate"><span class="pre">lvmdriver-3</span></code> back end.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For Fiber Channel drivers that support multipath, the configuration group
+requires the <code class="docutils literal notranslate"><span class="pre">use_multipath_for_image_xfer=true</span></code> option. In
+the example below, you can see details for HPE 3PAR and EMC Fiber
+Channel drivers.</p>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[3par]</span>
+<span class="na">use_multipath_for_image_xfer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
+<span class="na">volume_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder.volume.drivers.hpe.hpe_3par_fc.HPE3PARFCDriver</span>
+<span class="na">volume_backend_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">3parfc</span>
+
+<span class="k">[emc]</span>
+<span class="na">use_multipath_for_image_xfer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
+<span class="na">volume_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder.volume.drivers.emc.emc_smis_fc.EMCSMISFCDriver</span>
+<span class="na">volume_backend_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">emcfc</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-shared-volume-driver-backends">
+<h2>Configure shared volume driver backends<a class="headerlink" href="#configure-shared-volume-driver-backends" title="Link to this heading">¶</a></h2>
+<p>When configuring multiple volume backends, common configuration
+parameters can be shared using the <cite>[backend_defaults]</cite> section. As
+an example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">enabled_backends</span><span class="o">=</span><span class="s">backend1,backend2,backend3</span>
+
+<span class="k">[backend_defaults]</span>
+<span class="na">image_volume_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<span class="na">volume_clear</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">none</span>
+<span class="na">target_helper</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">tgtadm</span>
+<span class="na">volume_driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder.volume.drivers.lvm.LVMVolumeDriver</span>
+
+<span class="k">[backend1]</span>
+<span class="na">volume_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder-volume-1</span>
+<span class="na">image_volume_cache_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">False</span>
+
+<span class="k">[backend2]</span>
+<span class="na">volume_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder-volume-2</span>
+
+<span class="k">[backend3]</span>
+<span class="na">volume_group</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">cinder-volume-3</span>
+</pre></div>
+</div>
+<p>In this configuration, <code class="docutils literal notranslate"><span class="pre">backend2</span></code> and <code class="docutils literal notranslate"><span class="pre">backend3</span></code> have the same
+<code class="docutils literal notranslate"><span class="pre">image_volume_cache_enabled</span></code> as it is defined in the <code class="docutils literal notranslate"><span class="pre">backend_defaults</span></code>
+section. In other words, <code class="docutils literal notranslate"><span class="pre">backend2</span></code> and <code class="docutils literal notranslate"><span class="pre">backend3</span></code> have enabled
+the image cache features. <code class="docutils literal notranslate"><span class="pre">image_volume_cache_enabled</span></code> in <code class="docutils literal notranslate"><span class="pre">backend1</span></code>
+is False, that means any overwritten configuration in a volume backend
+will ignore the original value in <code class="docutils literal notranslate"><span class="pre">backend_defaults</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">backend_defaults</span></code> section should be configured according to
+your cloud environment or your backend driver information.</p>
+</div>
+</section>
+<section id="configure-block-storage-scheduler-multi-back-end">
+<h2>Configure Block Storage scheduler multi back end<a class="headerlink" href="#configure-block-storage-scheduler-multi-back-end" title="Link to this heading">¶</a></h2>
+<p>You must enable the <cite>filter_scheduler</cite> option to use
+multiple-storage back ends. The filter scheduler:</p>
+<ol class="arabic simple">
+<li><p>Filters the available back ends. By default, <code class="docutils literal notranslate"><span class="pre">AvailabilityZoneFilter</span></code>,
+<code class="docutils literal notranslate"><span class="pre">CapacityFilter</span></code> and <code class="docutils literal notranslate"><span class="pre">CapabilitiesFilter</span></code> are enabled.</p></li>
+<li><p>Weights the previously filtered back ends. By default, the
+<cite>CapacityWeigher</cite> option is enabled. When this option is
+enabled, the filter scheduler assigns the highest weight to back
+ends with the most available capacity.</p></li>
+</ol>
+<p>The scheduler uses filters and weights to pick the best back end to
+handle the request. The scheduler uses volume types to explicitly create
+volumes on specific back ends. For more information about filter and weighing,
+see <a class="reference internal" href="https://docs.openstack.org/cinder/2025.1/admin/driver-filter-weighing.html#filter-weigh-scheduler"><span class="std std-ref">Configure and use driver filter and weighing for scheduler</span></a>.</p>
+</section>
+<section id="volume-type">
+<h2>Volume type<a class="headerlink" href="#volume-type" title="Link to this heading">¶</a></h2>
+<p>Before using it, a volume type has to be declared to Block Storage.
+This can be done by the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-username<span class="w"> </span>admin<span class="w"> </span>--os-tenant-name<span class="w"> </span>admin<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>create<span class="w"> </span>lvm
+</pre></div>
+</div>
+<p>Then, an extra-specification has to be created to link the volume
+type to a back end name. Run this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-username<span class="w"> </span>admin<span class="w"> </span>--os-tenant-name<span class="w"> </span>admin<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>lvm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--property<span class="w"> </span><span class="nv">volume_backend_name</span><span class="o">=</span>LVM_iSCSI
+</pre></div>
+</div>
+<p>This example creates a <code class="docutils literal notranslate"><span class="pre">lvm</span></code> volume type with
+<code class="docutils literal notranslate"><span class="pre">volume_backend_name=LVM_iSCSI</span></code> as extra-specifications.</p>
+<p>Create another volume type:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-username<span class="w"> </span>admin<span class="w"> </span>--os-tenant-name<span class="w"> </span>admin<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>create<span class="w"> </span>lvm_gold
+
+<span class="gp">$ </span>openstack<span class="w"> </span>--os-username<span class="w"> </span>admin<span class="w"> </span>--os-tenant-name<span class="w"> </span>admin<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>lvm_gold<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--property<span class="w"> </span><span class="nv">volume_backend_name</span><span class="o">=</span>LVM_iSCSI_b
+</pre></div>
+</div>
+<p>This second volume type is named <code class="docutils literal notranslate"><span class="pre">lvm_gold</span></code> and has <code class="docutils literal notranslate"><span class="pre">LVM_iSCSI_b</span></code> as
+back end name.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To list the extra-specifications, use this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>--os-username<span class="w"> </span>admin<span class="w"> </span>--os-tenant-name<span class="w"> </span>admin<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>list<span class="w"> </span>--long
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a volume type points to a <code class="docutils literal notranslate"><span class="pre">volume_backend_name</span></code> that does not
+exist in the Block Storage configuration, the <code class="docutils literal notranslate"><span class="pre">filter_scheduler</span></code>
+returns an error that it cannot find a valid host with the suitable
+back end.</p>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h2>
+<p>When you create a volume, you must specify the volume type.
+The extra-specifications of the volume type are used to determine which
+back end has to be used.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span>--type<span class="w"> </span>lvm<span class="w"> </span>test_multi_backend
+</pre></div>
+</div>
+<p>Considering the <code class="docutils literal notranslate"><span class="pre">cinder.conf</span></code> described previously, the scheduler
+creates this volume on <code class="docutils literal notranslate"><span class="pre">lvmdriver-1</span></code> or <code class="docutils literal notranslate"><span class="pre">lvmdriver-2</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span>--type<span class="w"> </span>lvm_gold<span class="w"> </span>test_multi_backend
+</pre></div>
+</div>
+<p>This second volume is created on <code class="docutils literal notranslate"><span class="pre">lvmdriver-3</span></code>.</p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект cinder. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/cinder/2025.1/admin/multi-backend.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

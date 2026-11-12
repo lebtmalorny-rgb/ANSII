@@ -1,0 +1,632 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proxy Server Configuration — Swift 2.39.0.dev118 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-52">Каталог источников</a> · [52] · <a href="https://docs.openstack.org/swift/latest/config/proxy_server_config.html#proxy-server">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="proxy-server-configuration">
+<span id="proxy-server-config"></span><h1>Proxy Server Configuration<a class="headerlink" href="#proxy-server-configuration" title="Link to this heading">¶</a></h1>
+<p>This document describes the configuration options available for the proxy
+server. Some proxy server options may be configured on a <a class="reference internal" href="https://docs.openstack.org/swift/latest/deployment_guide.html#proxy-server-per-policy-config"><span class="std std-ref">per-policy</span></a> basis. Additional documentation for
+proxy-server middleware can be found at <a class="reference internal" href="13.html"><span class="doc">Middleware</span></a> and
+<a class="reference internal" href="https://docs.openstack.org/swift/latest/overview_auth.html"><span class="doc">The Auth System</span></a>.</p>
+<p>Documentation for other swift configuration options can be found at
+<a class="reference internal" href="https://docs.openstack.org/swift/latest/config/index.html"><span class="doc">Configuration Documentation</span></a>.</p>
+<p>An example Proxy Server configuration can be found at
+etc/proxy-server.conf-sample in the source code repository.</p>
+<p>The following configuration sections are available:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#proxy-server-default-options"><span class="std std-ref">[DEFAULT]</span></a></p></li>
+<li><p><a class="reference internal" href="#proxy-server">[proxy-server]</a></p></li>
+</ul>
+<section id="default">
+<span id="proxy-server-default-options"></span><h2>[DEFAULT]<a class="headerlink" href="#default" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>Option</p></td>
+<td><p>Default</p></td>
+<td><p>Description</p></td>
+</tr>
+<tr class="row-even"><td><p>bind_ip</p></td>
+<td><p>0.0.0.0</p></td>
+<td><p>IP Address for server to
+bind to</p></td>
+</tr>
+<tr class="row-odd"><td><p>bind_port</p></td>
+<td><p>80</p></td>
+<td><p>Port for server to bind to</p></td>
+</tr>
+<tr class="row-even"><td><p>keep_idle</p></td>
+<td><p>600</p></td>
+<td><p>Value to set for socket TCP_KEEPIDLE</p></td>
+</tr>
+<tr class="row-odd"><td><p>bind_timeout</p></td>
+<td><p>30</p></td>
+<td><p>Seconds to attempt bind before
+giving up</p></td>
+</tr>
+<tr class="row-even"><td><p>backlog</p></td>
+<td><p>4096</p></td>
+<td><p>Maximum number of allowed pending
+connections</p></td>
+</tr>
+<tr class="row-odd"><td><p>swift_dir</p></td>
+<td><p>/etc/swift</p></td>
+<td><p>Swift configuration directory</p></td>
+</tr>
+<tr class="row-even"><td><p>workers</p></td>
+<td><p>auto</p></td>
+<td><p>Override the number of
+pre-forked workers that will
+accept connections.  If set it
+should be an integer, zero
+means no fork.  If unset, it
+will try to default to the
+number of effective cpu cores
+and fallback to one.  See
+<a class="reference internal" href="https://docs.openstack.org/swift/latest/deployment_guide.html#general-service-tuning"><span class="std std-ref">General Service Tuning</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>max_clients</p></td>
+<td><p>1024</p></td>
+<td><p>Maximum number of clients one
+worker can process
+simultaneously (it will
+actually accept(2) N +
+1). Setting this to one (1)
+will only handle one request at
+a time, without accepting
+another request
+concurrently.</p></td>
+</tr>
+<tr class="row-even"><td><p>user</p></td>
+<td><p>swift</p></td>
+<td><p>User to run as</p></td>
+</tr>
+<tr class="row-odd"><td><p>cert_file</p></td>
+<td></td>
+<td><p>Path to the ssl .crt. This
+should be enabled for testing
+purposes only.</p></td>
+</tr>
+<tr class="row-even"><td><p>key_file</p></td>
+<td></td>
+<td><p>Path to the ssl .key. This
+should be enabled for testing
+purposes only.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cors_allow_origin</p></td>
+<td></td>
+<td><p>List of origin hosts that are allowed
+for CORS requests in addition to what
+the container has set.</p></td>
+</tr>
+<tr class="row-even"><td><p>strict_cors_mode</p></td>
+<td><p>True</p></td>
+<td><p>If True (default) then CORS
+requests are only allowed if their
+Origin header matches an allowed
+origin. Otherwise, any Origin is
+allowed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cors_expose_headers</p></td>
+<td></td>
+<td><p>This is a list of headers that
+are included in the header
+Access-Control-Expose-Headers
+in addition to what the container
+has set.</p></td>
+</tr>
+<tr class="row-even"><td><p>client_timeout</p></td>
+<td><p>60</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>trans_id_suffix</p></td>
+<td></td>
+<td><p>This optional suffix (default is empty)
+that would be appended to the swift
+transaction id allows one to easily
+figure out from which cluster that
+X-Trans-Id belongs to. This is very
+useful when one is managing more than
+one swift cluster.</p></td>
+</tr>
+<tr class="row-even"><td><p>log_name</p></td>
+<td><p>swift</p></td>
+<td><p>Label used when logging</p></td>
+</tr>
+<tr class="row-odd"><td><p>log_facility</p></td>
+<td><p>LOG_LOCAL0</p></td>
+<td><p>Syslog log facility</p></td>
+</tr>
+<tr class="row-even"><td><p>log_level</p></td>
+<td><p>INFO</p></td>
+<td><p>Logging level</p></td>
+</tr>
+<tr class="row-odd"><td><p>log_headers</p></td>
+<td><p>False</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>log_address</p></td>
+<td><p>/dev/log</p></td>
+<td><p>Logging directory</p></td>
+</tr>
+<tr class="row-odd"><td><p>log_max_line_length</p></td>
+<td><p>0</p></td>
+<td><p>Caps the length of log
+lines to the value given;
+no limit if set to 0, the
+default.</p></td>
+</tr>
+<tr class="row-even"><td><p>log_custom_handlers</p></td>
+<td><p>None</p></td>
+<td><p>Comma separated list of functions
+to call to setup custom log
+handlers.</p></td>
+</tr>
+<tr class="row-odd"><td><p>log_udp_host</p></td>
+<td></td>
+<td><p>Override log_address</p></td>
+</tr>
+<tr class="row-even"><td><p>log_udp_port</p></td>
+<td><p>514</p></td>
+<td><p>UDP log port</p></td>
+</tr>
+<tr class="row-odd"><td><p>log_statsd_host</p></td>
+<td><p>None</p></td>
+<td><p>Enables StatsD logging; IPv4/IPv6
+address or a hostname.  If a
+hostname resolves to an IPv4 and IPv6
+address, the IPv4 address will be
+used.</p></td>
+</tr>
+<tr class="row-even"><td><p>log_statsd_port</p></td>
+<td><p>8125</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>log_statsd_default_sample_rate</p></td>
+<td><p>1.0</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>log_statsd_sample_rate_factor</p></td>
+<td><p>1.0</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>log_statsd_metric_prefix</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>eventlet_debug</p></td>
+<td><p>false</p></td>
+<td><p>If true, turn on debug logging
+for eventlet</p></td>
+</tr>
+<tr class="row-odd"><td><p>expose_info</p></td>
+<td><p>true</p></td>
+<td><p>Enables exposing configuration
+settings via HTTP GET /info.</p></td>
+</tr>
+<tr class="row-even"><td><p>admin_key</p></td>
+<td></td>
+<td><p>Key to use for admin calls that
+are HMAC signed.  Default
+is empty, which will
+disable admin calls to
+/info.</p></td>
+</tr>
+<tr class="row-odd"><td><p>disallowed_sections</p></td>
+<td><p>swift.valid_api_versions</p></td>
+<td><p>Allows the ability to withhold
+sections from showing up in the
+public calls to /info. You can
+withhold subsections by separating
+the dict level with a “.”.</p></td>
+</tr>
+<tr class="row-even"><td><p>nice_priority</p></td>
+<td><p>None</p></td>
+<td><p>Scheduling priority of server
+processes.
+Niceness values range from -20 (most
+favorable to the process) to 19 (least
+favorable to the process). The default
+does not modify priority.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ionice_class</p></td>
+<td><p>None</p></td>
+<td><p>I/O scheduling class of server
+processes. I/O niceness class values
+are IOPRIO_CLASS_RT (realtime),
+IOPRIO_CLASS_BE (best-effort) and
+IOPRIO_CLASS_IDLE (idle).
+The default does not
+modify class and priority. Linux
+supports io scheduling priorities
+and classes since 2.6.13 with
+the CFQ io scheduler.
+Work only with ionice_priority.</p></td>
+</tr>
+<tr class="row-even"><td><p>ionice_priority</p></td>
+<td><p>None</p></td>
+<td><p>I/O scheduling priority of server
+processes. I/O niceness priority is
+a number which goes from 0 to 7.
+The higher the value, the lower
+the I/O priority of the process.
+Work only with ionice_class.
+Ignored if IOPRIO_CLASS_IDLE is set.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="proxy-server">
+<h2>[proxy-server]<a class="headerlink" href="#proxy-server" title="Link to this heading">¶</a></h2>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>Option</p></td>
+<td><p>Default</p></td>
+<td><p>Description</p></td>
+</tr>
+<tr class="row-even"><td><p>use</p></td>
+<td></td>
+<td><p>Entry point for paste.deploy for
+the proxy server.  For most
+cases, this should be
+<code class="docutils literal notranslate"><span class="pre">egg:swift#proxy</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>set log_name</p></td>
+<td><p>proxy-server</p></td>
+<td><p>Label used when logging</p></td>
+</tr>
+<tr class="row-even"><td><p>set log_facility</p></td>
+<td><p>LOG_LOCAL0</p></td>
+<td><p>Syslog log facility</p></td>
+</tr>
+<tr class="row-odd"><td><p>set log_level</p></td>
+<td><p>INFO</p></td>
+<td><p>Log level</p></td>
+</tr>
+<tr class="row-even"><td><p>set log_headers</p></td>
+<td><p>True</p></td>
+<td><p>If True, log headers in each
+request</p></td>
+</tr>
+<tr class="row-odd"><td><p>set log_handoffs</p></td>
+<td><p>True</p></td>
+<td><p>If True, the proxy will log
+whenever it has to failover to a
+handoff node</p></td>
+</tr>
+<tr class="row-even"><td><p>recheck_account_existence</p></td>
+<td><p>60</p></td>
+<td><p>Cache timeout in seconds to
+send memcached for account
+existence</p></td>
+</tr>
+<tr class="row-odd"><td><p>recheck_container_existence</p></td>
+<td><p>60</p></td>
+<td><p>Cache timeout in seconds to
+send memcached for container
+existence</p></td>
+</tr>
+<tr class="row-even"><td><p>account_existence_skip_cache_pct</p></td>
+<td><p>0.0</p></td>
+<td><p>Periodically, bypass the cache
+for account info requests and
+goto disk to refresh the data
+in the cache. This is a percentage
+of requests should randomly skip.
+Values around 0.0 - 0.1 (1 in every
+1000) are recommended.</p></td>
+</tr>
+<tr class="row-odd"><td><p>container_existence_skip_cache_pct</p></td>
+<td><p>0.0</p></td>
+<td><p>Periodically, bypass the cache
+for container info requests and
+goto disk to refresh the data
+in the cache. This is a percentage
+of requests should randomly skip.
+Values around 0.0 - 0.1 (1 in every
+1000) are recommended.</p></td>
+</tr>
+<tr class="row-even"><td><p>container_updating_shard_ranges_skip_cache_pct</p></td>
+<td><p>0.0</p></td>
+<td><p>Periodically, bypass the cache
+for shard_range update requests and
+goto disk to refresh the data
+in the cache. This is a percentage
+of requests should randomly skip.
+Values around 0.0 - 0.1 (1 in every
+1000) are recommended.</p></td>
+</tr>
+<tr class="row-odd"><td><p>container_listing_shard_ranges_skip_cache_pct</p></td>
+<td><p>0.0</p></td>
+<td><p>Periodically, bypass the cache
+for shard_range listing info requests
+and goto disk to refresh the data
+in the cache. This is a percentage
+of requests should randomly skip.
+Values around 0.0 - 0.1 (1 in every
+1000) are recommended.</p></td>
+</tr>
+<tr class="row-even"><td><p>object_chunk_size</p></td>
+<td><p>65536</p></td>
+<td><p>Chunk size to read from
+object servers</p></td>
+</tr>
+<tr class="row-odd"><td><p>client_chunk_size</p></td>
+<td><p>65536</p></td>
+<td><p>Chunk size to read from
+clients</p></td>
+</tr>
+<tr class="row-even"><td><p>memcache_servers</p></td>
+<td><p>127.0.0.1:11211</p></td>
+<td><p>Comma separated list of
+memcached servers
+ip:port or [ipv6addr]:port,
+if this value is
+empty, the memcache client will look
+for a <a class="reference internal" href="https://docs.openstack.org/swift/latest/config/global_memcache_config.html#memcache-config"><span class="std std-ref">[memcache.conf]</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>memcache_max_connections</p></td>
+<td><p>2</p></td>
+<td><p>Max number of connections to
+each memcached server per
+worker</p></td>
+</tr>
+<tr class="row-even"><td><p>node_timeout</p></td>
+<td><p>10</p></td>
+<td><p>Request timeout to external
+services</p></td>
+</tr>
+<tr class="row-odd"><td><p>recoverable_node_timeout</p></td>
+<td><p>node_timeout</p></td>
+<td><p>Request timeout to external
+services for requests that, on
+failure, can be recovered
+from. For example, object GET.</p></td>
+</tr>
+<tr class="row-even"><td><p>client_timeout</p></td>
+<td><p>60</p></td>
+<td><p>Timeout to read one chunk
+from a client</p></td>
+</tr>
+<tr class="row-odd"><td><p>conn_timeout</p></td>
+<td><p>0.5</p></td>
+<td><p>Connection timeout to
+external services</p></td>
+</tr>
+<tr class="row-even"><td><p>error_suppression_interval</p></td>
+<td><p>60</p></td>
+<td><p>Time in seconds that must
+elapse since the last error
+for a node to be considered
+no longer error limited</p></td>
+</tr>
+<tr class="row-odd"><td><p>error_suppression_limit</p></td>
+<td><p>10</p></td>
+<td><p>Error count to consider a
+node error limited</p></td>
+</tr>
+<tr class="row-even"><td><p>allow_account_management</p></td>
+<td><p>false</p></td>
+<td><p>Whether account PUTs and DELETEs
+are even callable</p></td>
+</tr>
+<tr class="row-odd"><td><p>account_autocreate</p></td>
+<td><p>false</p></td>
+<td><p>If set to ‘true’ authorized
+accounts that do not yet exist
+within the Swift cluster will
+be automatically created.</p></td>
+</tr>
+<tr class="row-even"><td><p>max_containers_per_account</p></td>
+<td><p>0</p></td>
+<td><p>If set to a positive value,
+trying to create a container
+when the account already has at
+least this maximum containers
+will result in a 403 Forbidden.
+Note: This is a soft limit,
+meaning a user might exceed the
+cap for
+recheck_account_existence before
+the 403s kick in.</p></td>
+</tr>
+<tr class="row-odd"><td><p>max_containers_whitelist</p></td>
+<td></td>
+<td><p>This is a comma separated list
+of account names that ignore
+the max_containers_per_account
+cap.</p></td>
+</tr>
+<tr class="row-even"><td><p>rate_limit_after_segment</p></td>
+<td><p>10</p></td>
+<td><p>Rate limit the download of
+large object segments after
+this segment is downloaded.</p></td>
+</tr>
+<tr class="row-odd"><td><p>rate_limit_segments_per_sec</p></td>
+<td><p>1</p></td>
+<td><p>Rate limit large object
+downloads at this rate.</p></td>
+</tr>
+<tr class="row-even"><td><p>request_node_count</p></td>
+<td><p>2 * replicas</p></td>
+<td><p>Set to the number of nodes to
+contact for a normal request.
+You can use ‘* replicas’ at the
+end to have it use the number
+given times the number of
+replicas for the ring being used
+for the request.</p></td>
+</tr>
+<tr class="row-odd"><td><p>swift_owner_headers</p></td>
+<td><p>&lt;see the sample
+conf file for
+the list of
+default
+headers&gt;</p></td>
+<td><p>These are the headers whose
+values will only be shown to
+swift_owners. The exact
+definition of a swift_owner is
+up to the auth system in use,
+but usually indicates
+administrative responsibilities.</p></td>
+</tr>
+<tr class="row-even"><td><p>sorting_method</p></td>
+<td><p>shuffle</p></td>
+<td><p>Storage nodes can be chosen at
+random (shuffle), by using timing
+measurements (timing), or by using
+an explicit match (affinity).
+Using timing measurements may allow
+for lower overall latency, while
+using affinity allows for finer
+control. In both the timing and
+affinity cases, equally-sorting nodes
+are still randomly chosen to spread
+load. This option may be overridden
+in a per-policy configuration
+section.</p></td>
+</tr>
+<tr class="row-odd"><td><p>timing_expiry</p></td>
+<td><p>300</p></td>
+<td><p>If the “timing” sorting_method is
+used, the timings will only be valid
+for the number of seconds configured
+by timing_expiry.</p></td>
+</tr>
+<tr class="row-even"><td><p>concurrent_gets</p></td>
+<td><p>off</p></td>
+<td><p>Use replica count number of
+threads concurrently during a
+GET/HEAD and return with the
+first successful response. In
+the EC case, this parameter only
+affects an EC HEAD as an EC GET
+behaves differently.</p></td>
+</tr>
+<tr class="row-odd"><td><p>concurrency_timeout</p></td>
+<td><p>conn_timeout</p></td>
+<td><p>This parameter controls how long
+to wait before firing off the
+next concurrent_get thread. A
+value of 0 would we fully concurrent,
+any other number will stagger the
+firing of the threads. This number
+should be between 0 and node_timeout.
+The default is conn_timeout (0.5).</p></td>
+</tr>
+<tr class="row-even"><td><p>nice_priority</p></td>
+<td><p>None</p></td>
+<td><p>Scheduling priority of server
+processes.
+Niceness values range from -20 (most
+favorable to the process) to 19 (least
+favorable to the process). The default
+does not modify priority.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ionice_class</p></td>
+<td><p>None</p></td>
+<td><p>I/O scheduling class of server
+processes. I/O niceness class values
+are IOPRIO_CLASS_RT (realtime),
+IOPRIO_CLASS_BE (best-effort),
+and IOPRIO_CLASS_IDLE (idle).
+The default does not modify class and
+priority. Linux supports io scheduling
+priorities and classes since 2.6.13
+with the CFQ io scheduler.
+Work only with ionice_priority.</p></td>
+</tr>
+<tr class="row-even"><td><p>ionice_priority</p></td>
+<td><p>None</p></td>
+<td><p>I/O scheduling priority of server
+processes. I/O niceness priority is
+a number which goes from 0 to 7.
+The higher the value, the lower the
+I/O priority of the process. Work
+only with ionice_class.
+Ignored if IOPRIO_CLASS_IDLE is set.</p></td>
+</tr>
+<tr class="row-odd"><td><p>read_affinity</p></td>
+<td><p>None</p></td>
+<td><p>Specifies which backend servers to
+prefer on reads; used in conjunction
+with the sorting_method option being
+set to ‘affinity’. Format is a comma
+separated list of affinity descriptors
+of the form &lt;selection&gt;=&lt;priority&gt;.
+The &lt;selection&gt; may be r&lt;N&gt; for
+selecting nodes in region N or
+r&lt;N&gt;z&lt;M&gt; for selecting nodes in
+region N, zone M. The &lt;priority&gt;
+value should be a whole number
+that represents the priority to
+be given to the selection; lower
+numbers are higher priority.
+Default is empty, meaning no
+preference. This option may be
+overridden in a per-policy
+configuration section.</p></td>
+</tr>
+<tr class="row-even"><td><p>write_affinity</p></td>
+<td><p>None</p></td>
+<td><p>Specifies which backend servers to
+prefer on writes. Format is a comma
+separated list of affinity
+descriptors of the form r&lt;N&gt; for
+region N or r&lt;N&gt;z&lt;M&gt; for region N,
+zone M. Default is empty, meaning no
+preference. This option may be
+overridden in a per-policy
+configuration section.</p></td>
+</tr>
+<tr class="row-odd"><td><p>write_affinity_node_count</p></td>
+<td><p>2 * replicas</p></td>
+<td><p>The number of local (as governed by
+the write_affinity setting) nodes to
+attempt to contact first on writes,
+before any non-local ones. The value
+should be an integer number, or use
+‘* replicas’ at the end to have it
+use the number given times the number
+of replicas for the ring being used
+for the request. This option may be
+overridden in a per-policy
+configuration section.</p></td>
+</tr>
+<tr class="row-even"><td><p>write_affinity_handoff_delete_count</p></td>
+<td><p>auto</p></td>
+<td><p>The number of local (as governed by
+the write_affinity setting) handoff
+nodes to attempt to contact on
+deletion, in addition to primary
+nodes. Example: in geographically
+distributed deployment, If replicas=3,
+sometimes there may be 1 primary node
+and 2 local handoff nodes in one region
+holding the object after uploading but
+before object replicated to the
+appropriate locations in other regions.
+In this case, include these handoff
+nodes to send request when deleting
+object could help make correct decision
+for the response. The default value ‘auto’
+means Swift will calculate the number
+automatically, the default value is
+(replicas - len(local_primary_nodes)).
+This option may be overridden in a
+per-policy configuration section.</p></td>
+</tr>
+<tr class="row-odd"><td><p>allow_open_expired</p></td>
+<td><p>false</p></td>
+<td><p>If true (default is false), an object that
+has expired but not yet been reaped can be
+can be accessed by setting the
+‘x-open-expired’ header to true in
+GET, HEAD, and POST requests.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RabbitMQ · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="rabbitmq">
+<span id="id1"></span><h1>RabbitMQ<a class="headerlink" href="#rabbitmq" title="Link to this heading">¶</a></h1>
+<p>RabbitMQ is a message broker written in Erlang.
+It is currently the default provider of message queues in Kolla Ansible
+deployments.</p>
+<section id="tls-encryption">
+<h2>TLS encryption<a class="headerlink" href="#tls-encryption" title="Link to this heading">¶</a></h2>
+<p>There are a number of channels to consider when securing RabbitMQ
+communication. Kolla Ansible currently supports TLS encryption of the
+following:</p>
+<ul class="simple">
+<li><p>client-server traffic, typically between OpenStack services using the
+<a class="extlink-oslo.messaging reference external" href="https://docs.openstack.org/oslo.messaging/2025.1//">oslo.messaging</a> library and RabbitMQ</p></li>
+<li><p>RabbitMQ Management API and UI (frontend connection to HAProxy only)</p></li>
+</ul>
+<p>Encryption of the following channels is not currently supported:</p>
+<ul class="simple">
+<li><p>RabbitMQ cluster traffic between RabbitMQ server nodes</p></li>
+<li><p>RabbitMQ CLI communication with RabbitMQ server nodes</p></li>
+<li><p>RabbitMQ Management API and UI (backend connection from HAProxy to RabbitMQ)</p></li>
+</ul>
+<section id="client-server">
+<h3>Client-server<a class="headerlink" href="#client-server" title="Link to this heading">¶</a></h3>
+<p>Encryption of client-server traffic is enabled by setting
+<code class="docutils literal notranslate"><span class="pre">rabbitmq_enable_tls</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>. Additionally, certificates and keys must
+be available in the following paths (in priority order):</p>
+<p>Certificates:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/{{</span> <span class="pre">inventory_hostname</span> <span class="pre">}}/rabbitmq-cert.pem"</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/{{</span> <span class="pre">inventory_hostname</span> <span class="pre">}}-cert.pem"</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/rabbitmq-cert.pem"</span></code></p></li>
+</ul>
+<p>Keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/{{</span> <span class="pre">inventory_hostname</span> <span class="pre">}}/rabbitmq-key.pem"</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/{{</span> <span class="pre">inventory_hostname</span> <span class="pre">}}-key.pem"</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"{{</span> <span class="pre">kolla_certificates_dir</span> <span class="pre">}}/rabbitmq-key.pem"</span></code></p></li>
+</ul>
+<p>The default for <code class="docutils literal notranslate"><span class="pre">kolla_certificates_dir</span></code> is <code class="docutils literal notranslate"><span class="pre">/etc/kolla/certificates</span></code>.</p>
+<p>The certificates must be valid for the IP address of the host running RabbitMQ
+on the API network.</p>
+<p>Additional TLS configuration options may be passed to RabbitMQ via
+<code class="docutils literal notranslate"><span class="pre">rabbitmq_tls_options</span></code>. This should be a dict, and the keys will be prefixed
+with <code class="docutils literal notranslate"><span class="pre">ssl_options.</span></code>. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rabbitmq_tls_options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ciphers.1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ECDHE-ECDSA-AES256-GCM-SHA384</span>
+<span class="w">  </span><span class="nt">ciphers.2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ECDHE-RSA-AES256-GCM-SHA384</span>
+<span class="w">  </span><span class="nt">ciphers.3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ECDHE-ECDSA-AES256-SHA384</span>
+<span class="w">  </span><span class="nt">honor_cipher_order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">honor_ecc_order</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>Details on configuration of RabbitMQ for TLS can be found in the <a class="reference external" href="https://www.rabbitmq.com/ssl.html">RabbitMQ
+documentation</a>.</p>
+<p>When <code class="docutils literal notranslate"><span class="pre">om_rabbitmq_enable_tls</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code> (it defaults to the value of
+<code class="docutils literal notranslate"><span class="pre">rabbitmq_enable_tls</span></code>), applicable OpenStack services will be configured to
+use oslo.messaging with TLS enabled. The CA certificate is configured via
+<code class="docutils literal notranslate"><span class="pre">om_rabbitmq_cacert</span></code> (it defaults to <code class="docutils literal notranslate"><span class="pre">rabbitmq_cacert</span></code>, which points to the
+system’s trusted CA certificate bundle for TLS). Note that there is currently
+no support for using client certificates.</p>
+<p>For testing purposes, Kolla Ansible provides the <code class="docutils literal notranslate"><span class="pre">kolla-ansible</span> <span class="pre">certificates</span></code>
+command, which will generate self-signed certificates for RabbitMQ if
+<code class="docutils literal notranslate"><span class="pre">rabbitmq_enable_tls</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+</section>
+<section id="management-api-and-ui">
+<h3>Management API and UI<a class="headerlink" href="#management-api-and-ui" title="Link to this heading">¶</a></h3>
+<p>The management API and UI are accessed via HAProxy, exposed only on the
+internal VIP. As such, traffic to this endpoint is encrypted when
+<code class="docutils literal notranslate"><span class="pre">kolla_enable_tls_internal</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>. See <a class="reference internal" href="E01-kolla-ansible-advanced-configuration.html#tls-configuration"><span class="std std-ref">TLS Configuration</span></a>.</p>
+</section>
+</section>
+<section id="passing-arguments-to-rabbitmq-server-s-erlang-vm">
+<h2>Passing arguments to RabbitMQ server’s Erlang VM<a class="headerlink" href="#passing-arguments-to-rabbitmq-server-s-erlang-vm" title="Link to this heading">¶</a></h2>
+<p>Erlang programs run in an Erlang VM (virtual machine) and use the Erlang
+runtime.  The Erlang VM can be configured.</p>
+<p>Kolla Ansible makes it possible to pass arguments to the Erlang VM via the
+usage of the <code class="docutils literal notranslate"><span class="pre">rabbitmq_server_additional_erl_args</span></code> variable. The contents of
+it are appended to the <code class="docutils literal notranslate"><span class="pre">RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS</span></code> environment
+variable which is passed to the RabbitMQ server startup script. Kolla Ansible
+already configures RabbitMQ server for IPv6 (if necessary). Any argument can be
+passed there as documented in <a class="reference external" href="https://www.rabbitmq.com/runtime.html">https://www.rabbitmq.com/runtime.html</a></p>
+<p>The default value for <code class="docutils literal notranslate"><span class="pre">rabbitmq_server_additional_erl_args</span></code> is <code class="docutils literal notranslate"><span class="pre">+S</span> <span class="pre">2:2</span> <span class="pre">+sbwt</span>
+<span class="pre">none</span> <span class="pre">+sbwtdcpu</span> <span class="pre">none</span> <span class="pre">+sbwtdio</span> <span class="pre">none</span></code>.</p>
+<p>By default RabbitMQ starts N schedulers where N is the number of CPU cores,
+including hyper-threaded cores. This is fine when you assume all CPUs are
+dedicated to RabbitMQ. Its not a good idea in a typical Kolla Ansible setup.
+Here we go for two scheduler threads (<code class="docutils literal notranslate"><span class="pre">+S</span> <span class="pre">2:2</span></code>).  More details can be found
+here: <a class="reference external" href="https://www.rabbitmq.com/runtime.html#scheduling">https://www.rabbitmq.com/runtime.html#scheduling</a> and here:
+<a class="reference external" href="https://erlang.org/doc/man/erl.html#emulator-flags">https://erlang.org/doc/man/erl.html#emulator-flags</a></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">+sbwt</span> <span class="pre">none</span> <span class="pre">+sbwtdcpu</span> <span class="pre">none</span> <span class="pre">+sbwtdio</span> <span class="pre">none</span></code> arguments prevent busy waiting
+of the scheduler, for more details see:
+<a class="reference external" href="https://www.rabbitmq.com/runtime.html#busy-waiting">https://www.rabbitmq.com/runtime.html#busy-waiting</a>.</p>
+</section>
+<section id="high-availability">
+<span id="id2"></span><h2>High Availability<a class="headerlink" href="#high-availability" title="Link to this heading">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In the Epoxy release of Kolla, the version of RabbitMQ will be updated to
+4.0. As a result, <strong>all queues must be migrated to a durable type prior to
+upgrading to Epoxy.</strong> This can be done by setting the following options and
+then following the migration procedure outlined below.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">om_enable_queue_manager</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">om_enable_rabbitmq_quorum_queues</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">om_enable_rabbitmq_transient_quorum_queue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">om_enable_rabbitmq_stream_fanout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</div>
+<p>With the release of RabbitMQ 4.0, all queues are highly available as they are
+configured to be quorum queues by default. RabbitMQ also offer queues called
+streams, which can be used to replace “fanout” queues with a more performant
+alternative. This is enabled by default, but can be disabled by setting
+<code class="docutils literal notranslate"><span class="pre">om_enable_rabbitmq_stream_fanout:</span> <span class="pre">false</span></code>. When changing queues to a
+different type, the follow procedure will be needed.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Since the default changed to have all queues be of durable type in the Epoxy
+release, following procedure is required to be carried out before any
+upgrade to Epoxy.</p>
+</div>
+<ol class="arabic">
+<li><p>Generate the new config for all services. After this, make sure not to
+restart any containers until after the RabbitMQ state has been reset.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible genconfig</span>
+</pre></div>
+</div>
+</li>
+<li><p>Stop all OpenStack services which use RabbitMQ, so that they will not
+attempt to recreate any queues yet.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible stop --tags &lt;service-tags&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Reconfigure RabbitMQ if you were previously using
+<code class="docutils literal notranslate"><span class="pre">om_enable_rabbitmq_high_availability</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible reconfigure --tags rabbitmq</span>
+</pre></div>
+</div>
+</li>
+<li><p>Reset the state on each RabbitMQ, to remove the old transient queues and
+exchanges.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible rabbitmq-reset-state</span>
+</pre></div>
+</div>
+</li>
+<li><p>Start the OpenStack services again, at which point they will recreate the
+appropriate queues as durable.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible deploy --tags &lt;service-tags&gt;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<section id="rabbitmq-versions">
+<h3>RabbitMQ Versions<a class="headerlink" href="#rabbitmq-versions" title="Link to this heading">¶</a></h3>
+<p>Kolla ships multiple versions of RabbitMQ.</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Supported RabbitMQ versions</span><a class="headerlink" href="#id3" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>OpenStack Release</p></th>
+<th class="head"><p>Default RabbitMQ version</p></th>
+<th class="head"><p>Additional RabbitMQ version</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>2025.1 Epoxy</p></td>
+<td><p>4.0</p></td>
+<td><p>4.1</p></td>
+</tr>
+<tr class="row-odd"><td><p>2024.1 Caracal/2024.2 Dalmatian</p></td>
+<td><p>3.13</p></td>
+<td><p>4.1</p></td>
+</tr>
+</tbody>
+</table>
+<p>Although Kolla-Ansible supports RabbitMQ upgrade when upgrading OpenStack from
+Caracal/Dalmatian to Epoxy, <strong>it is highly recommended to upgrade RabbitMQ to
+4.1 (the latest RabbitMQ supported by Epoxy/Dalmatian/Caracal Kolla-Ansible)
+prior to OpenStack upgrade to Epoxy</strong>
+You can upgrade RabbitMQ to 4.1 with following steps.</p>
+<ol class="arabic">
+<li><p>Queue migration</p>
+<p>See <a class="reference internal" href="#high-availability"><span class="std std-ref">High Availability</span></a> section above</p>
+</li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">rabbitmq_image</span></code> in your configuration <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code> to use later version of RabbitMQ</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is recommended to set <code class="docutils literal notranslate"><span class="pre">rabbitmq_image</span></code> before running upgrade command to
+maintain idempotency</p>
+<p>If you’re upgrading the system from Caracal or Dalmatian and already
+upgraded RabbitMQ to 4.1, <code class="docutils literal notranslate"><span class="pre">rabbitmq_image</span></code> must be overridden as
+follows to prevent the downgrade of RabbitMQ while upgrading the system to
+Epoxy.</p>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">rabbitmq_image</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">docker_registry</span><span class="nv"> </span><span class="s">~</span><span class="nv"> </span><span class="s">'/'</span><span class="nv"> </span><span class="s">if</span><span class="nv"> </span><span class="s">docker_registry</span><span class="nv"> </span><span class="s">else</span><span class="nv"> </span><span class="s">''</span><span class="nv"> </span><span class="s">}}{{</span><span class="nv"> </span><span class="s">docker_namespace</span><span class="nv"> </span><span class="s">}}/rabbitmq-4-1"</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run upgrade command</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible upgrade --tags rabbitmq</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект kolla-ansible. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/message-queues/rabbitmq.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

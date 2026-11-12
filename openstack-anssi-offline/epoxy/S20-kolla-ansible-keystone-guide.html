@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keystone - Identity service · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="keystone-identity-service">
+<span id="keystone-guide"></span><h1>Keystone - Identity service<a class="headerlink" href="#keystone-identity-service" title="Link to this heading">¶</a></h1>
+<section id="fernet-tokens">
+<h2>Fernet Tokens<a class="headerlink" href="#fernet-tokens" title="Link to this heading">¶</a></h2>
+<p>Fernet tokens require the use of keys that must be synchronised between
+Keystone servers. Kolla Ansible deploys two containers to handle this -
+<code class="docutils literal notranslate"><span class="pre">keystone_fernet</span></code> runs cron jobs to rotate keys via rsync when necessary.
+<code class="docutils literal notranslate"><span class="pre">keystone_ssh</span></code> is an SSH server that provides the transport for rsync. In a
+multi-host control plane, these rotations are performed by the hosts in a
+round-robin manner.</p>
+<p>The following variables may be used to configure the token expiry and key
+rotation.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">fernet_token_expiry</span></code></dt><dd><p>Keystone fernet token expiry in seconds. Default is 86400, which is 1 day.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">fernet_token_allow_expired_window</span></code></dt><dd><p>Keystone window to allow expired fernet tokens. Default is 172800, which is
+2 days.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">fernet_key_rotation_interval</span></code></dt><dd><p>Keystone fernet key rotation interval in seconds. Default is sum of token
+expiry and allow expired window, which is 3 days.</p>
+</dd>
+</dl>
+<p>The default rotation interval is set up to ensure that the minimum number of
+keys may be active at any time. This is one primary key, one secondary key and
+a buffer key - three in total. If the rotation interval is set lower than the
+sum of the token expiry and token allow expired window, more active keys will
+be configured in Keystone as necessary.</p>
+<p>Further information on Fernet tokens is available in the
+<a class="extlink-keystone reference external" href="https://docs.openstack.org/keystone/2025.1/admin/fernet-token-faq.html">Keystone documentation</a>.</p>
+</section>
+<section id="federated-identity">
+<h2>Federated identity<a class="headerlink" href="#federated-identity" title="Link to this heading">¶</a></h2>
+<p>Keystone allows users to be authenticated via identity federation. This means
+integrating OpenStack Keystone with an identity provider. The use of identity
+federation allows users to access OpenStack services without the necessity of
+an account in the OpenStack environment per se. The authentication is then
+off-loaded to the identity provider of the federation.</p>
+<p>To enable identity federation, you will need to execute a set of configurations
+in multiple OpenStack systems. Therefore, it is easier to use Kolla Ansible
+to execute this process for operators.</p>
+<p>For upstream documentations, please see
+<a class="extlink-keystone reference external" href="E08-keystone-configure_federation.html">Configuring Keystone for Federation</a></p>
+<section id="supported-protocols">
+<h3>Supported protocols<a class="headerlink" href="#supported-protocols" title="Link to this heading">¶</a></h3>
+<p>OpenStack supports both OpenID Connect and SAML protocols for federated
+identity, but for now, kolla Ansible supports only OpenID Connect.
+Therefore, if you desire to use SAML in your environment, you will need
+to set it up manually or extend Kolla Ansible to also support it.</p>
+</section>
+<section id="setting-up-openid-connect-via-kolla-ansible">
+<span id="setup-oidc-kolla-ansible"></span><h3>Setting up OpenID Connect via Kolla Ansible<a class="headerlink" href="#setting-up-openid-connect-via-kolla-ansible" title="Link to this heading">¶</a></h3>
+<p>First, you will need to register the OpenStack (Keystone) in your Identity
+provider as a Service Provider.</p>
+<p>After registering Keystone, you will need to add the Identity Provider
+configurations in your kolla-ansible globals configuration as the example
+below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">keystone_identity_providers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"myidp1"</span>
+<span class="w">    </span><span class="nt">openstack_domain</span><span class="p">:</span><span class="w"> </span><span class="s">"my-domain"</span>
+<span class="w">    </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="s">"openid"</span>
+<span class="w">    </span><span class="nt">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">"https://accounts.google.com"</span>
+<span class="w">    </span><span class="nt">public_name</span><span class="p">:</span><span class="w"> </span><span class="s">"Authenticate</span><span class="nv"> </span><span class="s">via</span><span class="nv"> </span><span class="s">myidp1"</span>
+<span class="w">    </span><span class="nt">attribute_mapping</span><span class="p">:</span><span class="w"> </span><span class="s">"mappingId1"</span>
+<span class="w">    </span><span class="nt">metadata_folder</span><span class="p">:</span><span class="w"> </span><span class="s">"path/to/metadata/folder"</span>
+<span class="w">    </span><span class="nt">certificate_file</span><span class="p">:</span><span class="w"> </span><span class="s">"path/to/certificate/file.pem"</span>
+
+<span class="nt">keystone_identity_mappings</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"mappingId1"</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="s">"/full/qualified/path/to/mapping/json/file/to/mappingId1"</span>
+</pre></div>
+</div>
+<p>In some cases it’s necessary to add JWKS (JSON Web Key Set) uri.
+It is required for auth-openidc endpoint - which is
+used by OpenStack command line client. Example config shown below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">keystone_federation_oidc_jwks_uri</span><span class="p">:</span><span class="w"> </span><span class="s">"https://&lt;AUTH</span><span class="nv"> </span><span class="s">PROVIDER&gt;/&lt;ID&gt;/discovery/v2.0/keys"</span>
+</pre></div>
+</div>
+<p>Some identity providers need additional <code class="docutils literal notranslate"><span class="pre">mod_auth_openidc</span></code> config, which can
+be passed with the <code class="docutils literal notranslate"><span class="pre">keystone_federation_oidc_additional_options</span></code> variable:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">keystone_federation_oidc_additional_options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">OIDCOutgoingProxy</span><span class="p">:</span><span class="w"> </span><span class="s">"http://proxy.example.com"</span>
+</pre></div>
+</div>
+</section>
+<section id="identity-providers-configurations">
+<h3>Identity providers configurations<a class="headerlink" href="#identity-providers-configurations" title="Link to this heading">¶</a></h3>
+<section id="name">
+<h4>name<a class="headerlink" href="#name" title="Link to this heading">¶</a></h4>
+<p>The internal name of the Identity provider in OpenStack.</p>
+</section>
+<section id="openstack-domain">
+<h4>openstack_domain<a class="headerlink" href="#openstack-domain" title="Link to this heading">¶</a></h4>
+<p>The OpenStack domain that the Identity Provider belongs.</p>
+</section>
+<section id="protocol">
+<h4>protocol<a class="headerlink" href="#protocol" title="Link to this heading">¶</a></h4>
+<p>The federated protocol used by the IdP; e.g. openid or saml. We support only
+OpenID connect right now.</p>
+</section>
+<section id="identifier">
+<h4>identifier<a class="headerlink" href="#identifier" title="Link to this heading">¶</a></h4>
+<p>The Identity provider URL; e.g. <a class="reference external" href="https://accounts.google.com">https://accounts.google.com</a> .</p>
+</section>
+<section id="public-name">
+<h4>public_name<a class="headerlink" href="#public-name" title="Link to this heading">¶</a></h4>
+<p>The Identity provider public name that will be shown for users in the Horizon
+login page.</p>
+</section>
+<section id="attribute-mapping">
+<h4>attribute_mapping<a class="headerlink" href="#attribute-mapping" title="Link to this heading">¶</a></h4>
+<p>The attribute mapping to be used for the Identity Provider. This mapping is
+expected to already exist in OpenStack or be configured in the
+<cite>keystone_identity_mappings</cite> property.</p>
+</section>
+<section id="metadata-folder">
+<h4>metadata_folder<a class="headerlink" href="#metadata-folder" title="Link to this heading">¶</a></h4>
+<p>Path to the folder containing all of the identity provider metadata as JSON
+files.</p>
+<p>The metadata folder must have all your Identity Providers configurations,
+the name of the files will be the name (with path) of the Issuer configuration.
+Such as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="o">&lt;</span><span class="n">IDP</span> <span class="n">metadata</span> <span class="n">directory</span><span class="o">&gt;</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">client</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">conf</span>
+  <span class="o">|</span>
+  <span class="o">-</span> <span class="n">keycloak</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">org</span><span class="o">%</span><span class="mi">2</span><span class="n">Fauth</span><span class="o">%</span><span class="mi">2</span><span class="n">Frealms</span><span class="o">%</span><span class="mi">2</span><span class="n">Fidp</span><span class="o">.</span><span class="n">provider</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The name of the file must be URL-encoded if needed. For example, if you have
+an Issuer with <code class="docutils literal notranslate"><span class="pre">/</span></code> in the URL, then you need to escape it to <code class="docutils literal notranslate"><span class="pre">%2F</span></code> by
+applying a URL escape in the file name.</p>
+</div>
+<p>The content of these files must be a JSON</p>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code>:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.client</span></code> file handles the Service Provider credentials in the Issuer.</p>
+<p>During the first step, when you registered the OpenStack as a
+Service Provider in the Identity Provider, you submitted a <cite>cliend_id</cite> and
+generated a <cite>client_secret</cite>, so these are the values you must use in this
+JSON file.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"client_id"</span><span class="p">:</span><span class="s2">"&lt;openid_client_id&gt;"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"client_secret"</span><span class="p">:</span><span class="s2">"&lt;openid_client_secret&gt;"</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">conf</span></code>:</p>
+<p>This file will be a JSON that overrides some of the OpenID Connect options. The
+options that can be overridden are listed in the
+<a class="reference internal" href="#openid-connect-apache2-plugin-documentation">OpenID Connect Apache2 plugin documentation</a>.
+.. <span class="target" id="openid-connect-apache2-plugin-documentation">OpenID Connect Apache2 plugin documentation</span>: <a class="reference external" href="https://github.com/zmartzone/mod_auth_openidc/wiki/Multiple-Providers#opclient-configuration">https://github.com/zmartzone/mod_auth_openidc/wiki/Multiple-Providers#opclient-configuration</a></p>
+<p>If you do not want to override the config values, you can leave this file as
+an empty JSON file such as <code class="docutils literal notranslate"><span class="pre">{}</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">provider</span></code>:</p>
+<p>This file will contain all specifications about the IdentityProvider. To
+simplify, you can just use the JSON returned in the <code class="docutils literal notranslate"><span class="pre">.well-known</span></code>
+Identity provider’s endpoint:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"issuer"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://accounts.google.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"authorization_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://accounts.google.com/o/oauth2/v2/auth"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"token_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://oauth2.googleapis.com/token"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"userinfo_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://openidconnect.googleapis.com/v1/userinfo"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"revocation_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://oauth2.googleapis.com/revoke"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"jwks_uri"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://www.googleapis.com/oauth2/v3/certs"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"response_types_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"code"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"token id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"code token id_token"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"none"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"subject_types_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"public"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"id_token_signing_alg_values_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"RS256"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"scopes_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"openid"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"profile"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"token_endpoint_auth_methods_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"client_secret_post"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"client_secret_basic"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"claims_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"aud"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"email_verified"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"exp"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"family_name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"given_name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"iat"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"iss"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"locale"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"name"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"picture"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"sub"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"code_challenge_methods_supported"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">   </span><span class="s2">"plain"</span><span class="p">,</span>
+<span class="w">   </span><span class="s2">"S256"</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="certificate-file">
+<h4>certificate_file<a class="headerlink" href="#certificate-file" title="Link to this heading">¶</a></h4>
+<p>Optional path to the Identity Provider certificate file.  If included,
+the file must be named as ‘certificate-key-id.pem’. E.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">fb8ca5b7d8d9a5c6c6788071e866c6c40f3fc1f9</span><span class="o">.</span><span class="n">pem</span>
+</pre></div>
+</div>
+<p>You can find the key-id in the Identity provider
+<cite>.well-known/openid-configuration</cite> <cite>jwks_uri</cite> like in
+<cite>https://www.googleapis.com/oauth2/v3/certs</cite> :</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"keys"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"e"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AQAB"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"use"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sig"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"n"</span><span class="p">:</span><span class="w"> </span><span class="s2">"zK8PHf_6V3G5rU-viUOL1HvAYn7q--dxMoU..."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"kty"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RSA"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"kid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fb8ca5b7d8d9a5c6c6788071e866c6c40f3fc1f9"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"alg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RS256"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The public key is different from the certificate, the file in this
+configuration must be the Identity provider’s certificate and not the
+Identity provider’s public key.</p>
+</div>
+</section>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект kolla-ansible. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/shared-services/keystone-guide.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

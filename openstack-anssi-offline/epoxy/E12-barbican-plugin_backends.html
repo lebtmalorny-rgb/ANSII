@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Using Secret Store Plugins in Barbican · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="using-secret-store-plugins-in-barbican">
+<h1>Using Secret Store Plugins in Barbican<a class="headerlink" href="#using-secret-store-plugins-in-barbican" title="Link to this heading">¶</a></h1>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading">¶</a></h2>
+<p>By default, Barbican is configured to use one active secret store plugin in a
+deployment. This means that all of the new secrets are going to be stored via
+same plugin mechanism (i.e. same storage backend).</p>
+<p>In <strong>Newton</strong> OpenStack release, support for configuring multiple secret store
+plugin backends is added (<a class="reference external" href="https://review.opendev.org/#/c/263972">Spec Link</a>). As part of this change, client can
+choose to select preferred plugin backend for storing their secret at a project
+level.</p>
+</section>
+<section id="enabling-multiple-barbican-backends">
+<h2>Enabling Multiple Barbican Backends<a class="headerlink" href="#enabling-multiple-barbican-backends" title="Link to this heading">¶</a></h2>
+<p>Multiple backends support may be needed in specific deployment/ use-case
+scenarios and can be enabled via configuration.</p>
+<p>For this, a Barbican deployment may have more than one secret storage backend
+added in service configuration. Project administrators will have choice of
+pre-selecting one backend as the preferred choice for secrets created under
+that project. Any <strong>new</strong> secret created under that project will use the
+preferred backend to store its key material. When there is no project level
+storage backend selected, then new secret will use the global secret storage
+backend.</p>
+<p>Multiple plugin configuration can be defined as follows.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[secretstore]</span>
+<span class="c1"># Set to True when multiple plugin backends support is needed</span>
+<span class="na">enable_multiple_secret_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<span class="na">stores_lookup_suffix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">software, kmip, pkcs11, dogtag, vault</span>
+
+<span class="k">[secretstore:software]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+<span class="na">crypto_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">simple_crypto</span>
+
+<span class="k">[secretstore:kmip]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">kmip_plugin</span>
+<span class="na">global_default</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+
+<span class="k">[secretstore:dogtag]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">dogtag_plugin</span>
+
+<span class="k">[secretstore:pkcs11]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+<span class="na">crypto_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">p11_crypto</span>
+
+<span class="k">[secretstore:vault]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">vault_plugin</span>
+</pre></div>
+</div>
+<p>When <cite>enable_multiple_secret_stores</cite> is enabled (True), then list property
+<cite>stores_lookup_suffix</cite> is used for looking up supported plugin names in
+configuration section. This section name is constructed using pattern
+‘secretstore:{one_of_suffix}’. One of the plugin <strong>must</strong> be explicitly
+identified as global default i.e. <cite>global_default = True</cite>. Ordering of suffix
+and label used does not matter as long as there is a matching section defined
+in service configuration.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For existing Barbican deployment case, its recommended to keep existing
+secretstore and crypto plugin (if applicable) name combination to be used as
+global default secret store. This is needed to be consistent with existing
+behavior.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When multiple plugins support is enabled, then <cite>enabled_secretstore_plugins</cite>
+and <cite>enabled_crypto_plugins</cite> values are <strong>not</strong> used to instantiate relevant
+plugins. Only above mentioned mechanism is used to identify and instantiate
+store and crypto plugins.</p>
+</div>
+<p>Multiple backend can be useful in following type of usage scenarios.</p>
+<ul class="simple">
+<li><p>In a deployment, a deployer may be okay in storing their dev/test resources
+using a low-security secret store, such as one backend using software-only
+crypto, but may want to use an HSM-backed secret store for production
+resources.</p></li>
+<li><p>In a deployment, for certain use cases where a client requires high
+concurrent access of stored keys, HSM might not be a good storage backend.
+Also scaling them horizontally to provide higher scalability is a costly
+approach with respect to database.</p></li>
+<li><p>HSM devices generally have limited storage capacity so a deployment will
+have to watch its stored keys size proactively to remain under the limit
+constraint. This is more applicable in KMIP backend than with PKCS11 backend
+because of plugin’s different storage approach. This aspect can also result
+from above use case scenario where deployment is storing non-sensitive (from
+dev/test environment) encryption keys in HSM.</p></li>
+<li><p>Barbican running as IaaS service or platform component where some class of
+client services have strict compliance requirements (e.g. FIPS) so will use
+HSM backed plugins whereas others may be okay storing keys in software-only
+crypto plugin.</p></li>
+</ul>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект barbican. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/barbican/2025.1/configuration/plugin_backends.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

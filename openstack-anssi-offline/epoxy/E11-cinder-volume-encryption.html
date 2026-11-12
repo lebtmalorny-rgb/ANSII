@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Volume encryption supported by the key manager · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="volume-encryption-supported-by-the-key-manager">
+<span id="volume-encryption"></span><h1>Volume encryption supported by the key manager<a class="headerlink" href="#volume-encryption-supported-by-the-key-manager" title="Link to this heading">¶</a></h1>
+<p>We recommend the Key management service (barbican) for storing
+encryption keys used by the OpenStack volume encryption feature. It can
+be enabled by updating <code class="docutils literal notranslate"><span class="pre">cinder.conf</span></code> and <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code>.</p>
+<section id="initial-configuration">
+<h2>Initial configuration<a class="headerlink" href="#initial-configuration" title="Link to this heading">¶</a></h2>
+<p>Configuration changes need to be made to any nodes running the
+<code class="docutils literal notranslate"><span class="pre">cinder-api</span></code> or <code class="docutils literal notranslate"><span class="pre">nova-compute</span></code> server.</p>
+<p>Steps to update <code class="docutils literal notranslate"><span class="pre">cinder-api</span></code> servers:</p>
+<ol class="arabic">
+<li><p>Edit the <code class="docutils literal notranslate"><span class="pre">/etc/cinder/cinder.conf</span></code> file to use Key management service
+as follows:</p>
+<ul>
+<li><p>Look for the <code class="docutils literal notranslate"><span class="pre">[key_manager]</span></code> section.</p></li>
+<li><p>Enter a new line directly below <code class="docutils literal notranslate"><span class="pre">[key_manager]</span></code> with the following:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">barbican</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Restart <code class="docutils literal notranslate"><span class="pre">cinder-api</span></code>, <code class="docutils literal notranslate"><span class="pre">cinder-volume</span></code> and <code class="docutils literal notranslate"><span class="pre">cinder-backup</span></code>.</p></li>
+</ol>
+<p>Update <code class="docutils literal notranslate"><span class="pre">nova-compute</span></code> servers:</p>
+<ol class="arabic">
+<li><p>Install the <code class="docutils literal notranslate"><span class="pre">python-barbicanclient</span></code> Python package.</p></li>
+<li><p>Set up the Key Manager service by editing <code class="docutils literal notranslate"><span class="pre">/etc/nova/nova.conf</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[key_manager]</span>
+<span class="na">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">barbican</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use a ‘#’ prefix to comment out the line in this section that
+begins with ‘fixed_key’.</p>
+</div>
+</li>
+<li><p>Restart <code class="docutils literal notranslate"><span class="pre">nova-compute</span></code>.</p></li>
+</ol>
+</section>
+<section id="key-management-access-control">
+<h2>Key management access control<a class="headerlink" href="#key-management-access-control" title="Link to this heading">¶</a></h2>
+<p>Special privileges can be assigned on behalf of an end user to allow
+them to manage their own encryption keys, which are required when
+creating the encrypted volumes. The Barbican <a class="reference external" href="https://docs.openstack.org/barbican/latest/admin/access_control.html#default-policy">Default Policy</a>
+for access control specifies that only users with an <code class="docutils literal notranslate"><span class="pre">admin</span></code> or
+<code class="docutils literal notranslate"><span class="pre">creator</span></code> role can create keys. The policy is very flexible and
+can be modified.</p>
+<p>To assign the <code class="docutils literal notranslate"><span class="pre">creator</span></code> role, the admin must know the user ID,
+project ID, and creator role ID. See <a class="reference external" href="https://docs.openstack.org/keystone/latest/admin/cli-manage-projects-users-and-roles.html#assign-a-role">Assign a role</a>
+for more information. An admin can list existing roles and associated
+IDs using the <code class="docutils literal notranslate"><span class="pre">openstack</span> <span class="pre">role</span> <span class="pre">list</span></code> command. If the creator
+role does not exist, the admin can <a class="reference external" href="https://docs.openstack.org/keystone/latest/admin/cli-manage-projects-users-and-roles.html#create-a-role">create the role</a>.</p>
+</section>
+<section id="create-an-encrypted-volume-type">
+<span id="create-encrypted-volume-type"></span><h2>Create an encrypted volume type<a class="headerlink" href="#create-an-encrypted-volume-type" title="Link to this heading">¶</a></h2>
+<p>Block Storage volume type assignment provides scheduling to a specific
+back-end, and can be used to specify actionable information for a
+back-end storage device.</p>
+<p>This example creates a volume type called LUKS and provides
+configuration information for the storage system to encrypt or decrypt
+the volume.</p>
+<ol class="arabic">
+<li><p>Source your admin credentials:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>.<span class="w"> </span>admin-openrc.sh
+</pre></div>
+</div>
+</li>
+<li><p>Create the volume type, marking the volume type as encrypted and providing
+the necessary details. Use <code class="docutils literal notranslate"><span class="pre">--encryption-control-location</span></code> to specify
+where encryption is performed: <code class="docutils literal notranslate"><span class="pre">front-end</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">back-end</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>create<span class="w"> </span>--encryption-provider<span class="w"> </span>luks<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--encryption-cipher<span class="w"> </span>aes-xts-plain64<span class="w"> </span>--encryption-key-size<span class="w"> </span><span class="m">256</span><span class="w"> </span>--encryption-control-location<span class="w"> </span>front-end<span class="w"> </span>LUKS
+
+<span class="go">  +-------------+----------------------------------------------------------------+</span>
+<span class="go">  | Field       | Value                                                          |</span>
+<span class="go">  +-------------+----------------------------------------------------------------+</span>
+<span class="go">  | description | None                                                           |</span>
+<span class="go">  | encryption  | cipher='aes-xts-plain64', control_location='front-end',        |</span>
+<span class="go">  |             | encryption_id='8584c43f-1666-43d1-a348-45cfcef72898',          |</span>
+<span class="go">  |             | key_size='256',                                                |</span>
+<span class="go">  |             | provider='luks'                                                |</span>
+<span class="go">  | id          | b9a8cff5-2f60-40d1-8562-d33f3bf18312                           |</span>
+<span class="go">  | is_public   | True                                                           |</span>
+<span class="go">  | name        | LUKS                                                           |</span>
+<span class="go">  +-------------+----------------------------------------------------------------+</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>The OpenStack dashboard (horizon) supports creating the encrypted
+volume type as of the Kilo release. For instructions, see
+<a class="reference external" href="https://docs.openstack.org/horizon/latest/admin/manage-volumes.html#create-an-encrypted-volume-type">Create an encrypted volume type</a>.</p>
+</section>
+<section id="create-an-encrypted-volume">
+<h2>Create an encrypted volume<a class="headerlink" href="#create-an-encrypted-volume" title="Link to this heading">¶</a></h2>
+<p>Use the OpenStack dashboard (horizon), or <strong class="command">openstack volume
+create</strong> command to create volumes just as you normally would. For an
+encrypted volume, pass the <code class="docutils literal notranslate"><span class="pre">--type</span> <span class="pre">LUKS</span></code> flag, which specifies that the
+volume type will be <code class="docutils literal notranslate"><span class="pre">LUKS</span></code> (Linux Unified Key Setup). If that argument is
+left out, the default volume type, <code class="docutils literal notranslate"><span class="pre">unencrypted</span></code>, is used.</p>
+<ol class="arabic">
+<li><p>Source your admin credentials:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>.<span class="w"> </span>admin-openrc.sh
+</pre></div>
+</div>
+</li>
+<li><p>Create an unencrypted 1GB test volume:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s1">'unencrypted volume'</span>
+</pre></div>
+</div>
+</li>
+<li><p>Create an encrypted 1GB test volume:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span>--type<span class="w"> </span>LUKS<span class="w"> </span><span class="s1">'encrypted volume'</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Notice the encrypted parameter; it will show <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+The option <code class="docutils literal notranslate"><span class="pre">volume_type</span></code> is also shown for easy review.</p>
+<p>Non-admin users need the <code class="docutils literal notranslate"><span class="pre">creator</span></code> role to store secrets in Barbican
+and to create encrypted volumes. As an administrator, you can give a user
+the creator role in the following way:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>role<span class="w"> </span>add<span class="w"> </span>--project<span class="w"> </span>PROJECT<span class="w"> </span>--user<span class="w"> </span>USER<span class="w"> </span>creator
+</pre></div>
+</div>
+<p>For details, see the
+<a class="reference external" href="https://docs.openstack.org/barbican/latest/admin/access_control.html">Barbican Access Control page</a>.</p>
+</section>
+<section id="testing-volume-encryption">
+<h2>Testing volume encryption<a class="headerlink" href="#testing-volume-encryption" title="Link to this heading">¶</a></h2>
+<p>This is a simple test scenario to help validate your encryption. It
+assumes an LVM based Block Storage server.</p>
+<p>Perform these steps after completing the volume encryption setup and
+creating the volume-type for LUKS as described in the preceding
+sections.</p>
+<ol class="arabic">
+<li><p>Create a VM:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>server<span class="w"> </span>create<span class="w"> </span>--image<span class="w"> </span>cirros-0.3.1-x86_64-disk<span class="w"> </span>--flavor<span class="w"> </span>m1.tiny<span class="w"> </span>TESTVM
+</pre></div>
+</div>
+</li>
+<li><p>Create two volumes, one encrypted and one not encrypted then attach them
+to your VM:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s1">'unencrypted volume'</span>
+<span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>create<span class="w"> </span>--size<span class="w"> </span><span class="m">1</span><span class="w"> </span>--type<span class="w"> </span>LUKS<span class="w"> </span><span class="s1">'encrypted volume'</span>
+<span class="gp">$ </span>openstack<span class="w"> </span>volume<span class="w"> </span>list
+<span class="gp">$ </span>openstack<span class="w"> </span>server<span class="w"> </span>add<span class="w"> </span>volume<span class="w"> </span>--device<span class="w"> </span>/dev/vdb<span class="w"> </span>TESTVM<span class="w"> </span><span class="s1">'unencrypted volume'</span>
+<span class="gp">$ </span>openstack<span class="w"> </span>server<span class="w"> </span>add<span class="w"> </span>volume<span class="w"> </span>--device<span class="w"> </span>/dev/vdc<span class="w"> </span>TESTVM<span class="w"> </span><span class="s1">'encrypted volume'</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">--device</span></code> option to specify the mountpoint for the attached volume
+may not be where the block device is actually attached in the guest VM,
+it is used here for illustration purposes.</p>
+</div>
+</li>
+<li><p>On the VM, send some text to the newly attached volumes and synchronize
+them:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Hello, world (unencrypted /dev/vdb)"</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/dev/vdb
+<span class="gp"># </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Hello, world (encrypted /dev/vdc)"</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/dev/vdc
+<span class="gp"># </span>sync<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">2</span>
+<span class="gp"># </span>sync<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+</li>
+<li><p>On the system hosting cinder volume services, synchronize to flush the
+I/O cache then test to see if your strings can be found:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>sync<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">2</span>
+<span class="gp"># </span>sync<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sleep<span class="w"> </span><span class="m">2</span>
+<span class="gp"># </span>strings<span class="w"> </span>/dev/stack-volumes/volume-*<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"Hello"</span>
+<span class="go">Hello, world (unencrypted /dev/vdb)</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>In the above example you see that the search returns the string
+written to the unencrypted volume, but not the encrypted one.</p>
+</section>
+<section id="known-issues">
+<h2>Known Issues<a class="headerlink" href="#known-issues" title="Link to this heading">¶</a></h2>
+<p>Retyping an unencrypted volume to the same size encrypted volume will
+most likely fail. Even though the volume is the same size as the source
+volume, the encrypted volume needs to store additional encryption
+information overhead. This results in the new volume not being large
+enough to hold all data.</p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект cinder. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/cinder/2025.1/configuration/block-storage/volume-encryption.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

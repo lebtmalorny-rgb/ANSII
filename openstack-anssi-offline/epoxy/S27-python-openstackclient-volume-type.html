@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>volume type · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="volume-type">
+<h1>volume type<a class="headerlink" href="#volume-type" title="Link to this heading">¶</a></h1>
+<p>Block Storage v1, v2, v3</p>
+<section id="volume-type-create">
+<h2>volume type create<a class="headerlink" href="#volume-type-create" title="Link to this heading">¶</a></h2>
+<p>Create new volume type</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>create
+<span class="w">    </span><span class="o">[</span>--description<span class="w"> </span>&lt;description&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--public<span class="w"> </span><span class="p">|</span><span class="w"> </span>--private<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--property<span class="w"> </span>&lt;<span class="nv">key</span><span class="o">=</span>value&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--multiattach<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--cacheable<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--replicated<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--availability-zone<span class="w"> </span>AVAILABILITY_ZONES<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project<span class="w"> </span>&lt;project&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-provider<span class="w"> </span>&lt;provider&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-cipher<span class="w"> </span>&lt;cipher&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-key-size<span class="w"> </span>&lt;key-size&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-control-location<span class="w"> </span>&lt;control-location&gt;<span class="o">]</span>
+<span class="w">    </span>&lt;name&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-description">
+<span class="sig-name descname"><span class="pre">--description</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;description&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-description" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type description</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-public">
+<span class="sig-name descname"><span class="pre">--public</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-public" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type is accessible to the public</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-private">
+<span class="sig-name descname"><span class="pre">--private</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-private" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type is not accessible to the public</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-property">
+<span class="sig-name descname"><span class="pre">--property</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key=value&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-property" title="Link to this definition">¶</a></dt>
+<dd><p>Set a property on this volume type (repeat option to set multiple properties)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-multiattach">
+<span class="sig-name descname"><span class="pre">--multiattach</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-multiattach" title="Link to this definition">¶</a></dt>
+<dd><p>Enable multi-attach for this volume type (this is an alias for ‘–property multiattach=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-cacheable">
+<span class="sig-name descname"><span class="pre">--cacheable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-cacheable" title="Link to this definition">¶</a></dt>
+<dd><p>Enable caching for this volume type (this is an alias for ‘–property cacheable=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-replicated">
+<span class="sig-name descname"><span class="pre">--replicated</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-replicated" title="Link to this definition">¶</a></dt>
+<dd><p>Enabled replication for this volume type (this is an alias for ‘–property replication_enabled=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-availability-zone">
+<span class="sig-name descname"><span class="pre">--availability-zone</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;AVAILABILITY_ZONES&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-availability-zone" title="Link to this definition">¶</a></dt>
+<dd><p>Set an availability zone for this volume type (this is an alias for ‘–property RESKEY:availability_zones:&lt;az&gt;’) (repeat option to set multiple availability zones)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-project">
+<span class="sig-name descname"><span class="pre">--project</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-project" title="Link to this definition">¶</a></dt>
+<dd><p>Allow &lt;project&gt; to access private type (name or ID) (must be used with –private option)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-encryption-provider">
+<span class="sig-name descname"><span class="pre">--encryption-provider</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;provider&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-encryption-provider" title="Link to this definition">¶</a></dt>
+<dd><p>Set the encryption provider format for this volume type (e.g “luks” or “plain”) (admin only) (this option is required when setting encryption type of a volume; consider using other encryption options such as: “–encryption-cipher”, “–encryption-key-size” and “–encryption-control-location”)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-encryption-cipher">
+<span class="sig-name descname"><span class="pre">--encryption-cipher</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cipher&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-encryption-cipher" title="Link to this definition">¶</a></dt>
+<dd><p>Set the encryption algorithm or mode for this volume type (e.g “aes-xts-plain64”) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-encryption-key-size">
+<span class="sig-name descname"><span class="pre">--encryption-key-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key-size&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-encryption-key-size" title="Link to this definition">¶</a></dt>
+<dd><p>Set the size of the encryption key of this volume type (e.g “128” or “256”) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-encryption-control-location">
+<span class="sig-name descname"><span class="pre">--encryption-control-location</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;control-location&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-encryption-control-location" title="Link to this definition">¶</a></dt>
+<dd><p>Set the notional service where the encryption is performed (“front-end” or “back-end”) (admin only) (The default value for this option is “front-end” when setting encryption type of a volume. Consider using other encryption options such as: “–encryption-cipher”, “–encryption-key-size” and “–encryption-provider”)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-create-arg-name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-create-arg-name" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type name</p>
+</dd></dl>
+
+</section>
+<section id="volume-type-delete">
+<h2>volume type delete<a class="headerlink" href="#volume-type-delete" title="Link to this heading">¶</a></h2>
+<p>Delete volume type(s)</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>delete<span class="w"> </span>&lt;volume-type&gt;<span class="w"> </span><span class="o">[</span>&lt;volume-type&gt;<span class="w"> </span>...<span class="o">]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-delete-arg-volume-type">
+<span class="sig-name descname"><span class="pre">volume-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-delete-arg-volume-type" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type(s) to delete (name or ID)</p>
+</dd></dl>
+
+</section>
+<section id="volume-type-list">
+<h2>volume type list<a class="headerlink" href="#volume-type-list" title="Link to this heading">¶</a></h2>
+<p>List volume types</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>list
+<span class="w">    </span><span class="o">[</span>--sort-column<span class="w"> </span>SORT_COLUMN<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--sort-ascending<span class="w"> </span><span class="p">|</span><span class="w"> </span>--sort-descending<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--long<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--default<span class="w"> </span><span class="p">|</span><span class="w"> </span>--public<span class="w"> </span><span class="p">|</span><span class="w"> </span>--private<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-type<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--property<span class="w"> </span>&lt;<span class="nv">key</span><span class="o">=</span>value&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--multiattach<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--cacheable<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--replicated<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--availability-zone<span class="w"> </span>AVAILABILITY_ZONES<span class="o">]</span>
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-sort-column">
+<span class="sig-name descname"><span class="pre">--sort-column</span></span><span class="sig-prename descclassname"> <span class="pre">SORT_COLUMN</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-sort-column" title="Link to this definition">¶</a></dt>
+<dd><p>specify the column(s) to sort the data (columns specified first have a priority, non-existing columns are ignored), can be repeated</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-sort-ascending">
+<span class="sig-name descname"><span class="pre">--sort-ascending</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-sort-ascending" title="Link to this definition">¶</a></dt>
+<dd><p>sort the column(s) in ascending order</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-sort-descending">
+<span class="sig-name descname"><span class="pre">--sort-descending</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-sort-descending" title="Link to this definition">¶</a></dt>
+<dd><p>sort the column(s) in descending order</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-long">
+<span class="sig-name descname"><span class="pre">--long</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-long" title="Link to this definition">¶</a></dt>
+<dd><p>List additional fields in output</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-default">
+<span class="sig-name descname"><span class="pre">--default</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-default" title="Link to this definition">¶</a></dt>
+<dd><p>List the default volume type</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-public">
+<span class="sig-name descname"><span class="pre">--public</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-public" title="Link to this definition">¶</a></dt>
+<dd><p>List only public types</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-private">
+<span class="sig-name descname"><span class="pre">--private</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-private" title="Link to this definition">¶</a></dt>
+<dd><p>List only private types (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-encryption-type">
+<span class="sig-name descname"><span class="pre">--encryption-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-encryption-type" title="Link to this definition">¶</a></dt>
+<dd><p>Display encryption information for each volume type (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-property">
+<span class="sig-name descname"><span class="pre">--property</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key=value&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-property" title="Link to this definition">¶</a></dt>
+<dd><p>Filter by a property on the volume types (repeat option to filter by multiple properties) (admin only except for user-visible extra specs) (supported by –os-volume-api-version 3.52 or above)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-multiattach">
+<span class="sig-name descname"><span class="pre">--multiattach</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-multiattach" title="Link to this definition">¶</a></dt>
+<dd><p>List only volume types with multi-attach enabled (this is an alias for ‘–property multiattach=&lt;is&gt; True’) (supported by –os-volume-api-version 3.52 or above)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-cacheable">
+<span class="sig-name descname"><span class="pre">--cacheable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-cacheable" title="Link to this definition">¶</a></dt>
+<dd><p>List only volume types with caching enabled (this is an alias for ‘–property cacheable=&lt;is&gt; True’) (admin only) (supported by –os-volume-api-version 3.52 or above)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-replicated">
+<span class="sig-name descname"><span class="pre">--replicated</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-replicated" title="Link to this definition">¶</a></dt>
+<dd><p>List only volume types with replication enabled (this is an alias for ‘–property replication_enabled=&lt;is&gt; True’) (supported by –os-volume-api-version 3.52 or above)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-list-availability-zone">
+<span class="sig-name descname"><span class="pre">--availability-zone</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;AVAILABILITY_ZONES&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-list-availability-zone" title="Link to this definition">¶</a></dt>
+<dd><p>List only volume types with this availability configured (this is an alias for ‘–property RESKEY:availability_zones:&lt;az&gt;’) (repeat option to filter on multiple availability zones)</p>
+</dd></dl>
+
+</section>
+<section id="volume-type-set">
+<h2>volume type set<a class="headerlink" href="#volume-type-set" title="Link to this heading">¶</a></h2>
+<p>Set volume type properties</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="nb">set</span>
+<span class="w">    </span><span class="o">[</span>--name<span class="w"> </span>&lt;name&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--description<span class="w"> </span>&lt;description&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--property<span class="w"> </span>&lt;<span class="nv">key</span><span class="o">=</span>value&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--multiattach<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--cacheable<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--replicated<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--availability-zone<span class="w"> </span>AVAILABILITY_ZONES<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project<span class="w"> </span>&lt;project&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--public<span class="w"> </span><span class="p">|</span><span class="w"> </span>--private<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-provider<span class="w"> </span>&lt;provider&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-cipher<span class="w"> </span>&lt;cipher&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-key-size<span class="w"> </span>&lt;key-size&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-control-location<span class="w"> </span>&lt;control-location&gt;<span class="o">]</span>
+<span class="w">    </span>&lt;volume-type&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-name">
+<span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-name" title="Link to this definition">¶</a></dt>
+<dd><p>Set volume type name</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-description">
+<span class="sig-name descname"><span class="pre">--description</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;description&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-description" title="Link to this definition">¶</a></dt>
+<dd><p>Set volume type description</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-property">
+<span class="sig-name descname"><span class="pre">--property</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key=value&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-property" title="Link to this definition">¶</a></dt>
+<dd><p>Set a property on this volume type (repeat option to set multiple properties)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-multiattach">
+<span class="sig-name descname"><span class="pre">--multiattach</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-multiattach" title="Link to this definition">¶</a></dt>
+<dd><p>Enable multi-attach for this volume type (this is an alias for ‘–property multiattach=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-cacheable">
+<span class="sig-name descname"><span class="pre">--cacheable</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-cacheable" title="Link to this definition">¶</a></dt>
+<dd><p>Enable caching for this volume type (this is an alias for ‘–property cacheable=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-replicated">
+<span class="sig-name descname"><span class="pre">--replicated</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-replicated" title="Link to this definition">¶</a></dt>
+<dd><p>Enabled replication for this volume type (this is an alias for ‘–property replication_enabled=&lt;is&gt; True’) (requires driver support)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-availability-zone">
+<span class="sig-name descname"><span class="pre">--availability-zone</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;AVAILABILITY_ZONES&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-availability-zone" title="Link to this definition">¶</a></dt>
+<dd><p>Set an availability zone for this volume type (this is an alias for ‘–property RESKEY:availability_zones:&lt;az&gt;’) (repeat option to set multiple availability zones)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-project">
+<span class="sig-name descname"><span class="pre">--project</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-project" title="Link to this definition">¶</a></dt>
+<dd><p>Set volume type access to project (name or ID) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-public">
+<span class="sig-name descname"><span class="pre">--public</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-public" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type is accessible to the public</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-private">
+<span class="sig-name descname"><span class="pre">--private</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-private" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type is not accessible to the public</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-encryption-provider">
+<span class="sig-name descname"><span class="pre">--encryption-provider</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;provider&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-encryption-provider" title="Link to this definition">¶</a></dt>
+<dd><p>Set the encryption provider format for this volume type (e.g “luks” or “plain”) (admin only) (This option is required when setting encryption type of a volume for the first time. Consider using other encryption options such as: “–encryption-cipher”, “–encryption-key-size” and “–encryption-control-location”)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-encryption-cipher">
+<span class="sig-name descname"><span class="pre">--encryption-cipher</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;cipher&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-encryption-cipher" title="Link to this definition">¶</a></dt>
+<dd><p>Set the encryption algorithm or mode for this volume type (e.g “aes-xts-plain64”) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-encryption-key-size">
+<span class="sig-name descname"><span class="pre">--encryption-key-size</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key-size&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-encryption-key-size" title="Link to this definition">¶</a></dt>
+<dd><p>Set the size of the encryption key of this volume type (e.g “128” or “256”) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-encryption-control-location">
+<span class="sig-name descname"><span class="pre">--encryption-control-location</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;control-location&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-encryption-control-location" title="Link to this definition">¶</a></dt>
+<dd><p>Set the notional service where the encryption is performed (“front-end” or “back-end”) (admin only) (The default value for this option is “front-end” when setting encryption type of a volume for the first time. Consider using other encryption options such as: “–encryption-cipher”, “–encryption-key-size” and “–encryption-provider”)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-set-arg-volume-type">
+<span class="sig-name descname"><span class="pre">volume-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-set-arg-volume-type" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type to modify (name or ID)</p>
+</dd></dl>
+
+</section>
+<section id="volume-type-show">
+<h2>volume type show<a class="headerlink" href="#volume-type-show" title="Link to this heading">¶</a></h2>
+<p>Display volume type details</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span>show<span class="w"> </span><span class="o">[</span>--encryption-type<span class="o">]</span><span class="w"> </span>&lt;volume-type&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-show-encryption-type">
+<span class="sig-name descname"><span class="pre">--encryption-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-show-encryption-type" title="Link to this definition">¶</a></dt>
+<dd><p>Display encryption information of this volume type (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-show-arg-volume-type">
+<span class="sig-name descname"><span class="pre">volume-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-show-arg-volume-type" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type to display (name or ID)</p>
+</dd></dl>
+
+</section>
+<section id="volume-type-unset">
+<h2>volume type unset<a class="headerlink" href="#volume-type-unset" title="Link to this heading">¶</a></h2>
+<p>Unset volume type properties</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>openstack<span class="w"> </span>volume<span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="nb">unset</span>
+<span class="w">    </span><span class="o">[</span>--property<span class="w"> </span>&lt;key&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project<span class="w"> </span>&lt;project&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--project-domain<span class="w"> </span>&lt;project-domain&gt;<span class="o">]</span>
+<span class="w">    </span><span class="o">[</span>--encryption-type<span class="o">]</span>
+<span class="w">    </span>&lt;volume-type&gt;
+</pre></div>
+</div>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-unset-property">
+<span class="sig-name descname"><span class="pre">--property</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;key&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-unset-property" title="Link to this definition">¶</a></dt>
+<dd><p>Remove a property from this volume type (repeat option to remove multiple properties)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-unset-project">
+<span class="sig-name descname"><span class="pre">--project</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-unset-project" title="Link to this definition">¶</a></dt>
+<dd><p>Removes volume type access to project (name or ID) (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-unset-project-domain">
+<span class="sig-name descname"><span class="pre">--project-domain</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;project-domain&gt;</span></span><a class="headerlink" href="#cmdoption-openstack-volume-type-unset-project-domain" title="Link to this definition">¶</a></dt>
+<dd><p>Domain the project belongs to (name or ID). This can be used in case collisions between project names exist.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-unset-encryption-type">
+<span class="sig-name descname"><span class="pre">--encryption-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-unset-encryption-type" title="Link to this definition">¶</a></dt>
+<dd><p>Remove the encryption type for this volume type (admin only)</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-openstack-volume-type-unset-arg-volume-type">
+<span class="sig-name descname"><span class="pre">volume-type</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-openstack-volume-type-unset-arg-volume-type" title="Link to this definition">¶</a></dt>
+<dd><p>Volume type to modify (name or ID)</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект python-openstackclient. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/volume-type.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

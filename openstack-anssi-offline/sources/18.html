@@ -1,0 +1,398 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Advanced Configuration — kolla-ansible 23.1.0.dev36 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-18">Каталог источников</a> · [18] · <a href="https://docs.openstack.org/kolla-ansible/latest/admin/advanced-configuration.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="advanced-configuration">
+<span id="id1"></span><h1>Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Link to this heading">¶</a></h1>
+<section id="endpoint-network-configuration">
+<h2>Endpoint Network Configuration<a class="headerlink" href="#endpoint-network-configuration" title="Link to this heading">¶</a></h2>
+<p>When an OpenStack cloud is deployed, the REST API of each service is presented
+as a series of endpoints. These endpoints are the internal URL, and the
+external URL.</p>
+<p>Kolla offers two options for assigning these endpoints to network addresses:</p>
+<ul class="simple">
+<li><p>Combined - Where both endpoints share the same IP address</p></li>
+<li><p>Separate - Where the external URL is assigned to an IP address that is
+different than the IP address used by the internal URL</p></li>
+</ul>
+<p>The configuration parameters related to these options are:</p>
+<ul class="simple">
+<li><p>kolla_internal_vip_address</p></li>
+<li><p>network_interface</p></li>
+<li><p>kolla_external_vip_address</p></li>
+<li><p>kolla_external_vip_interface</p></li>
+</ul>
+<p>For the combined option, set the two variables below, while allowing the
+other two to accept their default values. In this configuration all REST
+API requests, internal and external, will flow over the same network.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kolla_internal_vip_address</span><span class="p">:</span><span class="w"> </span><span class="s">"10.10.10.254"</span>
+<span class="nt">network_interface</span><span class="p">:</span><span class="w"> </span><span class="s">"eth0"</span>
+</pre></div>
+</div>
+<p>For the separate option, set these four variables. In this configuration
+the internal and external REST API requests can flow over separate
+networks.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kolla_internal_vip_address</span><span class="p">:</span><span class="w"> </span><span class="s">"10.10.10.254"</span>
+<span class="nt">network_interface</span><span class="p">:</span><span class="w"> </span><span class="s">"eth0"</span>
+<span class="nt">kolla_external_vip_address</span><span class="p">:</span><span class="w"> </span><span class="s">"10.10.20.254"</span>
+<span class="nt">kolla_external_vip_interface</span><span class="p">:</span><span class="w"> </span><span class="s">"eth1"</span>
+</pre></div>
+</div>
+</section>
+<section id="fully-qualified-domain-name-configuration">
+<h2>Fully Qualified Domain Name Configuration<a class="headerlink" href="#fully-qualified-domain-name-configuration" title="Link to this heading">¶</a></h2>
+<p>When addressing a server on the internet, it is more common to use
+a name, like <code class="docutils literal notranslate"><span class="pre">www.example.net</span></code>, instead of an address like
+<code class="docutils literal notranslate"><span class="pre">10.10.10.254</span></code>. If you prefer to use names to address the endpoints
+in your kolla deployment use the variables:</p>
+<ul class="simple">
+<li><p>kolla_internal_fqdn</p></li>
+<li><p>kolla_external_fqdn</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kolla_internal_fqdn</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">inside.mykolla.example.net</span>
+<span class="nt">kolla_external_fqdn</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mykolla.example.net</span>
+</pre></div>
+</div>
+<p>Provisions must be taken outside of kolla for these names to map to the
+configured IP addresses. Using a DNS server or the <code class="docutils literal notranslate"><span class="pre">/etc/hosts</span></code> file
+are two ways to create this mapping.</p>
+</section>
+<section id="rabbitmq-hostname-resolution">
+<h2>RabbitMQ Hostname Resolution<a class="headerlink" href="#rabbitmq-hostname-resolution" title="Link to this heading">¶</a></h2>
+<p>RabbitMQ doesn’t work with IP address, hence the IP address of
+<code class="docutils literal notranslate"><span class="pre">api_interface</span></code> should be resolvable by hostnames to make sure that
+all RabbitMQ Cluster hosts can resolve each others hostname beforehand.</p>
+</section>
+<section id="tls-configuration">
+<span id="id2"></span><h2>TLS Configuration<a class="headerlink" href="#tls-configuration" title="Link to this heading">¶</a></h2>
+<p>Configuration of TLS is now covered <a class="reference internal" href="https://docs.openstack.org/kolla-ansible/latest/admin/tls.html"><span class="doc">here</span></a>.</p>
+</section>
+<section id="openstack-service-configuration-in-kolla">
+<span id="service-config"></span><h2>OpenStack Service Configuration in Kolla<a class="headerlink" href="#openstack-service-configuration-in-kolla" title="Link to this heading">¶</a></h2>
+<p>An operator can change the location where custom config files are read from by
+editing <code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code> and adding the following line.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># The directory to merge custom config files the kolla's config files</span>
+<span class="nt">node_custom_config</span><span class="p">:</span><span class="w"> </span><span class="s">"/etc/kolla/config"</span>
+</pre></div>
+</div>
+<p>Kolla allows the operator to override configuration of services. Kolla will
+generally look for a file in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/&lt;&lt;</span> <span class="pre">config</span> <span class="pre">file</span> <span class="pre">&gt;&gt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/&lt;&lt;</span> <span class="pre">service</span> <span class="pre">name</span> <span class="pre">&gt;&gt;/&lt;&lt;</span> <span class="pre">config</span> <span class="pre">file</span> <span class="pre">&gt;&gt;</span></code> or
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/&lt;&lt;</span> <span class="pre">service</span> <span class="pre">name</span> <span class="pre">&gt;&gt;/&lt;&lt;</span> <span class="pre">hostname</span> <span class="pre">&gt;&gt;/&lt;&lt;</span> <span class="pre">config</span> <span class="pre">file</span> <span class="pre">&gt;&gt;</span></code>,
+but these locations sometimes vary and you should check the config task in
+the appropriate Ansible role for a full list of supported locations. For
+example, in the case of <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code> the following locations are supported,
+assuming that you have services using <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code> running on hosts
+called <code class="docutils literal notranslate"><span class="pre">controller-0001</span></code>, <code class="docutils literal notranslate"><span class="pre">controller-0002</span></code> and <code class="docutils literal notranslate"><span class="pre">controller-0003</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/controller-0001/nova.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/controller-0002/nova.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/controller-0003/nova.conf</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-scheduler.conf</span></code></p></li>
+</ul>
+<p>Using this mechanism, overrides can be configured per-project,
+per-project-service or per-project-service-on-specified-host.</p>
+<p>Overriding an option is as simple as setting the option under the relevant
+section. For example, to set <code class="docutils literal notranslate"><span class="pre">override</span> <span class="pre">scheduler_max_attempts</span></code> in nova
+scheduler, the operator could create
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-scheduler.conf</span></code> with content:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">scheduler_max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">100</span>
+</pre></div>
+</div>
+<p>If the operator wants to configure compute node cpu and ram allocation ratio
+on host myhost, the operator needs to create file
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/myhost/nova.conf</span></code> with content:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">cpu_allocation_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">16.0</span>
+<span class="na">ram_allocation_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">5.0</span>
+</pre></div>
+</div>
+<p>This method of merging configuration sections is supported for all services
+using Oslo Config, which includes the vast majority of OpenStack services,
+and in some cases for services using YAML configuration. Since the INI format
+is an informal standard, not all INI files can be merged in this way. In
+these cases Kolla supports overriding the entire config file.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The two override mechanisms behave differently. Merging only adds or
+replaces the options listed in the override file, while overriding the
+entire config file <em>replaces</em> the file generated by Kolla Ansible,
+including all sections and options it would otherwise contain. Check the
+config task of the relevant Ansible role to see which mechanism applies to
+a particular file and path. An override file placed in a location that the
+role does not look up is silently ignored - no error or warning is raised.
+After deploying or reconfiguring, verify the rendered configuration on the
+target hosts (under <code class="docutils literal notranslate"><span class="pre">/etc/kolla/&lt;container</span> <span class="pre">name&gt;/</span></code>) to confirm that the
+override took effect.</p>
+</div>
+<p>Additional flexibility can be introduced by using Jinja conditionals in the
+config files.  For example, you may create Nova cells which are homogeneous
+with respect to the hypervisor model. In each cell, you may wish to configure
+the hypervisors differently, for example the following override shows one way
+of setting the <code class="docutils literal notranslate"><span class="pre">bandwidth_poll_interval</span></code> variable as a function of the cell:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">{% if 'cell0001' in group_names %}</span>
+<span class="na">bandwidth_poll_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">100</span>
+<span class="na">{% elif 'cell0002' in group_names %}</span>
+<span class="na">bandwidth_poll_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">-1</span>
+<span class="na">{% else %}</span>
+<span class="na">bandwidth_poll_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">300</span>
+<span class="na">{% endif %}</span>
+</pre></div>
+</div>
+<p>An alternative to Jinja conditionals would be to define a variable for the
+<code class="docutils literal notranslate"><span class="pre">bandwidth_poll_interval</span></code> and set it in according to your requirements
+in the inventory group or host vars:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[DEFAULT]</span>
+<span class="na">bandwidth_poll_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">{{ bandwidth_poll_interval }}</span>
+</pre></div>
+</div>
+<p>Kolla allows the operator to override configuration globally for all services.
+It will look for a file called <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/global.conf</span></code>.</p>
+<p>For example to modify database pool size connection for all services, the
+operator needs to create <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/global.conf</span></code> with content:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[database]</span>
+<span class="na">max_pool_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">100</span>
+</pre></div>
+</div>
+</section>
+<section id="large-baremetal-deployments">
+<h2>Large baremetal deployments<a class="headerlink" href="#large-baremetal-deployments" title="Link to this heading">¶</a></h2>
+<p>Out of the box, a typical Kolla Ansible deployment can support managing a few
+hundred baremetal nodes. Beyond this number, it becomes necessary to configure
+scaling mechanisms built into Nova and Ironic.</p>
+<dl class="simple">
+<dt>There are two mechanisms to consider:</dt><dd><ul class="simple">
+<li><p>shards</p></li>
+<li><p>conductor groups</p></li>
+</ul>
+</dd>
+</dl>
+<p>Please see the Ironic documentation for further <a class="reference external" href="https://docs.openstack.org/ironic/latest/admin/availability-zones.html#common-deployment-patterns">information</a>.</p>
+<p>As an example, consider a deployment of 700 baremetal nodes spread over two
+distinct locations. Location 1 consists of 500 baremetal nodes, and location 2
+consists of 200 baremetal nodes.</p>
+<p>For location 1, all 500 nodes are placed into the same Ironic conductor
+group. Ironic conductors configured to use this group are deployed on each
+of the three nodes in the control plane. A single Nova Compute Ironic service
+would struggle to manage this many nodes, so two shards are created. Due to
+HA limitations with Nova Compute Ironic, a single instance is created for
+each shard, and the instances may be deployed to any node in the control
+plane.</p>
+<p>For location 2, no shards are required due to the smaller number of baremetal
+nodes. A single conductor group is configured. The result is that three Ironic
+conductors are deployed (one on each node in the control plane), and a single
+instance of Nova Compute Ironic configured to use this conductor group.
+Furthermore, for this location <code class="docutils literal notranslate"><span class="pre">custom_host</span></code> is used to override the
+automatically generated host field in the configuration. This is useful for
+migrating to the multi-instance configuration described here.</p>
+<p>Finally, Ironic and Nova services are deployed with no configured shards or
+conductor groups as a catch all.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nova_multi_compute_ironic_config</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"shard_key"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"shard_1"</span>
+<span class="w">    </span><span class="s">"conductor_group"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"location_1"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"shard_key"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"shard_2"</span>
+<span class="w">    </span><span class="s">"conductor_group"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"location_1"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"conductor_group"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"location_2"</span>
+<span class="w">    </span><span class="s">"custom_host"</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">"some_custom_host_field"</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">nova_multi_compute_ironic_config</span></code> must be defined as a global variable
+and not customised via hostvars.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you currently have the <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic</span></code> service deployed,
+you must manually remove it from the controllers before migrating to the
+new mode. You will need to ensure that you configure a compatible service
+in <code class="docutils literal notranslate"><span class="pre">nova_multi_compute_ironic_config</span></code> to replace the old one. This will
+likely involve setting the <code class="docutils literal notranslate"><span class="pre">custom_host</span></code> field at the very minimum.</p>
+</div>
+<p>The placement of the above services is managed via the inventory. This
+allows flexible placement, should a controller fail.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">[</span><span class="nv">nova-compute-ironic-1</span><span class="p p-Indicator">]</span>
+<span class="l l-Scalar l-Scalar-Plain">controller-01</span>
+<span class="l l-Scalar l-Scalar-Plain">[nova-compute-ironic-2]</span>
+<span class="l l-Scalar l-Scalar-Plain">controller-02</span>
+<span class="l l-Scalar l-Scalar-Plain">[nova-compute-ironic-3]</span>
+<span class="l l-Scalar l-Scalar-Plain">controller-03</span>
+<span class="l l-Scalar l-Scalar-Plain">[nova-compute-ironic-4]</span>
+<span class="l l-Scalar l-Scalar-Plain">controller-03</span>
+
+<span class="l l-Scalar l-Scalar-Plain">[nova-compute-ironic:children]</span>
+<span class="l l-Scalar l-Scalar-Plain">nova-compute-ironic-1</span>
+<span class="l l-Scalar l-Scalar-Plain">nova-compute-ironic-2</span>
+<span class="l l-Scalar l-Scalar-Plain">nova-compute-ironic-3</span>
+<span class="l l-Scalar l-Scalar-Plain">nova-compute-ironic-4</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The number of <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic-N</span></code> groups must equal the length of
+<code class="docutils literal notranslate"><span class="pre">nova_multi_compute_ironic_config</span></code>. This variable is an ordered list,
+where the first item maps to <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic-1</span></code>, the second item
+to <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic-2</span></code> and so forth.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A ‘cleanup’ function is provided which assists in ‘failing over’
+service instances to other hosts. For example, if <code class="docutils literal notranslate"><span class="pre">controller-01</span></code>
+was to be taken down for maintenance, replacing it with <code class="docutils literal notranslate"><span class="pre">controller-02</span></code>
+in the <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic-1</span></code> group and re-deploying the <code class="docutils literal notranslate"><span class="pre">nova</span></code>
+service would result in the service being removed from <code class="docutils literal notranslate"><span class="pre">controller-01</span></code>
+and re-deployed on <code class="docutils literal notranslate"><span class="pre">controller-02</span></code>. The cleanup function cannot
+currently handle downsizing the number of service instances. In this case
+the redundant service instances must be cleaned up manually. For obvious
+reasons the cleanup function cannot remove a service from a failed node,
+and in such a case, you must be careful not to allow a second identical
+service instance to start when the failed node is recovered.</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">nova-compute-ironic</span></code> service instances may be configured
+individually via the existing override mechanism. For example, the
+creation of <code class="docutils literal notranslate"><span class="pre">nova/nova-compute-ironic-1.conf</span></code> will allow variables
+for that specific service to be overridden.</p>
+</section>
+<section id="openstack-policy-customisation">
+<h2>OpenStack policy customisation<a class="headerlink" href="#openstack-policy-customisation" title="Link to this heading">¶</a></h2>
+<p>OpenStack services allow customisation of policy. Since the Queens release,
+default policy configuration is defined within the source code for each
+service, meaning that operators only need to override rules they wish to
+change. Projects typically provide documentation on their default policy
+configuration, for example, <a class="extlink-keystone reference external" href="https://docs.openstack.org/keystone/latest/configuration/policy">Keystone</a>.</p>
+<p>Policy can be customised via JSON or YAML files. As of the Wallaby release, the
+JSON format is deprecated in favour of YAML. One major benefit of YAML is that
+it allows for the use of comments.</p>
+<p>For example, to customise the Neutron policy in YAML format, the operator
+should add the customised rules in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/neutron/policy.yaml</span></code>.</p>
+<p>The operator can make these changes after services have been deployed by using
+the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible deploy</span>
+</pre></div>
+</div>
+<p>In order to present a user with the correct interface, Horizon includes policy
+for other services. Customisations made to those services may need to be
+replicated in Horizon. For example, to customise the Neutron policy in YAML
+format for Horizon, the operator should add the customised rules in
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/horizon/neutron_policy.yaml</span></code>.</p>
+</section>
+<section id="ip-address-constrained-environments">
+<h2>IP Address Constrained Environments<a class="headerlink" href="#ip-address-constrained-environments" title="Link to this heading">¶</a></h2>
+<p>If a development environment doesn’t have a free IP address available for VIP
+configuration, the host’s IP address may be used here by disabling HAProxy by
+adding:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">enable_haproxy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>Note this method is not recommended and generally not tested by the
+Kolla community, but included since sometimes a free IP is not available
+in a testing environment.</p>
+<p>In this mode it is still necessary to configure <code class="docutils literal notranslate"><span class="pre">kolla_internal_vip_address</span></code>,
+and it should take the IP address of the <code class="docutils literal notranslate"><span class="pre">api_interface</span></code> interface.</p>
+</section>
+<section id="external-elasticsearch-kibana-environment">
+<h2>External Elasticsearch/Kibana environment<a class="headerlink" href="#external-elasticsearch-kibana-environment" title="Link to this heading">¶</a></h2>
+<p>It is possible to use an external Elasticsearch/Kibana environment. To do this
+first disable the deployment of the central logging.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">enable_central_logging</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p>Now you can use the parameter <code class="docutils literal notranslate"><span class="pre">elasticsearch_address</span></code> to configure the
+address of the external Elasticsearch environment.</p>
+</section>
+<section id="non-default-service-port">
+<h2>Non-default &lt;service&gt; port<a class="headerlink" href="#non-default-service-port" title="Link to this heading">¶</a></h2>
+<p>It is sometimes required to use a different than default port
+for service(s) in Kolla. It is possible with setting
+<code class="docutils literal notranslate"><span class="pre">&lt;service&gt;_port</span></code> in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code> file. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database_port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3307</span>
+</pre></div>
+</div>
+<p>As <code class="docutils literal notranslate"><span class="pre">&lt;service&gt;_port</span></code> value is saved in different services’ configuration so
+it’s advised to make above change before deploying.</p>
+</section>
+<section id="use-an-external-syslog-server">
+<h2>Use an external Syslog server<a class="headerlink" href="#use-an-external-syslog-server" title="Link to this heading">¶</a></h2>
+<p>By default, Fluentd is used as a syslog server to collect HAProxy
+logs. When Fluentd is disabled or you want to use an external syslog server,
+You can set syslog parameters in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code> file. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">syslog_server</span><span class="p">:</span><span class="w"> </span><span class="s">"172.29.9.145"</span>
+<span class="nt">syslog_udp_port</span><span class="p">:</span><span class="w"> </span><span class="s">"514"</span>
+</pre></div>
+</div>
+<p>You can also set syslog facility names for HAProxy logs.
+By default, HAProxy uses <code class="docutils literal notranslate"><span class="pre">local1</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">syslog_haproxy_facility</span><span class="p">:</span><span class="w"> </span><span class="s">"local1"</span>
+</pre></div>
+</div>
+</section>
+<section id="mount-additional-docker-volumes-in-containers">
+<h2>Mount additional Docker volumes in containers<a class="headerlink" href="#mount-additional-docker-volumes-in-containers" title="Link to this heading">¶</a></h2>
+<p>It is sometimes useful to be able to mount additional Docker volumes into
+one or more containers. This may be to integrate 3rd party components into
+OpenStack, or to provide access to site-specific data such as x.509
+certificate bundles.</p>
+<p>Additional volumes may be specified at three levels:</p>
+<ul class="simple">
+<li><p>globally</p></li>
+<li><p>per-service (e.g. nova)</p></li>
+<li><p>per-container (e.g. <code class="docutils literal notranslate"><span class="pre">nova-api</span></code>)</p></li>
+</ul>
+<p>To specify additional volumes globally for all containers, set
+<code class="docutils literal notranslate"><span class="pre">default_extra_volumes</span></code> in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code>. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">default_extra_volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/etc/foo:/etc/foo"</span>
+</pre></div>
+</div>
+<p>To specify additional volumes for all containers in a service, set
+<code class="docutils literal notranslate"><span class="pre">&lt;service_name&gt;_extra_volumes</span></code> in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code>. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nova_extra_volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/etc/foo:/etc/foo"</span>
+</pre></div>
+</div>
+<p>To specify additional volumes for a single container, set
+<code class="docutils literal notranslate"><span class="pre">&lt;container_name&gt;_extra_volumes</span></code> in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code>. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nova_libvirt_extra_volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/etc/foo:/etc/foo"</span>
+</pre></div>
+</div>
+</section>
+<section id="migrate-container-engine">
+<h2>Migrate container engine<a class="headerlink" href="#migrate-container-engine" title="Link to this heading">¶</a></h2>
+<p>Kolla-Ansible supports two container engines - Docker and Podman.
+It is possible to migrate deployed OpenStack between these two engines.
+Migration is supported in both directions, meaning it is possible to
+migrate from Docker to Podman as well as from Podman to Docker.</p>
+<p>Before starting the migration, you have to change the value of
+<code class="docutils literal notranslate"><span class="pre">kolla_container_engine</span></code> in your <code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code> file to the new
+container engine:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># previous value was docker</span>
+<span class="nt">kolla_container_engine</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">podman</span>
+</pre></div>
+</div>
+<p>Apart from this change, <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code> should stay unchanged.
+The same goes for any other config file, such as the inventory file.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Currently, rolling migration is not supported. You have to stop
+all virtual machines running in your OpenStack. Otherwise,
+migration will become unstable and can fail.</p>
+</div>
+<p>After editing <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code> and stopping virtual machines
+migration can be started with the following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">kolla-ansible migrate-container-engine</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>During the migration, all the container volumes will be migrated
+under the new container engine. Old container engine system packages will be
+removed from the system and all their resources and data will be deleted.</p>
+</div>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

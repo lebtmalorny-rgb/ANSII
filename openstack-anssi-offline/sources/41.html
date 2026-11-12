@@ -1,0 +1,191 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Secure live migration with QEMU-native TLS — nova 34.1.0.dev163 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-41">Каталог источников</a> · [41] · <a href="https://docs.openstack.org/nova/latest/admin/secure-live-migration-with-qemu-native-tls.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="secure-live-migration-with-qemu-native-tls">
+<h1>Secure live migration with QEMU-native TLS<a class="headerlink" href="#secure-live-migration-with-qemu-native-tls" title="Link to this heading">¶</a></h1>
+<section id="context">
+<h2>Context<a class="headerlink" href="#context" title="Link to this heading">¶</a></h2>
+<p>The encryption offered by nova’s
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_tunnelled" title="live_migration_tunnelled"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_tunnelled</span></code></a> does not secure
+all the different migration streams of a nova instance, namely: guest
+RAM, device state, and disks (via NBD) when using non-shared storage.
+Further, the “tunnelling via libvirtd” has inherent limitations: (a) it
+cannot handle live migration of disks in a non-shared storage setup
+(a.k.a. “block migration”); and (b) has a huge performance overhead and
+latency, because it burns more CPU and memory bandwidth due to increased
+number of data copies on both source and destination hosts.</p>
+<p>To solve this existing limitation, QEMU and libvirt have gained (refer
+<a class="reference internal" href="#prerequisites"><span class="std std-ref">below</span></a> for version details) support for “native
+TLS”, i.e. TLS built into QEMU.  This will secure all data transports,
+including disks that are not on shared storage, without incurring the
+limitations of the “tunnelled via libvirtd” transport.</p>
+<p>To take advantage of the “native TLS” support in QEMU and libvirt, nova
+has introduced new configuration attribute
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_with_native_tls" title="live_migration_with_native_tls"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_with_native_tls</span></code></a>.</p>
+</section>
+<section id="prerequisites">
+<span id="id1"></span><h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p>Version requirement: This feature needs at least libvirt 4.4.0 and
+QEMU 2.11.</p></li>
+<li><p>A pre-configured TLS environment—i.e. CA, server, and client
+certificates, their file permissions, et al—must be “correctly”
+configured (typically by an installer tool) on all relevant compute
+nodes.  To simplify your PKI (Public Key Infrastructure) setup, use
+deployment tools that take care of handling all the certificate
+lifecycle management.  For example, refer to the “<a class="reference external" href="https://docs.openstack.org/project-deploy-guide/tripleo-docs/latest/features/tls-everywhere.html">TLS everywhere</a>”
+guide from the TripleO project.</p></li>
+<li><p>Password-less SSH setup for all relevant compute nodes.</p></li>
+<li><p>On all relevant compute nodes, ensure the TLS-related config
+attributes in <code class="docutils literal notranslate"><span class="pre">/etc/libvirt/qemu.conf</span></code> are in place:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">default_tls_x509_cert_dir</span> <span class="o">=</span> <span class="s2">"/etc/pki/qemu"</span>
+<span class="n">default_tls_x509_verify</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>If it is not already configured, modify <code class="docutils literal notranslate"><span class="pre">/etc/sysconfig/libvirtd</span></code>
+on both (ComputeNode1 &amp; ComputeNode2) to listen for TCP/IP
+connections:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LIBVIRTD_ARGS</span><span class="o">=</span><span class="s2">"--listen"</span>
+</pre></div>
+</div>
+<p>Then, restart the libvirt daemon (also on both nodes):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ systemctl restart libvirtd
+</pre></div>
+</div>
+<p>Refer to the “<a class="reference internal" href="#related-information">Related information</a>” section on a note about the
+other TLS-related configuration attributes in
+<code class="docutils literal notranslate"><span class="pre">/etc/libvirt/qemu.conf</span></code>.</p>
+</li>
+</ol>
+</section>
+<section id="validating-your-tls-environment-on-compute-nodes">
+<h2>Validating your TLS environment on compute nodes<a class="headerlink" href="#validating-your-tls-environment-on-compute-nodes" title="Link to this heading">¶</a></h2>
+<p>Assuming you have two compute hosts (<code class="docutils literal notranslate"><span class="pre">ComputeNode1</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">ComputeNode2</span></code>) run the <strong class="command">virt-pki-validate</strong> tool (comes with
+the <code class="docutils literal notranslate"><span class="pre">libvirt-client</span></code> package on your Linux distribution) on both the
+nodes to ensure all the necessary PKI files are configured are
+configured:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[ComputeNode1]$ virt-pki-validate
+Found /usr/bin/certtool
+Found CA certificate /etc/pki/CA/cacert.pem for TLS Migration Test
+Found client certificate /etc/pki/libvirt/clientcert.pem for ComputeNode1
+Found client private key /etc/pki/libvirt/private/clientkey.pem
+Found server certificate /etc/pki/libvirt/servercert.pem for ComputeNode1
+Found server private key /etc/pki/libvirt/private/serverkey.pem
+Make sure /etc/sysconfig/libvirtd is setup to listen to
+TCP/IP connections and restart the libvirtd service
+
+[ComputeNode2]$ virt-pki-validate
+Found /usr/bin/certtool
+Found CA certificate /etc/pki/CA/cacert.pem for TLS Migration Test
+Found client certificate /etc/pki/libvirt/clientcert.pem for ComputeNode2
+Found client private key /etc/pki/libvirt/private/clientkey.pem
+Found server certificate /etc/pki/libvirt/servercert.pem for ComputeNode2
+Found server private key /etc/pki/libvirt/private/serverkey.pem
+Make sure /etc/sysconfig/libvirtd is setup to listen to
+TCP/IP connections and restart the libvirtd service
+</pre></div>
+</div>
+</section>
+<section id="other-tls-environment-related-checks-on-compute-nodes">
+<h2>Other TLS environment related checks on compute nodes<a class="headerlink" href="#other-tls-environment-related-checks-on-compute-nodes" title="Link to this heading">¶</a></h2>
+<p><strong>IMPORTANT</strong>: Ensure that the permissions of certificate files and keys
+in <code class="docutils literal notranslate"><span class="pre">/etc/pki/qemu/*</span></code> directory on both source <em>and</em> destination
+compute nodes to be the following <code class="docutils literal notranslate"><span class="pre">0640</span></code> with <code class="docutils literal notranslate"><span class="pre">root:qemu</span></code> as the
+group/user.  For example, on a Fedora-based system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ls -lasrtZ /etc/pki/qemu
+total 32
+0 drwxr-xr-x. 10 root root system_u:object_r:cert_t:s0      110 Dec 10 10:39 ..
+4 -rw-r-----.  1 root qemu unconfined_u:object_r:cert_t:s0 1464 Dec 10 11:08 ca-cert.pem
+4 -rw-r-----.  1 root qemu unconfined_u:object_r:cert_t:s0 1558 Dec 10 11:08 server-cert.pem
+4 -rw-r-----.  1 root qemu unconfined_u:object_r:cert_t:s0 1619 Dec 10 11:09 client-cert.pem
+8 -rw-r-----.  1 root qemu unconfined_u:object_r:cert_t:s0 8180 Dec 10 11:09 client-key.pem
+8 -rw-r-----.  1 root qemu unconfined_u:object_r:cert_t:s0 8177 Dec 11 05:35 server-key.pem
+0 drwxr-xr-x.  2 root root unconfined_u:object_r:cert_t:s0  146 Dec 11 06:01 .
+</pre></div>
+</div>
+</section>
+<section id="performing-the-migration">
+<h2>Performing the migration<a class="headerlink" href="#performing-the-migration" title="Link to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p>On all relevant compute nodes, enable the
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_with_native_tls" title="live_migration_with_native_tls"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_with_native_tls</span></code></a>
+configuration attribute and set the
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_scheme" title="live_migration_scheme"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_scheme</span></code></a>
+configuration attribute to tls:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">libvirt</span><span class="p">]</span>
+<span class="n">live_migration_with_native_tls</span> <span class="o">=</span> <span class="n">true</span>
+<span class="n">live_migration_scheme</span> <span class="o">=</span> <span class="n">tls</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Setting both
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_with_native_tls" title="live_migration_with_native_tls"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_with_native_tls</span></code></a> and
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_tunnelled" title="live_migration_tunnelled"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_tunnelled</span></code></a> at the
+same time is invalid (and disallowed).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not setting
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_scheme" title="live_migration_scheme"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_scheme</span></code></a> to <code class="docutils literal notranslate"><span class="pre">tls</span></code>
+will result in libvirt using the unencrypted TCP connection
+without displaying any error or a warning in the logs.</p>
+</div>
+<p>And restart the <code class="docutils literal notranslate"><span class="pre">nova-compute</span></code> service:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ systemctl restart openstack-nova-compute
+</pre></div>
+</div>
+</li>
+<li><p>Now that all TLS-related configuration is in place, migrate guests
+(with or without shared storage) from <code class="docutils literal notranslate"><span class="pre">ComputeNode1</span></code> to
+<code class="docutils literal notranslate"><span class="pre">ComputeNode2</span></code>.  Refer to the <a class="reference internal" href="https://docs.openstack.org/nova/latest/admin/live-migration-usage.html"><span class="doc">Live-migrate instances</span></a> document
+on details about live migration.</p></li>
+</ol>
+</section>
+<section id="related-information">
+<span id="id2"></span><h2>Related information<a class="headerlink" href="#related-information" title="Link to this heading">¶</a></h2>
+<ul>
+<li><p>If you have the relevant libvirt and QEMU versions (mentioned in the
+“<a class="reference internal" href="#prerequisites">Prerequisites</a>” section earlier), then using the
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_with_native_tls" title="live_migration_with_native_tls"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_with_native_tls</span></code></a> is
+strongly recommended over the more limited
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_tunnelled" title="live_migration_tunnelled"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_tunnelled</span></code></a> option, which
+is intended to be deprecated in future.</p></li>
+<li><p>There are in total <em>nine</em> TLS-related config options in
+<code class="docutils literal notranslate"><span class="pre">/etc/libvirt/qemu.conf</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">default_tls_x509_cert_dir</span>
+<span class="n">default_tls_x509_verify</span>
+<span class="n">nbd_tls</span>
+<span class="n">nbd_tls_x509_cert_dir</span>
+<span class="n">migrate_tls_x509_cert_dir</span>
+
+<span class="n">vnc_tls_x509_cert_dir</span>
+<span class="n">spice_tls_x509_cert_dir</span>
+<span class="n">vxhs_tls_x509_cert_dir</span>
+<span class="n">chardev_tls_x509_cert_dir</span>
+</pre></div>
+</div>
+<p>If you set both <code class="docutils literal notranslate"><span class="pre">default_tls_x509_cert_dir</span></code> and
+<code class="docutils literal notranslate"><span class="pre">default_tls_x509_verify</span></code> parameters for all certificates, there is
+no need to specify any of the other <code class="docutils literal notranslate"><span class="pre">*_tls*</span></code> config options.</p>
+<p>The intention (of libvirt) is that you can just use the
+<code class="docutils literal notranslate"><span class="pre">default_tls_x509_*</span></code> config attributes so that you don’t need to set
+any other <code class="docutils literal notranslate"><span class="pre">*_tls*</span></code> parameters, _unless_ you need different
+certificates for some services.  The rationale for that is that some
+services (e.g.  migration / NBD)  are only exposed to internal
+infrastructure; while some services (VNC, Spice) might be exposed
+publicly, so might need different certificates.  For OpenStack this
+does not matter, though, we will stick with the defaults.</p>
+</li>
+<li><p>If they are not already open, ensure you open up these TCP ports on
+your firewall: <code class="docutils literal notranslate"><span class="pre">16514</span></code> (where the authenticated and encrypted TCP/IP
+socket will be listening on) and <code class="docutils literal notranslate"><span class="pre">49152-49215</span></code> (for regular
+migration) on all relevant compute nodes.   (Otherwise you get
+<code class="docutils literal notranslate"><span class="pre">error:</span> <span class="pre">internal</span> <span class="pre">error:</span> <span class="pre">unable</span> <span class="pre">to</span> <span class="pre">execute</span> <span class="pre">QEMU</span> <span class="pre">command</span>
+<span class="pre">'drive-mirror':</span> <span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">connect</span> <span class="pre">socket:</span> <span class="pre">No</span> <span class="pre">route</span> <span class="pre">to</span> <span class="pre">host</span></code>).</p></li>
+</ul>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

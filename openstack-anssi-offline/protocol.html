@@ -1,0 +1,435 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Протокол проверки рекомендаций</title><style>body{font:17px/1.55 system-ui,sans-serif;color:#17354a;background:#f2f5f6;margin:0}main{max-width:1030px;margin:0 auto;background:white;padding:40px clamp(18px,5vw,70px) 75px;min-height:100vh;box-sizing:border-box}h1,h2,h3,h4{line-height:1.23}h1{font-size:2.2rem}h2{font-size:1.65rem;border-bottom:1px solid #d4e0e1;padding-bottom:.45em;margin-top:1.9em}h3{color:#00645c;margin-top:1.8em}h4{color:#00645c;font-size:1.16rem;margin-top:2em}a{color:#00695f;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:.9rem}td,th{border:1px solid #ccd8db;padding:.5em .65em;vertical-align:top;text-align:left}th{background:#17354a;color:white}tr:nth-child(even) td{background:#f0f6f5}pre{background:#eff4f5;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere}code{font-size:.87em}nav{display:flex;flex-wrap:wrap;gap:16px;border-bottom:1px solid #ccd8db;margin-bottom:28px;padding-bottom:12px}.meta{color:#536877}</style></head><body><main><nav><a href="index.html">К комплекту</a><a href="checks.html">Проверки</a><a href="sources-index.html">Источники [1]–[53]</a><a href="protocol.md">Бланк протокола</a></nav><h1 id="протокол-проверки-рекомендаций-anssi">Протокол проверки рекомендаций ANSSI</h1>
+<p>Развёртывание: __________ Ветка и версия Kolla: __________ Регион: __________<br />
+Дата UTC: __________ Ответственный: __________ Ссылка на схему и версию конфигурации: __________</p>
+<p>Для нескольких регионов, хранилищ и маршрутов скопируйте строки и уточните охват. В графу «Свидетельство» внесите имя файла, идентификатор события или запись в системе доказательств. Статусы и порядок проверки приведены в <a href="checks.md">методике</a>.</p>
+<table>
+<thead>
+<tr class="header">
+<th>ID</th>
+<th>Рекомендация</th>
+<th>Граница, узел или сервис</th>
+<th>Фактический результат</th>
+<th>Статус</th>
+<th>Свидетельство / время UTC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>R1</td>
+<td>Настроить Keystone на использование каталога LDAP</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R2</td>
+<td>Использовать несколько доменов и выделить для них отдельные каталоги LDAP</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R3</td>
+<td>Использовать разные TCP-порты для точек доступа admin и public</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R4</td>
+<td>Разместить API public и admin в разных сетях</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R5</td>
+<td>Установить обратный прокси-сервер перед API заказчиков</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R6</td>
+<td>Настроить фильтрацию прикладного уровня перед API</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R7</td>
+<td>Блокировать токены admin при обращении к API заказчиков</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R8</td>
+<td>Блокировать токены public при обращении к API поставщика</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R9</td>
+<td>Настроить взаимную аутентификацию клиента OpenStack и прокси-сервера</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R10</td>
+<td>Проверять соответствие сертификата X.509 идентификатору пользователя</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R11</td>
+<td>Сохранять соответствие между DN сертификата X.509 и токеном, выданным Keystone</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R12</td>
+<td>Проверять соответствие между токенами клиентов OpenStack и предъявленными сертификатами X.509</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R13</td>
+<td>Включить шифрование томов в Nova</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R14</td>
+<td>Включить шифрование данных в хранилище Swift</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R15</td>
+<td>Включить шифрование трафика между Swift и Glance</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R16</td>
+<td>Включить шифрование трафика между Glance и Nova</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R17</td>
+<td>Защищать ключи шифрования</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R18</td>
+<td>Настроить TLS для API служб OpenStack в соответствии с современными требованиями безопасности</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R19</td>
+<td>Настроить TLS с взаимной аутентификацией для службы очередей сообщений</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R20</td>
+<td>Настроить TLS с взаимной аутентификацией для службы базы данных</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R21</td>
+<td>Организовать туннели IPsec между кешем токенов и службами OpenStack</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R22</td>
+<td>Настроить Glance на использование Cinder</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R23</td>
+<td>Настроить TLS для Glance</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R24</td>
+<td>Настроить Barbican на использование HSM</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R25</td>
+<td>Использовать HSM, прошедший сертификацию безопасности</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R26</td>
+<td>Ограничить доступ к секретам средствами управления доступом Barbican</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R27</td>
+<td>Разрешить доступ к HSM только с машин, на которых работает Barbican</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R28</td>
+<td>Внедрить процедуры автоматизации жизненного цикла секретов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R29</td>
+<td>Предоставить заказчикам процедуры аудита прав доступа к секретам и управления этими правами</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R30</td>
+<td>Регистрировать обращения к секретам</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R31</td>
+<td>Предоставить заказчикам процедуры стирания секретов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R32</td>
+<td>Выделить отдельные службы баз данных для разных компонентов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R33</td>
+<td>Выделить отдельные службы кеширования для разных компонентов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R34</td>
+<td>Выделить сеть для сторонних служб</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R35</td>
+<td>Выделить отдельные сети для отдельных видов сторонних служб</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R36</td>
+<td>Обеспечить возможность создания выделенных агрегатов вычислительных узлов для отдельных заказчиков</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R37</td>
+<td>Предложить заказчикам типы виртуальных машин, привязанные к агрегатам вычислительных узлов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R38</td>
+<td>Настроить горячую миграцию виртуальных машин средствами QEMU</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R39</td>
+<td>Настроить в QEMU современное TLS-шифрование трафика миграции виртуальных машин</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R40</td>
+<td>Настроить в Swift несколько наборов хранилищ</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R41</td>
+<td>Сопоставить каждому набору хранилищ отдельную подсистему Cinder</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R42</td>
+<td>Ограничить доступ проектов к подсистемам хранения с помощью квот Cinder</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R43+</td>
+<td>Настроить Neutron на инкапсуляцию трафика между вычислительными узлами в туннели IPsec</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R44</td>
+<td>Внедрить политику периодической смены мастер-ключей HSM</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R45</td>
+<td>Внедрить процедуру безопасного стирания данных заказчика на LDAP-сервере</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R46</td>
+<td>Использовать модуль безопасности Linux (LSM)</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R47</td>
+<td>Защитить конфигурацию службы обмена сообщениями (только RabbitMQ)</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R48</td>
+<td>Обеспечить синхронизацию часов</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R49</td>
+<td>Регистрировать обращения к файлам конфигурации сервисов OpenStack</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R50−</td>
+<td>Включить минимальное журналирование для обнаружения компрометации</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>R50</td>
+<td>Включить источники журналов, важные для обнаружения компрометации</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>R50+</td>
+<td>Включить все системы журналирования</td>
+<td></td>
+<td></td>
+<td>Не проверено</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</main></body></html>

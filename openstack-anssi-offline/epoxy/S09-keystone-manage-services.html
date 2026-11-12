@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create and manage services and service users · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="create-and-manage-services-and-service-users">
+<span id="manage-services"></span><h1>Create and manage services and service users<a class="headerlink" href="#create-and-manage-services-and-service-users" title="Link to this heading">¶</a></h1>
+<section id="service-catalog">
+<h2>Service Catalog<a class="headerlink" href="#service-catalog" title="Link to this heading">¶</a></h2>
+<p>OpenStack services can be discovered when registered in keystone’s service
+catalog. The service catalog can be managed as either a static file template or
+as a dynamic database table.</p>
+<section id="file-based-service-catalog-templated-catalog">
+<h3>File-based Service Catalog (<code class="docutils literal notranslate"><span class="pre">templated.Catalog</span></code>)<a class="headerlink" href="#file-based-service-catalog-templated-catalog" title="Link to this heading">¶</a></h3>
+<p>The templated catalog is an in-memory backend initialized from a read-only
+<code class="docutils literal notranslate"><span class="pre">template_file</span></code>. Choose this option only if you know that your service
+catalog will not change very much over time.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Attempting to change your service catalog against this driver will result
+in <code class="docutils literal notranslate"><span class="pre">HTTP</span> <span class="pre">501</span> <span class="pre">Not</span> <span class="pre">Implemented</span></code> errors. This is the expected behavior. If
+you want to use these commands, you must instead use the SQL-based Service
+Catalog driver.</p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code> example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[catalog]</span>
+<span class="na">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">templated</span>
+<span class="na">template_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/opt/stack/keystone/etc/default_catalog.templates</span>
+</pre></div>
+</div>
+<p>The value of <code class="docutils literal notranslate"><span class="pre">template_file</span></code> is expected to be an absolute path to your
+service catalog configuration. An example <code class="docutils literal notranslate"><span class="pre">template_file</span></code> is included in
+keystone, however you should create your own to reflect your deployment.</p>
+</section>
+<section id="sql-based-service-catalog-sql-catalog">
+<h3>SQL-based Service Catalog (<code class="docutils literal notranslate"><span class="pre">sql.Catalog</span></code>)<a class="headerlink" href="#sql-based-service-catalog-sql-catalog" title="Link to this heading">¶</a></h3>
+<p>A dynamic database-backed driver fully supporting persistent configuration.</p>
+<p><code class="docutils literal notranslate"><span class="pre">keystone.conf</span></code> example:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[catalog]</span>
+<span class="na">driver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">sql</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <cite>template_file</cite> does not need to be defined for the sql based catalog.</p>
+</div>
+<p>To build your service catalog using this driver, see the built-in help:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>openstack<span class="w"> </span>--help
+$<span class="w"> </span>openstack<span class="w"> </span>service<span class="w"> </span>create<span class="w"> </span>--help
+$<span class="w"> </span>openstack<span class="w"> </span>endpoint<span class="w"> </span>create<span class="w"> </span>--help
+</pre></div>
+</div>
+<section id="create-a-service">
+<h4>Create a service<a class="headerlink" href="#create-a-service" title="Link to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>List the available services:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>list
+<span class="go">+----------------------------------+----------+------------+</span>
+<span class="go">| ID                               | Name     | Type       |</span>
+<span class="go">+----------------------------------+----------+------------+</span>
+<span class="go">| 9816f1faaa7c4842b90fb4821cd09223 | cinder   | volume     |</span>
+<span class="go">| 1250f64f31e34dcd9a93d35a075ddbe1 | cinderv2 | volumev2   |</span>
+<span class="go">| da8cf9f8546b4a428c43d5e032fe4afc | ec2      | ec2        |</span>
+<span class="go">| 5f105eeb55924b7290c8675ad7e294ae | glance   | image      |</span>
+<span class="go">| dcaa566e912e4c0e900dc86804e3dde0 | keystone | identity   |</span>
+<span class="go">| 4a715cfbc3664e9ebf388534ff2be76a | nova     | compute    |</span>
+<span class="go">| 1aed4a6cf7274297ba4026cf5d5e96c5 | novav21  | computev21 |</span>
+<span class="go">| bed063c790634c979778551f66c8ede9 | neutron  | network    |</span>
+<span class="go">| 6feb2e0b98874d88bee221974770e372 |    s3    |    s3      |</span>
+<span class="go">+----------------------------------+----------+------------+</span>
+</pre></div>
+</div>
+</li>
+<li><p>To create a service, run this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>SERVICE_NAME<span class="w"> </span>--description<span class="w"> </span>SERVICE_DESCRIPTION<span class="w"> </span>SERVICE_TYPE
+</pre></div>
+</div>
+<dl class="simple">
+<dt>The arguments are:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">service_name</span></code>: the unique name of the new service.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">service_type</span></code>: the service type, such as <code class="docutils literal notranslate"><span class="pre">identity</span></code>,
+<code class="docutils literal notranslate"><span class="pre">compute</span></code>, <code class="docutils literal notranslate"><span class="pre">network</span></code>, <code class="docutils literal notranslate"><span class="pre">image</span></code>, <code class="docutils literal notranslate"><span class="pre">object-store</span></code>
+or any other service identifier string.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">service_description</span></code>: the description of the service.</p></li>
+</ul>
+</dd>
+</dl>
+<p>For example, to create a <code class="docutils literal notranslate"><span class="pre">swift</span></code> service of type
+<code class="docutils literal notranslate"><span class="pre">object-store</span></code>, run this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>swift<span class="w"> </span>--description<span class="w"> </span><span class="s2">"object store service"</span><span class="w"> </span>object-store
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| Field       | Value                            |</span>
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| description | object store service             |</span>
+<span class="go">| enabled     | True                             |</span>
+<span class="go">| id          | 84c23f4b942c44c38b9c42c5e517cd9a |</span>
+<span class="go">| name        | swift                            |</span>
+<span class="go">| type        | object-store                     |</span>
+<span class="go">+-------------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+<li><p>To get details for a service, run this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>show<span class="w"> </span>SERVICE_TYPE<span class="p">|</span>SERVICE_NAME<span class="p">|</span>SERVICE_ID
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>show<span class="w"> </span>object-store
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| Field       | Value                            |</span>
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| description | object store service             |</span>
+<span class="go">| enabled     | True                             |</span>
+<span class="go">| id          | 84c23f4b942c44c38b9c42c5e517cd9a |</span>
+<span class="go">| name        | swift                            |</span>
+<span class="go">| type        | object-store                     |</span>
+<span class="go">+-------------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="create-an-endpoint">
+<h4>Create an endpoint<a class="headerlink" href="#create-an-endpoint" title="Link to this heading">¶</a></h4>
+<ol class="arabic">
+<li><p>Once a service is created, register it at an endpoint:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>endpoint<span class="w"> </span>create<span class="w"> </span>nova<span class="w"> </span>public<span class="w"> </span>http://example.com/compute/v2.1
+<span class="go">+--------------+----------------------------------+</span>
+<span class="go">| Field        | Value                            |</span>
+<span class="go">+--------------+----------------------------------+</span>
+<span class="go">| enabled      | True                             |</span>
+<span class="go">| id           | c219aa779e90403eb4a78cf0aa7d38b1 |</span>
+<span class="go">| interface    | public                           |</span>
+<span class="go">| region       | None                             |</span>
+<span class="go">| region_id    | None                             |</span>
+<span class="go">| service_id   | 0f5da035b8e94629bf35e7ec1703a8eb |</span>
+<span class="go">| service_name | nova                             |</span>
+<span class="go">| service_type | compute                          |</span>
+<span class="go">| url          | http://example.com/compute/v2.1  |</span>
+<span class="go">+--------------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="delete-a-service">
+<h4>Delete a service<a class="headerlink" href="#delete-a-service" title="Link to this heading">¶</a></h4>
+<p>To delete a specified service, specify its ID.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>delete<span class="w"> </span>SERVICE_TYPE<span class="p">|</span>SERVICE_NAME<span class="p">|</span>SERVICE_ID
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>service<span class="w"> </span>delete<span class="w"> </span>object-store
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="service-users">
+<h2>Service users<a class="headerlink" href="#service-users" title="Link to this heading">¶</a></h2>
+<p>To authenticate users against the Identity service, you must
+create a service user for each OpenStack service. For example,
+create a service user for the Compute, Block Storage, and
+Networking services.</p>
+<p>To configure the OpenStack services with service users,
+create a project for all services and create users for each
+service. Assign the admin role to each service user and
+project pair. This role enables users to validate tokens and
+authenticate and authorize other user requests.</p>
+<section id="create-service-users">
+<h3>Create service users<a class="headerlink" href="#create-service-users" title="Link to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p>Create a project for the service users.
+Typically, this project is named <code class="docutils literal notranslate"><span class="pre">service</span></code>,
+but choose any name you like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>project<span class="w"> </span>create<span class="w"> </span>service<span class="w"> </span>--domain<span class="w"> </span>default
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| Field       | Value                            |</span>
+<span class="go">+-------------+----------------------------------+</span>
+<span class="go">| description | None                             |</span>
+<span class="go">| domain_id   | e601210181f54843b51b3edff41d4980 |</span>
+<span class="go">| enabled     | True                             |</span>
+<span class="go">| id          | 3e9f3f5399624b2db548d7f871bd5322 |</span>
+<span class="go">| is_domain   | False                            |</span>
+<span class="go">| name        | service                          |</span>
+<span class="go">| parent_id   | e601210181f54843b51b3edff41d4980 |</span>
+<span class="go">+-------------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+<li><p>Create service users for the relevant services for your
+deployment. For example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>user<span class="w"> </span>create<span class="w"> </span>nova<span class="w"> </span>--password<span class="w"> </span>Sekr3tPass
+<span class="go">+---------------------+----------------------------------+</span>
+<span class="go">| Field               | Value                            |</span>
+<span class="go">+---------------------+----------------------------------+</span>
+<span class="go">| domain_id           | default                          |</span>
+<span class="go">| enabled             | True                             |</span>
+<span class="go">| id                  | 95ec3e1d5dd747f5a512d261731d29c7 |</span>
+<span class="go">| name                | nova                             |</span>
+<span class="go">| options             | {}                               |</span>
+<span class="go">| password_expires_at | None                             |</span>
+<span class="go">+---------------------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+<li><p>Assign the admin role to the user-project pair.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>openstack<span class="w"> </span>role<span class="w"> </span>add<span class="w"> </span>--project<span class="w"> </span>service<span class="w"> </span>--user<span class="w"> </span>nova<span class="w"> </span>admin
+<span class="go">+-------+----------------------------------+</span>
+<span class="go">| Field | Value                            |</span>
+<span class="go">+-------+----------------------------------+</span>
+<span class="go">| id    | 233109e756c1465292f31e7662b429b1 |</span>
+<span class="go">| name  | admin                            |</span>
+<span class="go">+-------+----------------------------------+</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="configuring-service-tokens">
+<h3>Configuring service tokens<a class="headerlink" href="#configuring-service-tokens" title="Link to this heading">¶</a></h3>
+<p>A lot of operations in OpenStack require communication between multiple
+services on behalf of the user. For example, the Image service storing the
+user’s images in the Object Storage service. If the image is significantly
+large, the operation might fail due to the user’s token having expired
+during upload.</p>
+<p>In the above scenarios, the Image service will attach both the user’s token
+and its own token (called the service token), as per the diagram below.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">+----------------+</span>
+<span class="go">|      User      |</span>
+<span class="go">+-------+--------+</span>
+<span class="go">        | Access Image Data Request</span>
+<span class="go">        | X-AUTH-TOKEN: &lt;end user token&gt;</span>
+<span class="go">        |</span>
+<span class="go">+-------v---------+</span>
+<span class="go">|     Glance      |</span>
+<span class="go">+-------+---------+</span>
+<span class="go">        | Access Image Data Request</span>
+<span class="go">        | X-AUTH-TOKEN: &lt;original end user token&gt;</span>
+<span class="go">        | X-SERVICE-TOKEN: &lt;glance service user token&gt;</span>
+<span class="go">        |</span>
+<span class="go">+-------v---------+</span>
+<span class="go">|      Swift      |</span>
+<span class="go">+-----------------+</span>
+</pre></div>
+</div>
+<p>When a service receives a call from another service, it validates that the
+token has the appropriate roles for a service user. This is configured in each
+individual service configuration, under the section <code class="docutils literal notranslate"><span class="pre">[keystone_authtoken]</span></code>.</p>
+<p>If the service token is valid, the operation will be allowed even if the
+user’s token has expired.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">service_token_roles</span></code> option is the list of roles that the service
+token must contain to be a valid service token. In the previous steps, we have
+assigned the <cite>admin</cite> role to service users, so set the option to that and set
+<code class="docutils literal notranslate"><span class="pre">service_token_roles_required</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[keystone_authtoken]</span>
+<span class="na">service_token_roles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">admin</span>
+<span class="na">service_token_roles_required</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">true</span>
+</pre></div>
+</div>
+<p>For more information regarding service tokens, please see the
+<code class="docutils literal notranslate"><span class="pre">keystonemiddleware</span></code> <a class="reference external" href="https://docs.openstack.org/releasenotes/keystonemiddleware/ocata.html">release notes</a>.</p>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект keystone. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/keystone/2025.1/admin/manage-services.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

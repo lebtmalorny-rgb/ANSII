@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configuration Options · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="configuration-options">
+<h1>Configuration Options<a class="headerlink" href="#configuration-options" title="Link to this heading">¶</a></h1>
+<p>oslo.cache uses oslo.config to define and manage configuration options
+to allow the deployer to control how an application uses this library.</p>
+<section id="cache">
+<span id="cache"></span><h2>cache<a class="headerlink" href="#cache" title="Link to this heading">¶</a></h2>
+</section>
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.config_prefix">
+<span class="sig-name descname"><span class="pre">config_prefix</span></span><a class="headerlink" href="#cache.config_prefix" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">cache.oslo</span></code></p>
+</dd>
+</dl>
+<p>Prefix for building the configuration dictionary for the cache region. This should not need to be changed unless there is another dogpile.cache region with the same configuration name.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.expiration_time">
+<span class="sig-name descname"><span class="pre">expiration_time</span></span><a class="headerlink" href="#cache.expiration_time" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">600</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Default TTL, in seconds, for any cached item in the dogpile.cache region. This applies to any cached method that doesn’t have an explicit cache expiration time defined for it.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.backend_expiration_time">
+<span class="sig-name descname"><span class="pre">backend_expiration_time</span></span><a class="headerlink" href="#cache.backend_expiration_time" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Expiration time in cache backend to purge expired records automatically. This should be greater than expiration_time and all cache_time options</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.backend">
+<span class="sig-name descname"><span class="pre">backend</span></span><a class="headerlink" href="#cache.backend" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">dogpile.cache.null</span></code></p>
+</dd>
+<dt class="field-odd">Valid Values<span class="colon">:</span></dt>
+<dd class="field-odd"><p>oslo_cache.memcache_pool, oslo_cache.dict, oslo_cache.mongo, oslo_cache.etcd3gw, dogpile.cache.pymemcache, dogpile.cache.memcached, dogpile.cache.pylibmc, dogpile.cache.bmemcached, dogpile.cache.dbm, dogpile.cache.redis, dogpile.cache.redis_sentinel, dogpile.cache.memory, dogpile.cache.memory_pickle, dogpile.cache.null</p>
+</dd>
+</dl>
+<p>Cache backend module. For eventlet-based or environments with hundreds of threaded servers, Memcache with pooling (oslo_cache.memcache_pool) is recommended. For environments with less than 100 threaded servers, Memcached (dogpile.cache.memcached) or Redis (dogpile.cache.redis) is recommended. Test environments with a single instance of the server can use the dogpile.cache.memory backend.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.backend_argument">
+<span class="sig-name descname"><span class="pre">backend_argument</span></span><a class="headerlink" href="#cache.backend_argument" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>multi-valued</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">''</span></code></p>
+</dd>
+</dl>
+<p>Arguments supplied to the backend module. Specify this option once per argument to be passed to the dogpile.cache backend. Example format: “&lt;argname&gt;:&lt;value&gt;”.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.proxies">
+<span class="sig-name descname"><span class="pre">proxies</span></span><a class="headerlink" href="#cache.proxies" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p>
+</dd>
+</dl>
+<p>Proxy classes to import that will affect the way the dogpile.cache backend functions. See the dogpile.cache documentation on changing-backend-behavior.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.enabled">
+<span class="sig-name descname"><span class="pre">enabled</span></span><a class="headerlink" href="#cache.enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle for caching.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.debug_cache_backend">
+<span class="sig-name descname"><span class="pre">debug_cache_backend</span></span><a class="headerlink" href="#cache.debug_cache_backend" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Extra debugging from the cache backend (cache keys, get/set/delete/etc calls). This is only really useful if you need to see the specific cache-backend get/set/delete calls with the keys/values.  Typically this should be left set to false.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_servers">
+<span class="sig-name descname"><span class="pre">memcache_servers</span></span><a class="headerlink" href="#cache.memcache_servers" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">['localhost:11211']</span></code></p>
+</dd>
+</dl>
+<p>Memcache servers in the format of “host:port”. This is used by backends dependent on Memcached.If <code class="docutils literal notranslate"><span class="pre">dogpile.cache.memcached</span></code> or <code class="docutils literal notranslate"><span class="pre">oslo_cache.memcache_pool</span></code> is used and a given host refer to an IPv6 or a given domain refer to IPv6 then you should prefix the given address with the address family (<code class="docutils literal notranslate"><span class="pre">inet6</span></code>) (e.g <code class="docutils literal notranslate"><span class="pre">inet6[::1]:11211</span></code>, <code class="docutils literal notranslate"><span class="pre">inet6:[fd12:3456:789a:1::1]:11211</span></code>, <code class="docutils literal notranslate"><span class="pre">inet6:[controller-0.internalapi]:11211</span></code>). If the address family is not given then these backends will use the default <code class="docutils literal notranslate"><span class="pre">inet</span></code> address family which corresponds to IPv4</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_dead_retry">
+<span class="sig-name descname"><span class="pre">memcache_dead_retry</span></span><a class="headerlink" href="#cache.memcache_dead_retry" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p>
+</dd>
+</dl>
+<p>Number of seconds memcached server is considered dead before it is tried again. (dogpile.cache.memcache and oslo_cache.memcache_pool backends only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_socket_timeout">
+<span class="sig-name descname"><span class="pre">memcache_socket_timeout</span></span><a class="headerlink" href="#cache.memcache_socket_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+</dd>
+</dl>
+<p>Timeout in seconds for every call to a server. (dogpile.cache.memcache and oslo_cache.memcache_pool backends only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_pool_maxsize">
+<span class="sig-name descname"><span class="pre">memcache_pool_maxsize</span></span><a class="headerlink" href="#cache.memcache_pool_maxsize" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p>Max total number of open connections to every memcached server. (oslo_cache.memcache_pool backend only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_pool_unused_timeout">
+<span class="sig-name descname"><span class="pre">memcache_pool_unused_timeout</span></span><a class="headerlink" href="#cache.memcache_pool_unused_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p>Number of seconds a connection to memcached is held unused in the pool before it is closed. (oslo_cache.memcache_pool backend only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_pool_connection_get_timeout">
+<span class="sig-name descname"><span class="pre">memcache_pool_connection_get_timeout</span></span><a class="headerlink" href="#cache.memcache_pool_connection_get_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+<p>Number of seconds that an operation will wait to get a memcache client connection.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_pool_flush_on_reconnect">
+<span class="sig-name descname"><span class="pre">memcache_pool_flush_on_reconnect</span></span><a class="headerlink" href="#cache.memcache_pool_flush_on_reconnect" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle if memcache will be flushed on reconnect. (oslo_cache.memcache_pool backend only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_sasl_enabled">
+<span class="sig-name descname"><span class="pre">memcache_sasl_enabled</span></span><a class="headerlink" href="#cache.memcache_sasl_enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Enable the SASL(Simple Authentication and SecurityLayer) if the SASL_enable is true, else disable.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_username">
+<span class="sig-name descname"><span class="pre">memcache_username</span></span><a class="headerlink" href="#cache.memcache_username" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>the user name for the memcached which SASL enabled</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.memcache_password">
+<span class="sig-name descname"><span class="pre">memcache_password</span></span><a class="headerlink" href="#cache.memcache_password" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>the password for the memcached which SASL enabled</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_server">
+<span class="sig-name descname"><span class="pre">redis_server</span></span><a class="headerlink" href="#cache.redis_server" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">localhost:6379</span></code></p>
+</dd>
+</dl>
+<p>Redis server in the format of “host:port”</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_db">
+<span class="sig-name descname"><span class="pre">redis_db</span></span><a class="headerlink" href="#cache.redis_db" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>Database id in Redis server</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_username">
+<span class="sig-name descname"><span class="pre">redis_username</span></span><a class="headerlink" href="#cache.redis_username" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>the user name for redis</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_password">
+<span class="sig-name descname"><span class="pre">redis_password</span></span><a class="headerlink" href="#cache.redis_password" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>the password for redis</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_sentinels">
+<span class="sig-name descname"><span class="pre">redis_sentinels</span></span><a class="headerlink" href="#cache.redis_sentinels" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">['localhost:26379']</span></code></p>
+</dd>
+</dl>
+<p>Redis sentinel servers in the format of “host:port”</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_socket_timeout">
+<span class="sig-name descname"><span class="pre">redis_socket_timeout</span></span><a class="headerlink" href="#cache.redis_socket_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+</dd>
+</dl>
+<p>Timeout in seconds for every call to a server. (dogpile.cache.redis and dogpile.cache.redis_sentinel backends only).</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.redis_sentinel_service_name">
+<span class="sig-name descname"><span class="pre">redis_sentinel_service_name</span></span><a class="headerlink" href="#cache.redis_sentinel_service_name" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">mymaster</span></code></p>
+</dd>
+</dl>
+<p>Service name of the redis sentinel cluster.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.tls_enabled">
+<span class="sig-name descname"><span class="pre">tls_enabled</span></span><a class="headerlink" href="#cache.tls_enabled" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle for TLS usage when communicating with the caching servers. Currently supported by <code class="docutils literal notranslate"><span class="pre">dogpile.cache.bmemcache</span></code>, <code class="docutils literal notranslate"><span class="pre">dogpile.cache.pymemcache</span></code>, <code class="docutils literal notranslate"><span class="pre">oslo_cache.memcache_pool</span></code>, <code class="docutils literal notranslate"><span class="pre">dogpile.cache.redis</span></code> and <code class="docutils literal notranslate"><span class="pre">dogpile.cache.redis_sentinel</span></code>.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.tls_cafile">
+<span class="sig-name descname"><span class="pre">tls_cafile</span></span><a class="headerlink" href="#cache.tls_cafile" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>Path to a file of concatenated CA certificates in PEM format necessary to establish the caching servers’ authenticity. If tls_enabled is False, this option is ignored.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.tls_certfile">
+<span class="sig-name descname"><span class="pre">tls_certfile</span></span><a class="headerlink" href="#cache.tls_certfile" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>Path to a single file in PEM format containing the client’s certificate as well as any number of CA certificates needed to establish the certificate’s authenticity. This file is only required when client side authentication is necessary. If tls_enabled is False, this option is ignored.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.tls_keyfile">
+<span class="sig-name descname"><span class="pre">tls_keyfile</span></span><a class="headerlink" href="#cache.tls_keyfile" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>Path to a single file containing the client’s private key in. Otherwise the private key will be taken from the file specified in tls_certfile. If tls_enabled is False, this option is ignored.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.tls_allowed_ciphers">
+<span class="sig-name descname"><span class="pre">tls_allowed_ciphers</span></span><a class="headerlink" href="#cache.tls_allowed_ciphers" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">&lt;None&gt;</span></code></p>
+</dd>
+</dl>
+<p>Set the available ciphers for sockets created with the TLS context. It should be a string in the OpenSSL cipher list format. If not specified, all OpenSSL enabled ciphers will be available. Currently supported by <code class="docutils literal notranslate"><span class="pre">dogpile.cache.bmemcache</span></code>, <code class="docutils literal notranslate"><span class="pre">dogpile.cache.pymemcache</span></code> and <code class="docutils literal notranslate"><span class="pre">oslo_cache.memcache_pool</span></code>.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.enable_socket_keepalive">
+<span class="sig-name descname"><span class="pre">enable_socket_keepalive</span></span><a class="headerlink" href="#cache.enable_socket_keepalive" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle for the socket keepalive of dogpile’s pymemcache backend</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.socket_keepalive_idle">
+<span class="sig-name descname"><span class="pre">socket_keepalive_idle</span></span><a class="headerlink" href="#cache.socket_keepalive_idle" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>The time (in seconds) the connection needs to remain idle before TCP starts sending keepalive probes. Should be a positive integer most greater than zero.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.socket_keepalive_interval">
+<span class="sig-name descname"><span class="pre">socket_keepalive_interval</span></span><a class="headerlink" href="#cache.socket_keepalive_interval" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>The time (in seconds) between individual keepalive probes. Should be a positive integer greater than zero.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.socket_keepalive_count">
+<span class="sig-name descname"><span class="pre">socket_keepalive_count</span></span><a class="headerlink" href="#cache.socket_keepalive_count" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0</p>
+</dd>
+</dl>
+<p>The maximum number of keepalive probes TCP should send before dropping the connection. Should be a positive integer greater than zero.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.enable_retry_client">
+<span class="sig-name descname"><span class="pre">enable_retry_client</span></span><a class="headerlink" href="#cache.enable_retry_client" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Enable retry client mechanisms to handle failure. Those mechanisms can be used to wrap all kind of pymemcache clients. The wrapper allows you to define how many attempts to make and how long to wait between attemots.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.retry_attempts">
+<span class="sig-name descname"><span class="pre">retry_attempts</span></span><a class="headerlink" href="#cache.retry_attempts" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Number of times to attempt an action before failing.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.retry_delay">
+<span class="sig-name descname"><span class="pre">retry_delay</span></span><a class="headerlink" href="#cache.retry_delay" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+</dd>
+</dl>
+<p>Number of seconds to sleep between each attempt.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.hashclient_retry_attempts">
+<span class="sig-name descname"><span class="pre">hashclient_retry_attempts</span></span><a class="headerlink" href="#cache.hashclient_retry_attempts" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p>
+</dd>
+<dt class="field-odd">Minimum Value<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1</p>
+</dd>
+</dl>
+<p>Amount of times a client should be tried before it is marked dead and removed from the pool in the HashClient’s internal mechanisms.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.hashclient_retry_delay">
+<span class="sig-name descname"><span class="pre">hashclient_retry_delay</span></span><a class="headerlink" href="#cache.hashclient_retry_delay" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+<p>Time in seconds that should pass between retry attempts in the HashClient’s internal mechanisms.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.dead_timeout">
+<span class="sig-name descname"><span class="pre">dead_timeout</span></span><a class="headerlink" href="#cache.dead_timeout" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>floating point</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">60</span></code></p>
+</dd>
+</dl>
+<p>Time in seconds before attempting to add a node back in the pool in the HashClient’s internal mechanisms.</p>
+</dd></dl>
+
+<dl class="oslo.config option">
+<dt class="sig sig-object oslo.config" id="cache.enforce_fips_mode">
+<span class="sig-name descname"><span class="pre">enforce_fips_mode</span></span><a class="headerlink" href="#cache.enforce_fips_mode" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>boolean</p>
+</dd>
+<dt class="field-even">Default<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+<p>Global toggle for enforcing the OpenSSL FIPS mode. This feature requires Python support. This is available in Python 3.9 in all environments and may have been backported to older Python versions on select environments. If the Python executable used does not support OpenSSL FIPS mode, an exception will be raised. Currently supported by <code class="docutils literal notranslate"><span class="pre">dogpile.cache.bmemcache</span></code>, <code class="docutils literal notranslate"><span class="pre">dogpile.cache.pymemcache</span></code> and <code class="docutils literal notranslate"><span class="pre">oslo_cache.memcache_pool</span></code>.</p>
+</dd></dl>
+
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект oslo.cache. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/oslo.cache/2025.1/configuration/">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

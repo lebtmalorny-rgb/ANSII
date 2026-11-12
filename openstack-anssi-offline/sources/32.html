@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Policies — Security Guide  documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-32">Каталог источников</a> · [32] · <a href="https://docs.openstack.org/security-guide/identity/policies.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="policies">
+<span id="policy-section"></span><h1>Policies<a class="headerlink" href="#policies" title="Link to this heading">¶</a></h1>
+<p>Each OpenStack service defines the access policies for its resources in an
+associated policy file. A resource, for example, could be API access, the
+ability to attach to a volume, or to fire up instances. The policy rules are
+specified in JSON format and the file is called <code class="docutils literal notranslate"><span class="pre">policy.json</span></code>. The
+syntax and format of this file is discussed in the <a class="reference external" href="https://docs.openstack.org/ocata/config-reference/policy-json-file.html">Configuration Reference</a>.</p>
+<p>These policies can be modified or updated by the cloud administrator to
+control the access to the various resources. Ensure that any changes to the
+access control policies do not unintentionally weaken the security of any
+resource. Also note that changes to the <code class="docutils literal notranslate"><span class="pre">policy.json</span></code> file become effective
+immediately and do not require the service to be restarted.</p>
+<p>The following example shows how the service can restrict access to create,
+update and delete resources to only those users which have the role of
+<code class="docutils literal notranslate"><span class="pre">cloud_admin</span></code>, which has been defined as being the conjunction of
+<code class="docutils literal notranslate"><span class="pre">role</span> <span class="pre">=</span> <span class="pre">admin</span></code> and <code class="docutils literal notranslate"><span class="pre">domain_id</span> <span class="pre">=</span> <span class="pre">admin_domain_id</span></code>, while the get and list
+resources are made available to users which have the role of <code class="docutils literal notranslate"><span class="pre">cloud_admin</span></code>
+or <code class="docutils literal notranslate"><span class="pre">admin</span></code>.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"admin_required"</span><span class="p">:</span><span class="w"> </span><span class="s2">"role:admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"cloud_admin"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_required and domain_id:admin_domain_id"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"service_role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"role:service"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"service_or_admin"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_required or rule:service_role"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"owner"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"user_id:%(user_id)s or user_id:%(target.token.user_id)s"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"admin_or_owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"(rule:admin_required and domain_id:%(target.token.user.domain.id)s) or rule:owner"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"admin_or_cloud_admin"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_required or rule:cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"admin_and_matching_domain_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_required and domain_id:%(domain_id)s"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"service_admin_or_owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:service_or_admin or rule:owner"</span><span class="p">,</span>
+
+<span class="w">    </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_required"</span><span class="p">,</span>
+
+<span class="w">    </span><span class="nt">"identity:get_service"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_or_cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:list_services"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_or_cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:create_service"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:update_service"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:delete_service"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+
+<span class="w">    </span><span class="nt">"identity:get_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_or_cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:list_endpoints"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:admin_or_cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:create_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:update_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"identity:delete_endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rule:cloud_admin"</span><span class="p">,</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

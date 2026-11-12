@@ -1,0 +1,167 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Encrypt Open vSwitch Tunnels with IPsec — Open vSwitch 4.0.90 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-34">Каталог источников</a> · [34] · <a href="https://docs.openvswitch.org/en/latest/howto/ipsec/">Страница издателя</a></header><main><section id="encrypt-open-vswitch-tunnels-with-ipsec">
+<h1>Encrypt Open vSwitch Tunnels with IPsec<a class="headerlink" href="#encrypt-open-vswitch-tunnels-with-ipsec" title="Link to this heading">¶</a></h1>
+<p>This document gives detailed description on the OVS IPsec tunnel and its
+configuration modes.  If you want to follow a step-by-step guide to run and
+test IPsec tunnel, please refer to <a class="reference internal" href="https://docs.openvswitch.org/en/latest/tutorials/ipsec/"><span class="doc">OVS IPsec Tutorial</span></a>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<section id="why-do-encryption">
+<h3>Why do encryption?<a class="headerlink" href="#why-do-encryption" title="Link to this heading">¶</a></h3>
+<p>OVS tunnel packets are transported from one machine to another. Along the path,
+the packets are processed by physical routers and physical switches.  There are
+risks that these physical devices might read or write the contents of the
+tunnel packets. IPsec encrypts IP payload and prevents the malicious party
+sniffing or manipulating the tunnel traffic.</p>
+</section>
+<section id="ovs-ipsec">
+<h3>OVS IPsec<a class="headerlink" href="#ovs-ipsec" title="Link to this heading">¶</a></h3>
+<p>OVS IPsec aims to provide a simple interface for user to add encryption on OVS
+tunnels. It supports GRE, GENEVE, and VXLAN tunnels. The IPsec configuration is
+done by setting options of the tunnel interface and other_config of
+Open_vSwitch. You can choose different authentication methods and plaintext
+tunnel policies based on your requirements.</p>
+<p>OVS does not currently provide any support for IPsec encryption for traffic not
+encapsulated in a tunnel.</p>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<section id="authentication-methods">
+<h3>Authentication Methods<a class="headerlink" href="#authentication-methods" title="Link to this heading">¶</a></h3>
+<p>Hosts of the IPsec tunnel need to authenticate each other to build a secure
+channel. There are three authentication methods:</p>
+<ol class="arabic">
+<li><p>You can use a pre-shared key (PSK) to do authentication. In both hosts, set
+the same PSK value. This PSK is like your password. You should never reveal
+it to untrusted parties. This method is easier to use but less secure than
+the certificate-based methods:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+            set interface ipsec_gre0 type=gre \
+                               options:remote_ip=2.2.2.2 \
+                               options:psk=swordfish
+</pre></div>
+</div>
+</li>
+<li><p>You can use a self-signed certificate to do authentication. In each host,
+generate a certificate and the paired private key. Copy the certificate of
+the remote host to the local host and configure the OVS as following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl set Open_vSwitch . \
+            other_config:certificate=/path/to/local_cert.pem \
+            other_config:private_key=/path/to/priv_key.pem
+$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+            set interface ipsec_gre0 type=gre \
+                           options:remote_ip=2.2.2.2 \
+                           options:remote_cert=/path/to/remote_cert.pem
+</pre></div>
+</div>
+<p><cite>local_cert.pem</cite> is the certificate of the local host. <cite>priv_key.pem</cite>
+is the private key of the local host. <cite>priv_key.pem</cite> needs to be stored in
+a secure location. <cite>remote_cert.pem</cite> is the certificate of the remote host.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>OVS IPsec requires x.509 version 3 certificate with the subjectAltName
+DNS field setting the same string as the common name (CN) field. You can
+follow the tutorial in <a class="reference internal" href="https://docs.openvswitch.org/en/latest/tutorials/ipsec/"><span class="doc">OVS IPsec Tutorial</span></a> and use ovs-pki(8) to
+generate compatible certificate and key.</p>
+<p>(Before OVS version 2.10.90, ovs-pki(8) did not generate x.509 v3
+certificates, so if your existing PKI was generated by an older version,
+it is not suitable for this purpose.)</p>
+</div>
+</li>
+<li><p>You can also use CA-signed certificate to do authentication. First, you need
+to create a CA certificate and sign each host certificate with the CA key
+(please see <a class="reference internal" href="https://docs.openvswitch.org/en/latest/tutorials/ipsec/"><span class="doc">OVS IPsec Tutorial</span></a>). Copy the CA certificate to each
+host and configure the OVS as following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl set Open_vSwitch . \
+            other_config:certificate=/path/to/local_cert.pem \
+            other_config:private_key=/path/to/priv_key.pem \
+            other_config:ca_cert=/path/to/ca_cert.pem
+$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+            set interface ipsec_gre0 type=gre \
+                               options:remote_ip=2.2.2.2 \
+                               options:remote_name=remote_cn
+</pre></div>
+</div>
+<p><cite>ca_cert.pem</cite> is the CA certificate.  You need to set <cite>remote_cn</cite> as the
+common name (CN) of the remote host’s certificate so that only the
+certificate with the expected CN can be trusted in this connection. It is
+preferable to use this method than 2) if there are many remote hosts since
+you don’t have to copy every remote certificate to the local host.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When using certificate-based authentication, you should not set psk in
+the interface options. When using psk-based authentication, you should
+not set certificate, private_key, ca_cert, remote_cert, and remote_name.</p>
+</div>
+</li>
+</ol>
+</section>
+<section id="plaintext-policies">
+<h3>Plaintext Policies<a class="headerlink" href="#plaintext-policies" title="Link to this heading">¶</a></h3>
+<p>When an IPsec tunnel is configured in this database, multiple independent
+components take responsibility for implementing it.  <code class="docutils literal notranslate"><span class="pre">ovs-vswitchd</span></code> and its
+datapath handle packet forwarding to the tunnel and a separate daemon pushes
+the tunnel’s IPsec policy configuration to the kernel or other entity that
+implements it.  There is a race: if the former configuration completes before
+the latter, then packets sent by the local host over the tunnel can be
+transmitted in plaintext.  Using this setting, OVS users can avoid this
+undesirable situation.</p>
+<ol class="arabic">
+<li><p>The default setting allows unencrypted packets to be sent before IPsec
+completes negotiation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+             set interface ipsec_gre0 type=gre \
+                                options:remote_ip=2.2.2.2 \
+                                options:psk=swordfish
+</pre></div>
+</div>
+<p>This setting should be used only and only if tunnel configuration is static
+and/or if there is firewall that can drop the plain packets that
+occasionally leak the tunnel unencrypted on OVSDB (re)configuration events.</p>
+</li>
+<li><p>Setiing ipsec_skb_mark drops unencrypted packets by using skb_mark of
+tunnel packets:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl set Open_vSwitch . other_config:ipsec_skb_mark=0/1
+$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+            set interface ipsec_gre0 type=gre \
+                               options:remote_ip=2.2.2.2 \
+                               options:psk=swordfish
+</pre></div>
+</div>
+<p>OVS IPsec drops unencrypted packets which carry the same skb_mark as
+<cite>ipsec_skb_mark</cite>. By setting the ipsec_skb_mark as 0/1, OVS IPsec prevents
+all unencrypted tunnel packets leaving the host since the default skb_mark
+value for tunnel packets are 0. This affects all OVS tunnels including those
+without IPsec being set up. You can install OpenFlow rules to enable
+those non-IPsec tunnels by setting the skb_mark of the tunnel traffic as
+non-zero value.</p>
+</li>
+<li><p>Setting <cite>ipsec_skb_mark</cite> as 1/1 only drops tunnel packets with skb_mark
+value being 1:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ovs-vsctl set Open_vSwitch . other_config:ipsec_skb_mark=1/1
+$ ovs-vsctl add-port br0 ipsec_gre0 -- \
+            set interface ipsec_gre0 type=gre \
+                               options:remote_ip=2.2.2.2 \
+                               options:psk=swordfish
+</pre></div>
+</div>
+<p>Opposite to 2), this setting passes through unencrypted tunnel packets by
+default. To drop unencrypted IPsec tunnel traffic, you need to explicitly
+set skb_mark to a non-zero value for those tunnel traffic by installing
+OpenFlow rules.</p>
+</li>
+</ol>
+</section>
+</section>
+<section id="bug-reporting">
+<h2>Bug Reporting<a class="headerlink" href="#bug-reporting" title="Link to this heading">¶</a></h2>
+<p>If you think you may have found a bug with security implications, like</p>
+<ol class="arabic simple">
+<li><p>IPsec protected tunnel accepted packets that came unencrypted; OR</p></li>
+<li><p>IPsec protected tunnel allowed packets to leave unencrypted</p></li>
+</ol>
+<p>then please report such bugs according to <a class="reference internal" href="https://docs.openvswitch.org/en/latest/internals/security/"><span class="doc">Security Process</span></a>.</p>
+<p>If the bug does not have security implications, then report it according to
+instructions in <a class="reference internal" href="https://docs.openvswitch.org/en/latest/internals/bugs/"><span class="doc">Reporting Bugs</span></a>.</p>
+</section>
+</section></main><footer lang="ru">© 2016–2023 A Linux Foundation Collaborative Project. Open vSwitch contributors. <a href="assets/Apache-License-2.0.txt">Apache License 2.0</a> · <a href="https://github.com/openvswitch/ovs/blob/main/Documentation/howto/ipsec.rst">Исходник руководства</a>. Оформление адаптировано для чтения офлайн.</footer></body></html>

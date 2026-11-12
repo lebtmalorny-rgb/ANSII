@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Central Logging · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="central-logging">
+<span id="central-logging-guide"></span><h1>Central Logging<a class="headerlink" href="#central-logging" title="Link to this heading">¶</a></h1>
+<p>An OpenStack deployment generates vast amounts of log data. In order to
+successfully monitor this and use it to diagnose problems, the standard “ssh
+and grep” solution quickly becomes unmanageable.</p>
+<section id="preparation-and-deployment">
+<h2>Preparation and deployment<a class="headerlink" href="#preparation-and-deployment" title="Link to this heading">¶</a></h2>
+<p>Modify the configuration file <code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code> and change
+the following:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">enable_central_logging</span><span class="p">:</span><span class="w"> </span><span class="s">"yes"</span>
+</pre></div>
+</div>
+</section>
+<section id="opensearch">
+<h2>OpenSearch<a class="headerlink" href="#opensearch" title="Link to this heading">¶</a></h2>
+<p>Kolla deploys OpenSearch to store, organize and make logs easily accessible.</p>
+<p>By default OpenSearch is deployed on port <code class="docutils literal notranslate"><span class="pre">9200</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>OpenSearch stores a lot of logs, so if you are running centralized logging,
+remember to give <code class="docutils literal notranslate"><span class="pre">/var/lib/docker</span></code> adequate space.</p>
+<p>Alternatively it is possible to use a local directory instead of the volume
+<code class="docutils literal notranslate"><span class="pre">opensearch</span></code> to store the data of OpenSearch. The path can be set via
+the variable <code class="docutils literal notranslate"><span class="pre">opensearch_datadir_volume</span></code>.</p>
+</div>
+<section id="applying-log-retention-policies">
+<h3>Applying log retention policies<a class="headerlink" href="#applying-log-retention-policies" title="Link to this heading">¶</a></h3>
+<p>To stop your disks filling up, the Index State Management plugin for
+OpenSearch can be used to define log retention policies. A default
+retention policy is applied to all indices which match the
+<code class="docutils literal notranslate"><span class="pre">opensearch_log_index_prefix</span></code>. This policy first closes old indices,
+and then eventually deletes them. It can be customised via the following
+variables:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">opensearch_apply_log_retention_policy</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">opensearch_soft_retention_period_days</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">opensearch_hard_retention_period_days</span></code></p></li>
+</ul>
+<p>By default the soft and hard retention periods are 30 and 60 days
+respectively. If you are upgrading from ElasticSearch, and have previously
+configured <code class="docutils literal notranslate"><span class="pre">elasticsearch_curator_soft_retention_period_days</span></code> or
+<code class="docutils literal notranslate"><span class="pre">elasticsearch_curator_hard_retention_period_days</span></code>, those variables will
+be used instead of the defaults. You should migrate your configuration to
+use the new variable names before the Caracal release.</p>
+<p>Advanced users may wish to customise the retention policy, which
+is possible by overriding <code class="docutils literal notranslate"><span class="pre">opensearch_retention_policy</span></code> with
+a valid policy. See the <a class="reference external" href="https://opensearch.org/docs/latest/im-plugin/index/">Index Management plugin documentation</a>
+for further details.</p>
+</section>
+<section id="updating-log-retention-policies">
+<h3>Updating log retention policies<a class="headerlink" href="#updating-log-retention-policies" title="Link to this heading">¶</a></h3>
+<p>By design, Kolla Ansible will NOT update an existing retention
+policy in OpenSearch. This is to prevent policy changes that may have
+been made via the OpenSearch Dashboards UI, or external tooling,
+from being wiped out.</p>
+<p>There are three options for modifying an existing policy:</p>
+<p>1. Via the OpenSearch Dashboards UI. See the <a class="reference external" href="https://opensearch.org/docs/latest/im-plugin/index/">Index Management plugin documentation</a>
+for further details.</p>
+<ol class="arabic simple" start="2">
+<li><p>Via the OpenSearch API using external tooling.</p></li>
+<li><p>By manually removing the existing policy via the OpenSearch Dashboards
+UI (or API), before re-applying the updated policy with Kolla Ansible.</p></li>
+</ol>
+</section>
+</section>
+<section id="opensearch-dashboards">
+<h2>OpenSearch Dashboards<a class="headerlink" href="#opensearch-dashboards" title="Link to this heading">¶</a></h2>
+<p>Kolla deploys OpenSearch dashboards to allow operators to
+search and visualise logs in a centralised manner.</p>
+<p>After a successful deployment, OpenSearch Dashboards can be accessed using a
+browser on <code class="docutils literal notranslate"><span class="pre">&lt;kolla_internal_fqdn&gt;:5601</span></code> or
+<code class="docutils literal notranslate"><span class="pre">&lt;kolla_external_fqdn&gt;:5601</span></code>.</p>
+<p>The default username is <code class="docutils literal notranslate"><span class="pre">opensearch</span></code>, the password can be located under
+<code class="docutils literal notranslate"><span class="pre">&lt;opensearch_dashboards_password&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/passwords.yml</span></code>.</p>
+<p>If you want to prevent OpenSearch Dashboards being exposed on the external
+VIP, you can set <code class="docutils literal notranslate"><span class="pre">enable_opensearch_dashboards_external</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code>.</p>
+<section id="first-login">
+<h3>First Login<a class="headerlink" href="#first-login" title="Link to this heading">¶</a></h3>
+<p>When OpenSearch Dashboards is opened for the first time, it requires creating
+a default index pattern. To view, analyse and search logs, at least one
+index pattern has to be created. To match indices stored in OpenSearch,
+we suggest using the following configuration:</p>
+<ol class="arabic simple">
+<li><p>Index pattern - flog-*</p></li>
+<li><p>Time Filter field name - @timestamp</p></li>
+<li><p>Expand index pattern when searching [DEPRECATED] - not checked</p></li>
+<li><p>Use event times to create index names [DEPRECATED] - not checked</p></li>
+</ol>
+<p>After setting parameters, one can create an index with the <em>Create</em> button.</p>
+</section>
+<section id="search-logs-discover-tab">
+<h3>Search logs - Discover tab<a class="headerlink" href="#search-logs-discover-tab" title="Link to this heading">¶</a></h3>
+<p>Operators can create and store searches based on various fields from logs, for
+example, “show all logs marked with ERROR on nova-compute”.</p>
+<p>To do this, click the <code class="docutils literal notranslate"><span class="pre">Discover</span></code> tab. Fields from the logs can be filtered by
+hovering over entries from the left hand side, and clicking <code class="docutils literal notranslate"><span class="pre">add</span></code> or
+<code class="docutils literal notranslate"><span class="pre">remove</span></code>. Add the following fields:</p>
+<ul class="simple">
+<li><p>Hostname</p></li>
+<li><p>Payload</p></li>
+<li><p>severity_label</p></li>
+<li><p>programname</p></li>
+</ul>
+<p>This yields an easy to read list of all log events from each node in the
+deployment within the last 15 minutes. A “tail like” functionality can be
+achieved by clicking the clock icon in the top right hand corner of the screen,
+and selecting <code class="docutils literal notranslate"><span class="pre">Auto-refresh</span></code>.</p>
+<p>Logs can also be filtered down further. To use the above example, type
+<code class="docutils literal notranslate"><span class="pre">programname:nova-compute</span></code> in the search bar. Click the drop-down arrow from
+one of the results, then the small magnifying glass icon from beside the
+programname field. This should now show a list of all events from nova-compute
+services across the cluster.</p>
+<p>The current search can also be saved by clicking the <code class="docutils literal notranslate"><span class="pre">Save</span> <span class="pre">Search</span></code> icon
+available from the menu on the right hand side.</p>
+</section>
+<section id="example-using-opensearch-dashboards-to-diagnose-a-common-failure">
+<h3>Example: using OpenSearch Dashboards to diagnose a common failure<a class="headerlink" href="#example-using-opensearch-dashboards-to-diagnose-a-common-failure" title="Link to this heading">¶</a></h3>
+<p>The following example demonstrates how OpenSearch can be used to diagnose a
+common OpenStack problem, where an instance fails to launch with the error
+‘No valid host was found’.</p>
+<p>First, re-run the server creation with <code class="docutils literal notranslate"><span class="pre">--debug</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">openstack --debug server create --image cirros --flavor m1.tiny \</span>
+<span class="go">--key-name mykey --nic net-id=00af016f-dffe-4e3c-a9b8-ec52ccd8ea65 \</span>
+<span class="go">demo1</span>
+</pre></div>
+</div>
+<p>In this output, look for the key <code class="docutils literal notranslate"><span class="pre">X-Compute-Request-Id</span></code>. This is a unique
+identifier that can be used to track the request through the system. An
+example ID looks like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">X-Compute-Request-Id: req-c076b50a-6a22-48bf-8810-b9f41176a6d5</span>
+</pre></div>
+</div>
+<p>Taking the value of <code class="docutils literal notranslate"><span class="pre">X-Compute-Request-Id</span></code>, enter the value into the
+OpenSearch Dashboards search bar, minus the leading <code class="docutils literal notranslate"><span class="pre">req-</span></code>. Assuming some
+basic filters have been added as shown in the previous section, OpenSearch
+Dashboards should now show the path this request made through the
+OpenStack deployment, starting at a <code class="docutils literal notranslate"><span class="pre">nova-api</span></code> on a control node,
+through the <code class="docutils literal notranslate"><span class="pre">nova-scheduler</span></code>, <code class="docutils literal notranslate"><span class="pre">nova-conductor</span></code>, and finally
+<code class="docutils literal notranslate"><span class="pre">nova-compute</span></code>. Inspecting the <code class="docutils literal notranslate"><span class="pre">Payload</span></code> of the entries marked <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>
+should quickly lead to the source of the problem.</p>
+<p>While some knowledge is still required of how Nova works in this instance, it
+can still be seen how OpenSearch Dashboards helps in tracing this data,
+particularly in a large scale deployment scenario.</p>
+</section>
+<section id="visualize-data-visualize-tab">
+<h3>Visualize data - Visualize tab<a class="headerlink" href="#visualize-data-visualize-tab" title="Link to this heading">¶</a></h3>
+<p>In the visualization tab a wide range of charts is available. If any
+visualization has not been saved yet, after choosing this tab <em>Create a new
+visualization</em> panel is opened. If a visualization has already been saved,
+after choosing this tab, lately modified visualization is opened. In this
+case, one can create a new visualization by choosing <em>add visualization</em>
+option in the menu on the right. In order to create new visualization, one
+of the available options has to be chosen (pie chart, area chart). Each
+visualization can be created from a saved or a new search. After choosing
+any kind of search, a design panel is opened. In this panel, a chart can be
+generated and previewed. In the menu on the left, metrics for a chart can
+be chosen. The chart can be generated by pressing a green arrow on the top
+of the left-side menu.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After creating a visualization, it can be saved by choosing <em>save
+visualization</em> option in the menu on the right. If it is not saved, it
+will be lost after leaving a page or creating another visualization.</p>
+</div>
+</section>
+<section id="organize-visualizations-and-searches-dashboard-tab">
+<h3>Organize visualizations and searches - Dashboard tab<a class="headerlink" href="#organize-visualizations-and-searches-dashboard-tab" title="Link to this heading">¶</a></h3>
+<p>In the Dashboard tab all of saved visualizations and searches can be
+organized in one Dashboard. To add visualization or search, one can choose
+<em>add visualization</em> option in the menu on the right and then choose an item
+from all saved ones. The order and size of elements can be changed directly
+in this place by moving them or resizing. The color of charts can also be
+changed by checking a colorful dots on the legend near each visualization.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>After creating a dashboard, it can be saved by choosing <em>save dashboard</em>
+option in the menu on the right. If it is not saved, it will be lost after
+leaving a page or creating another dashboard.</p>
+</div>
+<p>If a Dashboard has already been saved, it can be opened by choosing <em>open
+dashboard</em> option in the menu on the right.</p>
+</section>
+<section id="exporting-and-importing-created-items-settings-tab">
+<h3>Exporting and importing created items - Settings tab<a class="headerlink" href="#exporting-and-importing-created-items-settings-tab" title="Link to this heading">¶</a></h3>
+<p>Once visualizations, searches or dashboards are created, they can be exported
+to a JSON format by choosing Settings tab and then Objects tab. Each of the
+item can be exported separately by selecting it in the menu. All of the items
+can also be exported at once by choosing <em>export everything</em> option.
+In the same tab (Settings - Objects) one can also import saved items by
+choosing <em>import</em> option.</p>
+</section>
+</section>
+<section id="custom-log-rules">
+<h2>Custom log rules<a class="headerlink" href="#custom-log-rules" title="Link to this heading">¶</a></h2>
+<p>Kolla Ansible automatically deploys Fluentd for forwarding OpenStack logs
+from across the control plane to a central logging repository. The Fluentd
+configuration is split into four parts: Input, forwarding, filtering and
+formatting. The following can be customised:</p>
+<section id="custom-log-filtering">
+<h3>Custom log filtering<a class="headerlink" href="#custom-log-filtering" title="Link to this heading">¶</a></h3>
+<p>In some scenarios it may be useful to apply custom filters to logs before
+forwarding them.  This may be useful to add additional tags to the messages
+or to modify the tags to conform to a log format that differs from the one
+defined by kolla-ansible.</p>
+<p>Configuration of custom fluentd filters is possible by placing filter
+configuration files in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/fluentd/filter/*.conf</span></code> on the
+control host.</p>
+</section>
+<section id="custom-log-formatting">
+<h3>Custom log formatting<a class="headerlink" href="#custom-log-formatting" title="Link to this heading">¶</a></h3>
+<p>In some scenarios it may be useful to perform custom formatting of logs before
+forwarding them. For example, the JSON formatter plugin can be used to convert
+an event to JSON.</p>
+<p>Configuration of custom fluentd formatting is possible by placing filter
+configuration files in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/fluentd/format/*.conf</span></code> on the
+control host.</p>
+</section>
+<section id="custom-log-forwarding">
+<h3>Custom log forwarding<a class="headerlink" href="#custom-log-forwarding" title="Link to this heading">¶</a></h3>
+<p>In some scenarios it may be useful to forward logs to a logging service other
+than elasticsearch.  This can be done by configuring custom fluentd outputs.</p>
+<p>Configuration of custom fluentd outputs is possible by placing output
+configuration files in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/fluentd/output/*.conf</span></code> on the
+control host.</p>
+</section>
+<section id="custom-log-inputs">
+<h3>Custom log inputs<a class="headerlink" href="#custom-log-inputs" title="Link to this heading">¶</a></h3>
+<p>In some scenarios it may be useful to input logs from other services, e.g.
+network equipment. This can be done by configuring custom fluentd inputs.</p>
+<p>Configuration of custom fluentd inputs is possible by placing input
+configuration files in <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/fluentd/input/*.conf</span></code> on the
+control host.</p>
+</section>
+<section id="systemd-logs">
+<h3>Systemd Logs<a class="headerlink" href="#systemd-logs" title="Link to this heading">¶</a></h3>
+<p>By default, when enabling central logging, we also enable reading <code class="docutils literal notranslate"><span class="pre">systemd</span></code>
+logs from the <code class="docutils literal notranslate"><span class="pre">/var/log/journal</span></code> file.</p>
+<p>To disable this behavior when central logging is enabled, set the value of
+the variable <code class="docutils literal notranslate"><span class="pre">enable_fluentd_systemd</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in the configuration
+file <code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code>.</p>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект kolla-ansible. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/logging-and-monitoring/central-logging-guide.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

@@ -1,0 +1,736 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Object Encryption — Swift 2.39.0.dev118 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-49">Каталог источников</a> · [49] · <a href="https://docs.openstack.org/swift/latest/overview_encryption.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="object-encryption">
+<h1>Object Encryption<a class="headerlink" href="#object-encryption" title="Link to this heading">¶</a></h1>
+<p>Swift supports the optional encryption of object data at rest on storage nodes.
+The encryption of object data is intended to mitigate the risk of users’ data
+being read if an unauthorised party were to gain physical access to a disk.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Swift’s data-at-rest encryption accepts plaintext object data from the
+client, encrypts it in the cluster, and stores the encrypted data. This
+protects object data from inadvertently being exposed if a data drive
+leaves the Swift cluster. If a user wishes to ensure that the plaintext
+data is always encrypted while in transit and in storage, it is strongly
+recommended that the data be encrypted before sending it to the Swift
+cluster. Encrypting on the client side is the only way to ensure that the
+data is fully encrypted for its entire lifecycle.</p>
+</div>
+<p>Encryption of data at rest is implemented by middleware that may be included in
+the proxy server WSGI pipeline. The feature is internal to a Swift cluster and
+not exposed through the API. Clients are unaware that data is encrypted by this
+feature internally to the Swift service; internally encrypted data should never
+be returned to clients via the Swift API.</p>
+<p>The following data are encrypted while at rest in Swift:</p>
+<ul class="simple">
+<li><p>Object content i.e. the content of an object PUT request’s body</p></li>
+<li><p>The entity tag (ETag) of objects that have non-zero content</p></li>
+<li><p>All custom user object metadata values i.e. metadata sent using
+X-Object-Meta- prefixed headers with PUT or POST requests</p></li>
+</ul>
+<p>Any data or metadata not included in the list above are not encrypted,
+including:</p>
+<ul class="simple">
+<li><p>Account, container and object names</p></li>
+<li><p>Account and container custom user metadata values</p></li>
+<li><p>All custom user metadata names</p></li>
+<li><p>Object Content-Type values</p></li>
+<li><p>Object size</p></li>
+<li><p>System metadata</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This feature is intended to provide <cite>confidentiality</cite> of data that is at
+rest i.e. to protect user data from being read by an attacker that gains
+access to disks on which object data is stored.</p>
+<p>This feature is not intended to prevent undetectable <cite>modification</cite>
+of user data at rest.</p>
+<p>This feature is not intended to protect against an attacker that gains
+access to Swift’s internal network connections, or gains access to key
+material or is able to modify the Swift code running on Swift nodes.</p>
+</div>
+<section id="deployment-and-operation">
+<span id="encryption-deployment"></span><h2>Deployment and operation<a class="headerlink" href="#deployment-and-operation" title="Link to this heading">¶</a></h2>
+<p>Encryption is deployed by adding two middleware filters to the proxy
+server WSGI pipeline and including their respective filter configuration
+sections in the <cite>proxy-server.conf</cite> file. <a class="reference internal" href="#container-sync-client-config"><span class="std std-ref">Additional steps</span></a> are required if the container sync feature is
+being used.</p>
+<p>The <cite>keymaster</cite> and <cite>encryption</cite> middleware filters must be to the right of all
+other middleware in the pipeline apart from the final proxy-logging middleware,
+and in the order shown in this example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">other</span> <span class="n">middleware</span><span class="o">&gt;</span> <span class="n">keymaster</span> <span class="n">encryption</span> <span class="n">proxy</span><span class="o">-</span><span class="n">logging</span> <span class="n">proxy</span><span class="o">-</span><span class="n">server</span>
+
+<span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#keymaster</span>
+<span class="n">encryption_root_secret</span> <span class="o">=</span> <span class="n">your_secret</span>
+
+<span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">encryption</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#encryption</span>
+<span class="c1"># disable_encryption = False</span>
+</pre></div>
+</div>
+<p>See the <cite>proxy-server.conf-sample</cite> file for further details on the middleware
+configuration options.</p>
+<section id="keymaster-middleware">
+<h3>Keymaster middleware<a class="headerlink" href="#keymaster-middleware" title="Link to this heading">¶</a></h3>
+<p>The <cite>keymaster</cite> middleware must be configured with a root secret before it is
+used. By default the <cite>keymaster</cite> middleware will use the root secret configured
+using the <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> option in the middleware filter section of
+the <cite>proxy-server.conf</cite> file, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#keymaster</span>
+<span class="n">encryption_root_secret</span> <span class="o">=</span> <span class="n">your_secret</span>
+</pre></div>
+</div>
+<p>Root secret values MUST be at least 44 valid base-64 characters and
+should be consistent across all proxy servers. The minimum length of 44 has
+been chosen because it is the length of a base-64 encoded 32 byte value.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> option holds the master secret key used for
+encryption.  The security of all encrypted data critically depends on this
+key and it should therefore be set to a high-entropy value. For example, a
+suitable <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> may be obtained by base-64 encoding a
+32 byte (or longer) value generated by a cryptographically secure random
+number generator.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> value is necessary to recover any encrypted
+data from the storage system, and therefore, it must be guarded against
+accidental loss. Its value (and consequently, the proxy-server.conf file)
+should not be stored on any disk that is in any account, container or
+object ring.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> value should not be changed once deployed.
+Doing so would prevent Swift from properly decrypting data that was
+encrypted using the former value, and would therefore result in the loss of
+that data.</p>
+</div>
+<p>One method for generating a suitable value for <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> is to
+use the <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command line tool:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openssl</span> <span class="n">rand</span> <span class="o">-</span><span class="n">base64</span> <span class="mi">32</span>
+</pre></div>
+</div>
+<section id="separate-keymaster-configuration-file">
+<h4>Separate keymaster configuration file<a class="headerlink" href="#separate-keymaster-configuration-file" title="Link to this heading">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> option may alternatively be specified in a
+separate config file at a path specified by the <code class="docutils literal notranslate"><span class="pre">keymaster_config_path</span></code>
+option, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#keymaster</span>
+<span class="n">keymaster_config_path</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">keymaster</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+<p>This has the advantage of allowing multiple processes which need to be
+encryption-aware (for example, proxy-server and container-sync) to share the
+same config file, ensuring that consistent encryption keys are used by those
+processes. It also allows the keymaster configuration file to have different
+permissions than the <cite>proxy-server.conf</cite> file.</p>
+<p>A separate keymaster config file should have a <code class="docutils literal notranslate"><span class="pre">[keymaster]</span></code> section
+containing the <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">keymaster</span><span class="p">]</span>
+<span class="n">encryption_root_secret</span> <span class="o">=</span> <span class="n">your_secret</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Alternative keymaster middleware is available to retrieve encryption root
+secrets from an <a class="reference internal" href="#encryption-root-secret-in-external-kms"><span class="std std-ref">external key management system</span></a> such as <a class="reference external" href="https://docs.openstack.org/barbican">Barbican</a> rather than storing root secrets in
+configuration files.</p>
+</div>
+<p>Once deployed, the encryption filter will by default encrypt object data and
+metadata when handling PUT and POST requests and decrypt object data and
+metadata when handling GET and HEAD requests. COPY requests are transformed
+into GET and PUT requests by the <a class="reference internal" href="13.html#copy"><span class="std std-ref">Server Side Copy</span></a> middleware before reaching the
+encryption middleware and as a result object data and metadata is decrypted and
+re-encrypted when copied.</p>
+</section>
+<section id="changing-the-encryption-root-secret">
+<span id="changing-the-root-secret"></span><h4>Changing the encryption root secret<a class="headerlink" href="#changing-the-encryption-root-secret" title="Link to this heading">¶</a></h4>
+<p>From time to time it may be desirable to change the root secret that is used to
+derive encryption keys for new data written to the cluster. The <cite>keymaster</cite>
+middleware allows alternative root secrets to be specified in its configuration
+using options of the form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">encryption_root_secret_</span><span class="o">&lt;</span><span class="n">secret_id</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">secret</span> <span class="n">value</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">secret_id</span></code> is a unique identifier for the root secret and <code class="docutils literal notranslate"><span class="pre">secret</span>
+<span class="pre">value</span></code> is a value that meets the requirements for a root secret described
+above.</p>
+<p>Only one root secret is used to encrypt new data at any moment in time. This
+root secret is specified using the <code class="docutils literal notranslate"><span class="pre">active_root_secret_id</span></code> option. If
+specified, the value of this option should be one of the configured root secret
+<code class="docutils literal notranslate"><span class="pre">secret_id</span></code> values; otherwise the value of <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> will be
+taken as the default active root secret.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The active root secret is only used to derive keys for new data written to
+the cluster. Changing the active root secret does not cause any existing
+data to be re-encrypted.</p>
+</div>
+<p>Existing encrypted data will be decrypted using the root secret that was active
+when that data was written. All previous active root secrets must therefore
+remain in the middleware configuration in order for decryption of existing data
+to succeed.  Existing encrypted data will reference previous root secret by
+the <code class="docutils literal notranslate"><span class="pre">secret_id</span></code> so it must be kept consistent in the configuration.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do not remove or change any previously active <code class="docutils literal notranslate"><span class="pre">&lt;secret</span> <span class="pre">value&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">&lt;secret_id&gt;</span></code>.</p>
+</div>
+<p>For example, the following keymaster configuration file specifies three root
+secrets, with the value of <code class="docutils literal notranslate"><span class="pre">encryption_root_secret_2</span></code> being the current
+active root secret:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">keymaster</span><span class="p">]</span>
+<span class="n">active_root_secret_id</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">encryption_root_secret</span> <span class="o">=</span> <span class="n">your_secret</span>
+<span class="n">encryption_root_secret_1</span> <span class="o">=</span> <span class="n">your_secret_1</span>
+<span class="n">encryption_root_secret_2</span> <span class="o">=</span> <span class="n">your_secret_2</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To ensure there is no loss of data availability, deploying a new key to
+your cluster requires a two-stage config change. First, add the new key
+to the <code class="docutils literal notranslate"><span class="pre">encryption_root_secret_&lt;secret_id&gt;</span></code> option and restart the
+proxy-server. Do this for all proxies. Next, set the
+<code class="docutils literal notranslate"><span class="pre">active_root_secret_id</span></code> option to the new secret id and restart the
+proxy. Again, do this for all proxies. This process ensures that all
+proxies will have the new key available for <em>decryption</em> before any proxy
+uses it for <em>encryption</em>.</p>
+</div>
+</section>
+</section>
+<section id="encryption-middleware">
+<h3>Encryption middleware<a class="headerlink" href="#encryption-middleware" title="Link to this heading">¶</a></h3>
+<p>Once deployed, the encryption filter will by default encrypt object data and
+metadata when handling PUT and POST requests and decrypt object data and
+metadata when handling GET and HEAD requests. COPY requests are transformed
+into GET and PUT requests by the <a class="reference internal" href="13.html#copy"><span class="std std-ref">Server Side Copy</span></a> middleware before reaching the
+encryption middleware and as a result object data and metadata is decrypted and
+re-encrypted when copied.</p>
+</section>
+<section id="encryption-root-secret-in-external-key-management-system">
+<span id="encryption-root-secret-in-external-kms"></span><h3>Encryption Root Secret in External Key Management System<a class="headerlink" href="#encryption-root-secret-in-external-key-management-system" title="Link to this heading">¶</a></h3>
+<p>The benefits of using a dedicated system for storing the encryption root secret
+include the auditing and access control infrastructure that are already in
+place in such a system, and the fact that an encryption root secret stored in a
+key management system (KMS) may be backed by a hardware security module (HSM)
+for additional security. Another significant benefit of storing the root
+encryption secret in an external KMS is that it is in this case never stored on
+a disk in the Swift cluster.</p>
+<p>Swift supports fetching encryption root secrets from a <a class="reference external" href="https://docs.openstack.org/barbican">Barbican</a> service or a <a class="reference external" href="https://www.oasis-open.org/committees/kmip/">KMIP</a> service using the
+<code class="docutils literal notranslate"><span class="pre">kms_keymaster</span></code> or <code class="docutils literal notranslate"><span class="pre">kmip_keymaster</span></code> middleware respectively.</p>
+<section id="encryption-root-secret-in-a-barbican-kms">
+<h4>Encryption Root Secret in a Barbican KMS<a class="headerlink" href="#encryption-root-secret-in-a-barbican-kms" title="Link to this heading">¶</a></h4>
+<p>Make sure the required dependencies are installed for retrieving an encryption
+root secret from an external KMS. This can be done when installing Swift (add
+the <code class="docutils literal notranslate"><span class="pre">-e</span></code> flag to install as a development version) by changing to the Swift
+directory and running the following command to install Swift together with
+the <code class="docutils literal notranslate"><span class="pre">kms_keymaster</span></code> extra dependencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">.</span><span class="p">[</span><span class="n">kms_keymaster</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Another way to install the dependencies is by making sure the
+following lines exist in the requirements.txt file, and installing them using
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cryptography</span><span class="o">&gt;=</span><span class="mf">1.6</span>                       <span class="c1"># BSD/Apache-2.0</span>
+<span class="n">castellan</span><span class="o">&gt;=</span><span class="mf">0.6.0</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If any of the required packages is already installed, the <code class="docutils literal notranslate"><span class="pre">--upgrade</span></code>
+flag may be required for the <code class="docutils literal notranslate"><span class="pre">pip</span></code> commands in order for the required
+minimum version to be installed.</p>
+</div>
+<p>To make use of an encryption root secret stored in an external KMS,
+replace the keymaster middleware with the kms_keymaster middleware in the
+proxy server WSGI pipeline in <cite>proxy-server.conf</cite>, in the order shown in this
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">other</span> <span class="n">middleware</span><span class="o">&gt;</span> <span class="n">kms_keymaster</span> <span class="n">encryption</span> <span class="n">proxy</span><span class="o">-</span><span class="n">logging</span> <span class="n">proxy</span><span class="o">-</span><span class="n">server</span>
+</pre></div>
+</div>
+<p>and add a section to the same file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">kms_keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#kms_keymaster</span>
+<span class="n">keymaster_config_path</span> <span class="o">=</span> <span class="n">file_with_kms_keymaster_config</span>
+</pre></div>
+</div>
+<p>Create or edit the file <cite>file_with_kms_keymaster_config</cite> referenced above.
+For further details on the middleware configuration options, see the
+<cite>keymaster.conf-sample</cite> file. An example of the content of this file, with
+optional parameters omitted, is below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">kms_keymaster</span><span class="p">]</span>
+<span class="n">key_id</span> <span class="o">=</span> <span class="n">changeme</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">swift</span>
+<span class="n">password</span> <span class="o">=</span> <span class="n">password</span>
+<span class="n">project_name</span> <span class="o">=</span> <span class="n">swift</span>
+<span class="n">auth_endpoint</span> <span class="o">=</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">keystonehost</span><span class="p">:</span><span class="mi">5000</span><span class="o">/</span><span class="n">v3</span>
+</pre></div>
+</div>
+<p>The encryption root secret shall be created and stored in the external key
+management system before it can be used by the keymaster. It shall be stored
+as a symmetric key, with content type <code class="docutils literal notranslate"><span class="pre">application/octet-stream</span></code>,
+<code class="docutils literal notranslate"><span class="pre">base64</span></code> content encoding, <code class="docutils literal notranslate"><span class="pre">AES</span></code> algorithm, bit length <code class="docutils literal notranslate"><span class="pre">256</span></code>, and secret
+type <code class="docutils literal notranslate"><span class="pre">symmetric</span></code>. The mode <code class="docutils literal notranslate"><span class="pre">ctr</span></code> may also be stored for informational
+purposes - it is not currently checked by the keymaster.</p>
+<p>The following command can be used to store the currently configured
+<code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> value from the <cite>proxy-server.conf</cite> file
+in Barbican:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openstack</span> <span class="n">secret</span> <span class="n">store</span> <span class="o">--</span><span class="n">name</span> <span class="n">swift_root_secret</span> \
+<span class="o">--</span><span class="n">payload</span><span class="o">-</span><span class="n">content</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="s2">"application/octet-stream"</span> \
+<span class="o">--</span><span class="n">payload</span><span class="o">-</span><span class="n">content</span><span class="o">-</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"base64"</span> <span class="o">--</span><span class="n">algorithm</span> <span class="n">aes</span> <span class="o">--</span><span class="n">bit</span><span class="o">-</span><span class="n">length</span> <span class="mi">256</span> \
+<span class="o">--</span><span class="n">mode</span> <span class="n">ctr</span> <span class="o">--</span><span class="n">secret</span><span class="o">-</span><span class="nb">type</span> <span class="n">symmetric</span> <span class="o">--</span><span class="n">payload</span> <span class="o">&lt;</span><span class="n">base64_encoded_root_secret</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Alternatively, the existing root secret can also be stored in Barbican using
+<a class="reference external" href="https://docs.openstack.org/api-guide/key-manager/secrets.html">curl</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The credentials used to store the secret in Barbican shall be the same
+ones that the proxy server uses to retrieve the secret, i.e., the ones
+configured in the <cite>keymaster.conf</cite> file. For clarity reasons the commands
+shown here omit the credentials - they may be specified explicitly, or in
+environment variables.</p>
+</div>
+<p>Instead of using an existing root secret, Barbican can also be asked to
+generate a new 256-bit root secret, with content type
+<code class="docutils literal notranslate"><span class="pre">application/octet-stream</span></code> and algorithm <code class="docutils literal notranslate"><span class="pre">AES</span></code> (the <code class="docutils literal notranslate"><span class="pre">mode</span></code> parameter is
+currently optional):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openstack</span> <span class="n">secret</span> <span class="n">order</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">swift_root_secret</span> \
+<span class="o">--</span><span class="n">payload</span><span class="o">-</span><span class="n">content</span><span class="o">-</span><span class="nb">type</span><span class="o">=</span><span class="s2">"application/octet-stream"</span> <span class="o">--</span><span class="n">algorithm</span> <span class="n">aes</span> \
+<span class="o">--</span><span class="n">bit</span><span class="o">-</span><span class="n">length</span> <span class="mi">256</span> <span class="o">--</span><span class="n">mode</span> <span class="n">ctr</span> <span class="n">key</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">order</span> <span class="pre">create</span></code> creates an asynchronous request to create the actual
+secret.
+The order can be retrieved using <code class="docutils literal notranslate"><span class="pre">openstack</span> <span class="pre">secret</span> <span class="pre">order</span> <span class="pre">get</span></code>, and once the
+order completes successfully, the output will show the key id of the generated
+root secret.
+Keys currently stored in Barbican can be listed using the
+<code class="docutils literal notranslate"><span class="pre">openstack</span> <span class="pre">secret</span> <span class="pre">list</span></code> command.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both the order (the asynchronous request for creating or storing a secret),
+and the actual secret itself, have similar unique identifiers. Once the
+order has been completed, the key id is shown in the output of the <code class="docutils literal notranslate"><span class="pre">order</span>
+<span class="pre">get</span></code> command.</p>
+</div>
+<p>The keymaster uses the explicitly configured username and password (and
+project name etc.) from the <cite>keymaster.conf</cite> file for retrieving the encryption
+root secret from an external key management system. The <a class="reference external" href="https://docs.openstack.org/castellan/latest/">Castellan library</a> is used to communicate with
+Barbican.</p>
+<p>For the proxy server, reading the encryption root secret directly from the
+<cite>proxy-server.conf</cite> file, from the <cite>keymaster.conf</cite> file pointed to
+from the <cite>proxy-server.conf</cite> file, or from an external key management system
+such as Barbican, are all functionally equivalent. In case reading the
+encryption root secret from the external key management system fails, the
+proxy server will not start up. If the encryption root secret is retrieved
+successfully, it is cached in memory in the proxy server.</p>
+<p>For further details on the configuration options, see the
+<cite>[filter:kms_keymaster]</cite> section in the <cite>proxy-server.conf-sample</cite> file, and
+the <cite>keymaster.conf-sample</cite> file.</p>
+</section>
+<section id="encryption-root-secret-in-a-kmip-service">
+<h4>Encryption Root Secret in a KMIP service<a class="headerlink" href="#encryption-root-secret-in-a-kmip-service" title="Link to this heading">¶</a></h4>
+<p>This middleware enables Swift to fetch a root secret from a <a class="reference external" href="https://www.oasis-open.org/committees/kmip/">KMIP</a> service. The
+root secret is expected to have been previously created in the <a class="reference external" href="https://www.oasis-open.org/committees/kmip/">KMIP</a> service
+and is referenced by its unique identifier. The secret should be an AES-256
+symmetric key.</p>
+<p>To use this middleware Swift must be installed with the extra required
+dependencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">.</span><span class="p">[</span><span class="n">kmip_keymaster</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Add the <code class="docutils literal notranslate"><span class="pre">-e</span></code> flag to install as a development version.</p>
+<p>Edit the swift <cite>proxy-server.conf</cite> file to insert the middleware in the wsgi
+pipeline, replacing any other keymaster middleware:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">pipeline</span><span class="p">:</span><span class="n">main</span><span class="p">]</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">catch_errors</span> <span class="n">gatekeeper</span> <span class="n">healthcheck</span> <span class="n">proxy</span><span class="o">-</span><span class="n">logging</span> \
+    <span class="o">&lt;</span><span class="n">other</span> <span class="n">middleware</span><span class="o">&gt;</span> <span class="n">kmip_keymaster</span> <span class="n">encryption</span> <span class="n">proxy</span><span class="o">-</span><span class="n">logging</span> <span class="n">proxy</span><span class="o">-</span><span class="n">server</span>
+</pre></div>
+</div>
+<p>and add a new filter section:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">kmip_keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#kmip_keymaster</span>
+<span class="n">key_id</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">unique</span> <span class="nb">id</span> <span class="n">of</span> <span class="n">secret</span> <span class="n">to</span> <span class="n">be</span> <span class="n">fetched</span> <span class="kn">from</span><span class="w"> </span><span class="nn">the</span> <span class="n">KMIP</span> <span class="n">service</span><span class="o">&gt;</span>
+<span class="n">host</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">KMIP</span> <span class="n">server</span> <span class="n">host</span><span class="o">&gt;</span>
+<span class="n">port</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">KMIP</span> <span class="n">server</span> <span class="n">port</span><span class="o">&gt;</span>
+<span class="n">certfile</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">client</span><span class="o">/</span><span class="n">cert</span><span class="o">.</span><span class="n">pem</span>
+<span class="n">keyfile</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">client</span><span class="o">/</span><span class="n">key</span><span class="o">.</span><span class="n">pem</span>
+<span class="n">ca_certs</span> <span class="o">=</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">server</span><span class="o">/</span><span class="n">cert</span><span class="o">.</span><span class="n">pem</span>
+<span class="n">username</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">KMIP</span> <span class="n">username</span><span class="o">&gt;</span>
+<span class="n">password</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">KMIP</span> <span class="n">password</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Apart from <code class="docutils literal notranslate"><span class="pre">use</span></code> and <code class="docutils literal notranslate"><span class="pre">key_id</span></code> the options are as defined for a PyKMIP
+client. The authoritative definition of these options can be found at
+<a class="reference external" href="https://pykmip.readthedocs.io/en/latest/client.html">https://pykmip.readthedocs.io/en/latest/client.html</a>.</p>
+<p>The value of the <code class="docutils literal notranslate"><span class="pre">key_id</span></code> option should be the unique identifier for a secret
+that will be retrieved from the <a class="reference external" href="https://www.oasis-open.org/committees/kmip/">KMIP</a> service.</p>
+<p>The keymaster configuration can alternatively be defined in a separate config
+file by using the <code class="docutils literal notranslate"><span class="pre">keymaster_config_path</span></code> option:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="nb">filter</span><span class="p">:</span><span class="n">kmip_keymaster</span><span class="p">]</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">egg</span><span class="p">:</span><span class="n">swift</span><span class="c1">#kmip_keymaster</span>
+<span class="n">keymaster_config_path</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">kmip_keymaster</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+<p>In this case, the <code class="docutils literal notranslate"><span class="pre">filter:kmip_keymaster</span></code> section should contain no other
+options than <code class="docutils literal notranslate"><span class="pre">use</span></code> and <code class="docutils literal notranslate"><span class="pre">keymaster_config_path</span></code>. All other options should be
+defined in the separate config file in a section named <code class="docutils literal notranslate"><span class="pre">kmip_keymaster</span></code>. For
+example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">kmip_keymaster</span><span class="p">]</span>
+<span class="n">key_id</span> <span class="o">=</span> <span class="mi">1234567890</span>
+<span class="n">host</span> <span class="o">=</span> <span class="mf">127.0.0.1</span>
+<span class="n">port</span> <span class="o">=</span> <span class="mi">5696</span>
+<span class="n">certfile</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">kmip_client</span><span class="o">.</span><span class="n">crt</span>
+<span class="n">keyfile</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">kmip_client</span><span class="o">.</span><span class="n">key</span>
+<span class="n">ca_certs</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">kmip_server</span><span class="o">.</span><span class="n">crt</span>
+<span class="n">username</span> <span class="o">=</span> <span class="n">swift</span>
+<span class="n">password</span> <span class="o">=</span> <span class="n">swift_password</span>
+</pre></div>
+</div>
+</section>
+<section id="changing-the-encryption-root-secret-of-external-kms-s">
+<h4>Changing the encryption root secret of external KMS’s<a class="headerlink" href="#changing-the-encryption-root-secret-of-external-kms-s" title="Link to this heading">¶</a></h4>
+<p>Because the KMS and KMIP keymaster’s derive from the default KeyMaster they
+also have to ability to define multiple keys. The only difference is the key
+option names. Instead of using the form <cite>encryption_root_secret_&lt;secret_id&gt;</cite>
+both external KMS’s use <cite>key_id_&lt;secret_id&gt;</cite>, as it is an extension of their
+existing configuration. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+<span class="n">key_id</span> <span class="o">=</span> <span class="mi">1234567890</span>
+<span class="n">key_id_foo</span> <span class="o">=</span> <span class="mi">0987654321</span>
+<span class="n">key_id_bar</span> <span class="o">=</span> <span class="mi">5432106789</span>
+<span class="n">active_root_secret_id</span> <span class="o">=</span> <span class="n">foo</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>Other then that, the process is the same as <a class="reference internal" href="#changing-the-root-secret"><span class="std std-ref">Changing the encryption root secret</span></a>.</p>
+</section>
+</section>
+<section id="upgrade-considerations">
+<h3>Upgrade Considerations<a class="headerlink" href="#upgrade-considerations" title="Link to this heading">¶</a></h3>
+<p>When upgrading an existing cluster to deploy encryption, the following sequence
+of steps is recommended:</p>
+<ol class="arabic simple">
+<li><p>Upgrade all object servers</p></li>
+<li><p>Upgrade all proxy servers</p></li>
+<li><p>Add keymaster and encryption middlewares to every proxy server’s middleware
+pipeline with the encryption <code class="docutils literal notranslate"><span class="pre">disable_encryption</span></code> option set to <code class="docutils literal notranslate"><span class="pre">True</span></code>
+and the keymaster <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> value set as described above.</p></li>
+<li><p>If required, follow the steps for <a class="reference internal" href="#container-sync-client-config"><span class="std std-ref">Container sync configuration</span></a>.</p></li>
+<li><p>Finally, change the encryption <code class="docutils literal notranslate"><span class="pre">disable_encryption</span></code> option to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ol>
+<p>Objects that existed in the cluster prior to the keymaster and encryption
+middlewares being deployed are still readable with GET and HEAD requests. The
+content of those objects will not be encrypted unless they are written again by
+a PUT or COPY request. Any user metadata of those objects will not be encrypted
+unless it is written again by a PUT, POST or COPY request.</p>
+</section>
+<section id="disabling-encryption">
+<h3>Disabling Encryption<a class="headerlink" href="#disabling-encryption" title="Link to this heading">¶</a></h3>
+<p>Once deployed, the keymaster and encryption middlewares should not be removed
+from the pipeline. To do so will cause encrypted object data and/or metadata to
+be returned in response to GET or HEAD requests for objects that were
+previously encrypted.</p>
+<p>Encryption of inbound object data may be disabled by setting the encryption
+<code class="docutils literal notranslate"><span class="pre">disable_encryption</span></code> option to <code class="docutils literal notranslate"><span class="pre">True</span></code>, in which case existing encrypted
+objects will remain encrypted but new data written with PUT, POST or COPY
+requests will not be encrypted. The keymaster and encryption middlewares should
+remain in the pipeline even when encryption of new objects is not required. The
+encryption middleware is needed to handle GET requests for objects that may
+have been previously encrypted. The keymaster is needed to provide keys for
+those requests.</p>
+</section>
+<section id="container-sync-configuration">
+<span id="container-sync-client-config"></span><h3>Container sync configuration<a class="headerlink" href="#container-sync-configuration" title="Link to this heading">¶</a></h3>
+<p>If container sync is being used then the keymaster and encryption middlewares
+must be added to the container sync internal client pipeline. The following
+configuration steps are required:</p>
+<ol class="arabic">
+<li><p>Create a custom internal client configuration file for container sync (if
+one is not already in use) based on the sample file
+<cite>internal-client.conf-sample</cite>. For example, copy
+<cite>internal-client.conf-sample</cite> to <cite>/etc/swift/container-sync-client.conf</cite>.</p></li>
+<li><p>Modify this file to include the middlewares in the pipeline in
+the same way as described above for the proxy server.</p></li>
+<li><p>Modify the container-sync section of all container server config files to
+point to this internal client config file using the
+<code class="docutils literal notranslate"><span class="pre">internal_client_conf_path</span></code> option. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">internal_client_conf_path</span> <span class="o">=</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">swift</span><span class="o">/</span><span class="n">container</span><span class="o">-</span><span class="n">sync</span><span class="o">-</span><span class="n">client</span><span class="o">.</span><span class="n">conf</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> value is necessary to recover any encrypted
+data from the storage system, and therefore, it must be guarded against
+accidental loss. Its value (and consequently, the custom internal client
+configuration file) should not be stored on any disk that is in any
+account, container or object ring.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These container sync configuration steps will be necessary for container
+sync probe tests to pass if the encryption middlewares are included in the
+proxy pipeline of a test cluster.</p>
+</div>
+</section>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">¶</a></h2>
+<section id="encryption-scheme">
+<h3>Encryption scheme<a class="headerlink" href="#encryption-scheme" title="Link to this heading">¶</a></h3>
+<p>Plaintext data is encrypted to ciphertext using the AES cipher with 256-bit
+keys implemented by the python <a class="reference external" href="https://pypi.org/project/cryptography">cryptography package</a>. The cipher is used in counter
+(CTR) mode so that any byte or range of bytes in the ciphertext may be
+decrypted independently of any other bytes in the ciphertext. This enables very
+simple handling of ranged GETs.</p>
+<p>In general an item of unencrypted data, <code class="docutils literal notranslate"><span class="pre">plaintext</span></code>, is transformed to an
+item of encrypted data, <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ciphertext</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">plaintext</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">iv</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">E</span></code> is the encryption function, <code class="docutils literal notranslate"><span class="pre">k</span></code> is an encryption key and <code class="docutils literal notranslate"><span class="pre">iv</span></code>
+is a unique initialization vector (IV) chosen for each encryption context. For
+example, the object body is one encryption context with a randomly chosen IV.
+The IV is stored as metadata of the encrypted item so that it is available for
+decryption:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plaintext</span> <span class="o">=</span> <span class="n">D</span><span class="p">(</span><span class="n">ciphertext</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">iv</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">D</span></code> is the decryption function.</p>
+<p>The implementation of CTR mode follows <a class="reference external" href="http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf">NIST SP800-38A</a>, and the
+full IV passed to the encryption or decryption function serves as the initial
+counter block.</p>
+<p>In general any encrypted item has accompanying crypto-metadata that describes
+the IV and the cipher algorithm used for the encryption:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">crypto_metadata</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="o">&lt;</span><span class="mi">16</span> <span class="n">byte</span> <span class="n">value</span><span class="o">&gt;</span><span class="p">,</span>
+                   <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>This crypto-metadata is stored either with the ciphertext (for user
+metadata and etags) or as a separate header (for object bodies).</p>
+</section>
+<section id="key-management">
+<h3>Key management<a class="headerlink" href="#key-management" title="Link to this heading">¶</a></h3>
+<p>A keymaster middleware is responsible for providing the keys required for each
+encryption and decryption operation. Two keys are required when handling object
+requests: a <cite>container key</cite> that is uniquely associated with the container path
+and an <cite>object key</cite> that is uniquely associated with the object path.  These
+keys are made available to the encryption middleware via a callback function
+that the keymaster installs in the WSGI request environ.</p>
+<p>The current keymaster implementation derives container and object keys from the
+<code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> in a deterministic way by constructing a SHA256
+HMAC using the <code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code> as a key and the container or object
+path as a message, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">object_key</span> <span class="o">=</span> <span class="n">HMAC</span><span class="p">(</span><span class="n">encryption_root_secret</span><span class="p">,</span> <span class="s2">"/a/c/o"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Other strategies for providing object and container keys may be employed by
+future implementations of alternative keymaster middleware.</p>
+<p>During each object PUT, a random key is generated to encrypt the object body.
+This random key is then encrypted using the object key provided by the
+keymaster. This makes it safe to store the encrypted random key alongside the
+encrypted object data and metadata.</p>
+<p>This process of <cite>key wrapping</cite> enables more efficient re-keying events when the
+object key may need to be replaced and consequently any data encrypted using
+that key must be re-encrypted. Key wrapping minimizes the amount of data
+encrypted using those keys to just other randomly chosen keys which can be
+re-wrapped efficiently without needing to re-encrypt the larger amounts of data
+that were encrypted using the random keys.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Re-keying is not currently implemented. Key wrapping is implemented
+in anticipation of future re-keying operations.</p>
+</div>
+</section>
+<section id="id2">
+<h3>Encryption middleware<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<p>The encryption middleware is composed of an <cite>encrypter</cite> component and a
+<cite>decrypter</cite> component.</p>
+<section id="encrypter-operation">
+<h4>Encrypter operation<a class="headerlink" href="#encrypter-operation" title="Link to this heading">¶</a></h4>
+<section id="custom-user-metadata">
+<h5>Custom user metadata<a class="headerlink" href="#custom-user-metadata" title="Link to this heading">¶</a></h5>
+<p>The encrypter encrypts each item of custom user metadata using the object key
+provided by the keymaster and an IV that is randomly chosen for that metadata
+item. The encrypted values are stored as <a class="reference internal" href="https://docs.openstack.org/swift/latest/development_middleware.html#transient-sysmeta"><span class="std std-ref">Object Transient-Sysmeta</span></a> with
+associated crypto-metadata appended to the encrypted value. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Private1</span><span class="p">:</span> <span class="n">value1</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Private2</span><span class="p">:</span> <span class="n">value2</span>
+</pre></div>
+</div>
+<p>are transformed to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Transient</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Private1</span><span class="p">:</span>
+  <span class="n">E</span><span class="p">(</span><span class="n">value1</span><span class="p">,</span> <span class="n">object_key</span><span class="p">,</span> <span class="n">header_iv_1</span><span class="p">);</span> <span class="n">swift_meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="n">header_iv_1</span><span class="p">,</span>
+                                                  <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">}</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Transient</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Meta</span><span class="o">-</span><span class="n">Private2</span><span class="p">:</span>
+  <span class="n">E</span><span class="p">(</span><span class="n">value2</span><span class="p">,</span> <span class="n">object_key</span><span class="p">,</span> <span class="n">header_iv_2</span><span class="p">);</span> <span class="n">swift_meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="n">header_iv_2</span><span class="p">,</span>
+                                                  <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The unencrypted custom user metadata headers are removed.</p>
+</section>
+<section id="object-body">
+<h5>Object body<a class="headerlink" href="#object-body" title="Link to this heading">¶</a></h5>
+<p>Encryption of an object body is performed using a randomly chosen body key
+and a randomly chosen IV:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">body_ciphertext</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">body_plaintext</span><span class="p">,</span> <span class="n">body_key</span><span class="p">,</span> <span class="n">body_iv</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The body_key is wrapped using the object key provided by the keymaster and a
+randomly chosen IV:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wrapped_body_key</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span><span class="n">body_key</span><span class="p">,</span> <span class="n">object_key</span><span class="p">,</span> <span class="n">body_key_iv</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The encrypter stores the associated crypto-metadata in a system metadata
+header:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Body</span><span class="o">-</span><span class="n">Meta</span><span class="p">:</span>
+    <span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="n">body_iv</span><span class="p">,</span>
+     <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">,</span>
+     <span class="s2">"body_key"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">wrapped_body_key</span><span class="p">,</span>
+                  <span class="s2">"iv"</span><span class="p">:</span> <span class="n">body_key_iv</span><span class="p">}}</span>
+</pre></div>
+</div>
+<p>Note that in this case there is an extra item of crypto-metadata which stores
+the wrapped body key and its IV.</p>
+</section>
+<section id="entity-tag">
+<h5>Entity tag<a class="headerlink" href="#entity-tag" title="Link to this heading">¶</a></h5>
+<p>While encrypting the object body the encrypter also calculates the ETag (md5
+digest) of the plaintext body. This value is encrypted using the object key
+provided by the keymaster and a randomly chosen IV, and saved as an item of
+system metadata, with associated crypto-metadata appended to the encrypted
+value:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Etag</span><span class="p">:</span>
+  <span class="n">E</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">plaintext</span><span class="p">),</span> <span class="n">object_key</span><span class="p">,</span> <span class="n">etag_iv</span><span class="p">);</span> <span class="n">swift_meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="n">etag_iv</span><span class="p">,</span>
+                                                      <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The encrypter also forces an encrypted version of the plaintext ETag to be sent
+with container updates by adding an update override header to the PUT request.
+The associated crypto-metadata is appended to the encrypted ETag value of this
+update override header:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Container</span><span class="o">-</span><span class="n">Update</span><span class="o">-</span><span class="n">Override</span><span class="o">-</span><span class="n">Etag</span><span class="p">:</span>
+    <span class="n">E</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">plaintext</span><span class="p">),</span> <span class="n">container_key</span><span class="p">,</span> <span class="n">override_etag_iv</span><span class="p">);</span>
+    <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">"iv"</span><span class="p">:</span> <span class="n">override_etag_iv</span><span class="p">,</span> <span class="s2">"cipher"</span><span class="p">:</span> <span class="s2">"AES_CTR_256"</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The container key is used for this encryption so that the decrypter is able
+to decrypt the ETags in container listings when handling a container request,
+since object keys may not be available in that context.</p>
+<p>Since the plaintext ETag value is only known once the encrypter has completed
+processing the entire object body, the <code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Etag</span></code> and
+<code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Container-Update-Override-Etag</span></code> headers are sent after the
+encrypted object body using the proxy server’s support for request footers.</p>
+</section>
+<section id="conditional-requests">
+<span id="id3"></span><h5>Conditional Requests<a class="headerlink" href="#conditional-requests" title="Link to this heading">¶</a></h5>
+<p>In general, an object server evaluates conditional requests with
+<code class="docutils literal notranslate"><span class="pre">If[-None]-Match</span></code> headers by comparing values listed in an
+<code class="docutils literal notranslate"><span class="pre">If[-None]-Match</span></code> header against the ETag that is stored in the object
+metadata. This is not possible when the ETag stored in object metadata has been
+encrypted. The encrypter therefore calculates an HMAC using the object key and
+the ETag while handling object PUT requests, and stores this under the metadata
+key <code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Etag-Mac</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Etag</span><span class="o">-</span><span class="n">Mac</span><span class="p">:</span> <span class="n">HMAC</span><span class="p">(</span><span class="n">object_key</span><span class="p">,</span> <span class="n">md5</span><span class="p">(</span><span class="n">plaintext</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Like other ETag-related metadata, this is sent after the encrypted object body
+using the proxy server’s support for request footers.</p>
+<p>The encrypter similarly calculates an HMAC for each ETag value included in
+<code class="docutils literal notranslate"><span class="pre">If[-None]-Match</span></code> headers of conditional GET or HEAD requests, and appends
+these to the <code class="docutils literal notranslate"><span class="pre">If[-None]-Match</span></code> header. The encrypter also sets the
+<code class="docutils literal notranslate"><span class="pre">X-Backend-Etag-Is-At</span></code> header to point to the previously stored
+<code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Etag-Mac</span></code> metadata so that the object server
+evaluates the conditional request by comparing the HMAC values included in the
+<code class="docutils literal notranslate"><span class="pre">If[-None]-Match</span></code> with the value stored under
+<code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Etag-Mac</span></code>. For example, given a conditional request
+with header:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">If</span><span class="o">-</span><span class="n">Match</span><span class="p">:</span> <span class="n">match_etag</span>
+</pre></div>
+</div>
+<p>the encrypter would transform the request headers to include:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">If</span><span class="o">-</span><span class="n">Match</span><span class="p">:</span> <span class="n">match_etag</span><span class="p">,</span><span class="n">HMAC</span><span class="p">(</span><span class="n">object_key</span><span class="p">,</span> <span class="n">match_etag</span><span class="p">)</span>
+<span class="n">X</span><span class="o">-</span><span class="n">Backend</span><span class="o">-</span><span class="n">Etag</span><span class="o">-</span><span class="n">Is</span><span class="o">-</span><span class="n">At</span><span class="p">:</span> <span class="n">X</span><span class="o">-</span><span class="n">Object</span><span class="o">-</span><span class="n">Sysmeta</span><span class="o">-</span><span class="n">Crypto</span><span class="o">-</span><span class="n">Etag</span><span class="o">-</span><span class="n">Mac</span>
+</pre></div>
+</div>
+<p>This enables the object server to perform an encrypted comparison to check
+whether the ETags match, without leaking the ETag itself or leaking information
+about the object body.</p>
+</section>
+</section>
+<section id="decrypter-operation">
+<h4>Decrypter operation<a class="headerlink" href="#decrypter-operation" title="Link to this heading">¶</a></h4>
+<p>For each GET or HEAD request to an object, the decrypter inspects the response
+for encrypted items (revealed by crypto-metadata headers), and if any are
+discovered then it will:</p>
+<ol class="arabic simple">
+<li><p>Fetch the object and container keys from the keymaster via its callback</p></li>
+<li><p>Decrypt the <code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Etag</span></code> value</p></li>
+<li><p>Decrypt the <code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Container-Update-Override-Etag</span></code> value</p></li>
+<li><p>Decrypt metadata header values using the object key</p></li>
+<li><p>Decrypt the wrapped body key found in <code class="docutils literal notranslate"><span class="pre">X-Object-Sysmeta-Crypto-Body-Meta</span></code></p></li>
+<li><p>Decrypt the body using the body key</p></li>
+</ol>
+<p>For each GET request to a container that would include ETags in its response
+body, the decrypter will:</p>
+<ol class="arabic simple">
+<li><p>GET the response body with the container listing</p></li>
+<li><p>Fetch the container key from the keymaster via its callback</p></li>
+<li><p>Decrypt any encrypted ETag entries in the container listing using the
+container key</p></li>
+</ol>
+</section>
+</section>
+<section id="impact-on-other-swift-services-and-features">
+<h3>Impact on other Swift services and features<a class="headerlink" href="#impact-on-other-swift-services-and-features" title="Link to this heading">¶</a></h3>
+<p>Encryption has no impact on <a class="reference internal" href="13.html#versioned-writes"><span class="std std-ref">Versioned Writes</span></a> other than that any
+previously unencrypted objects will be encrypted as they are copied to or from
+the versions container. Keymaster and encryption middlewares should be placed
+after <code class="docutils literal notranslate"><span class="pre">versioned_writes</span></code> in the proxy server pipeline, as described in
+<a class="reference internal" href="#encryption-deployment"><span class="std std-ref">Deployment and operation</span></a>.</p>
+<p><cite>Container Sync</cite> uses an internal client to GET objects that are to be sync’d.
+This internal client must be configured to use the keymaster and encryption
+middlewares as described <a class="reference internal" href="#container-sync-client-config"><span class="std std-ref">above</span></a>.</p>
+<p>Encryption has no impact on the <cite>object-auditor</cite> service. Since the ETag
+header saved with the object at rest is the md5 sum of the encrypted object
+body then the auditor will verify that encrypted data is valid.</p>
+<p>Encryption has no impact on the <cite>object-expirer</cite> service. <code class="docutils literal notranslate"><span class="pre">X-Delete-At</span></code> and
+<code class="docutils literal notranslate"><span class="pre">X-Delete-After</span></code> headers are not encrypted.</p>
+<p>Encryption has no impact on the <cite>object-replicator</cite> and <cite>object-reconstructor</cite>
+services. These services are unaware of the object or EC fragment data being
+encrypted.</p>
+<p>Encryption has no impact on the <cite>container-reconciler</cite> service. The
+<cite>container-reconciler</cite> uses an internal client to move objects between
+different policy rings. The reconciler’s pipeline <em>MUST NOT</em> have encryption
+enabled. The destination object has the same URL as the source object and the
+object is moved without re-encryption.</p>
+</section>
+<section id="considerations-for-developers">
+<h3>Considerations for developers<a class="headerlink" href="#considerations-for-developers" title="Link to this heading">¶</a></h3>
+<p>Developers should be aware that keymaster and encryption middlewares rely on
+the path of an object remaining unchanged. The included keymaster derives keys
+for containers and objects based on their paths and the
+<code class="docutils literal notranslate"><span class="pre">encryption_root_secret</span></code>. The keymaster does not rely on object metadata to
+inform its generation of keys for GET and HEAD requests because when handling
+<a class="reference internal" href="#conditional-requests"><span class="std std-ref">Conditional Requests</span></a> it is required to provide the object key before any
+metadata has been read from the object.</p>
+<p>Developers should therefore give careful consideration to any new features that
+would relocate object data and metadata within a Swift cluster by means that do
+not cause the object data and metadata to pass through the encryption
+middlewares in the proxy pipeline and be re-encrypted.</p>
+<p>The crypto-metadata associated with each encrypted item does include some
+<cite>key_id</cite> metadata that is provided by the keymaster and contains the path used
+to derive keys. This <cite>key_id</cite> metadata is persisted in anticipation of future
+scenarios when it may be necessary to decrypt an object that has been relocated
+without re-encrypting, in which case the metadata could be used to derive the
+keys that were used for encryption. However, this alone is not sufficient to
+handle conditional requests and to decrypt container listings where objects
+have been relocated, and further work will be required to solve those issues.</p>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configure Secret Store Back-end · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="configure-secret-store-back-end">
+<span id="barbican-backend"></span><h1>Configure Secret Store Back-end<a class="headerlink" href="#configure-secret-store-back-end" title="Link to this heading">¶</a></h1>
+<p>The Key Manager service has a plugin architecture that allows the deployer to
+store secrets in one or more secret stores.  Secret stores can be
+software-based such as a software-only encryption mechanism, or hardware
+devices such as a hardware security module (HSM).</p>
+<p>Secret Stores implement both the encryption mechanisms as well as the storage
+of the encrypted secrets.</p>
+<p>This section compares all the plugins that are currently available and the
+security tradeoffs that need to be considered when deciding which plugins to
+use.</p>
+<section id="simple-crypto-plugin">
+<h2>Simple Crypto Plugin<a class="headerlink" href="#simple-crypto-plugin" title="Link to this heading">¶</a></h2>
+<p>This back end plugin implements encryption using only software.  The encrypted
+secrets are stored in the Barbican database.</p>
+<p>This crypto plugin is configured by default in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code>.</p>
+<p>This plugin uses single symmetric key (kek - or ‘key encryption key’)
+- which is stored in plain text in the <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code> file to encrypt
+and decrypt all secrets.</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>Security</p></td>
+<td><p>⚠ Master Key (KEK) stored in the configuration file</p></td>
+</tr>
+<tr class="row-even"><td><p>Maturity</p></td>
+<td><p>✅ Tested on every patch</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ease of Use</p></td>
+<td><div class="line-block">
+<div class="line">✅ Simple to deploy</div>
+<div class="line">❌ Key rotation is disruptive</div>
+<div class="line">(all secrets must be re-encrypted)</div>
+</div>
+</td>
+</tr>
+<tr class="row-even"><td><p>Scalability</p></td>
+<td><div class="line-block">
+<div class="line">✅ Storage can be scaled in SQL DB</div>
+<div class="line">✅ Failover/HA is simple, just run more barbican-api
+instances</div>
+<div class="line">✅ High performance - Software crypto is fast</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>Cost</p></td>
+<td><p>✅ Free (as in beer)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This plugin stores its KEK in plain text in the configuration file,
+which will be present in any node running the <cite>barbican-api</cite> or
+<cite>barbican-worker</cite> services.  Extreme care should be taken to prevent
+unauthorized access to these nodes.  When using this plugin the KEK is the
+only thing protecting the secrets stored in the database.</p>
+</div>
+<p>The configuration for this plugin in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code> is as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># ================= Secret Store Plugin ===================</span>
+<span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+
+<span class="c1"># ================= Crypto plugin ===================</span>
+<span class="k">[crypto]</span>
+<span class="na">..</span>
+<span class="na">enabled_crypto_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">simple_crypto</span>
+
+<span class="k">[simple_crypto_plugin]</span>
+<span class="c1"># the kek should be a 32-byte value which is base64 encoded</span>
+<span class="na">kek</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY='</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Setting crypto plugins has effect only when <cite>secretstore</cite> plugin is set to
+<cite>store_crypto</cite> unless multibackend storage is used.
+So, for example, using vault for secretstore and PKCS#11 for crypto will not
+work (vault will be responsible for both storage and encryption).</p>
+</div>
+</section>
+<section id="pkcs-11-crypto-plugin">
+<h2>PKCS#11 Crypto Plugin<a class="headerlink" href="#pkcs-11-crypto-plugin" title="Link to this heading">¶</a></h2>
+<p>This crypto plugin can be used to interface with a Hardware Security Module (HSM)
+using the PKCS#11 protocol.</p>
+<p>Secrets are encrypted (and decrypted on retrieval) by a project specific
+Key Encryption Key (KEK), which in it’s turn encrypted with Master Key (MKEK)
+and signed with HMAC key. Both MKEK and HMAC resides in the HSM.</p>
+<p>The configuration for this plugin in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code>.
+Settings for some different HSMs are provided below:</p>
+<section id="thales-luna-network-hsm">
+<h3>Thales Luna Network HSM<a class="headerlink" href="#thales-luna-network-hsm" title="Link to this heading">¶</a></h3>
+<p>The PKCS#11 plugin configuration for Luna Network HSM looks like:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[secretstore]</span>
+<span class="na">enable_multiple_secret_stores</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<span class="na">stores_lookup_suffix</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">luna</span>
+
+<span class="c1"># ========== Secret Store configuration ==========</span>
+<span class="k">[secretstore:luna]</span>
+<span class="na">secret_store_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+<span class="na">crypto_plugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">p11_crypto</span>
+
+<span class="c1"># ================= Crypto plugin ===================</span>
+<span class="k">[p11_crypto_plugin]</span>
+<span class="c1"># Path to vendor PKCS11 library</span>
+<span class="na">library_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/usr/lib/libCryptoki2_64.so'</span>
+
+<span class="c1"># Token serial number for the token to be used.  Required</span>
+<span class="c1"># when the device has multiple tokens with the same label.</span>
+<span class="c1"># (string value)</span>
+<span class="c1">#token_serial_number = 12345678</span>
+
+<span class="c1"># Token label for the token to be used.  Required when</span>
+<span class="c1"># token_serial_number is not specified. (string value)</span>
+<span class="na">token_labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">myPCKS11Token</span>
+
+<span class="c1"># (Optional) HSM Slot ID that contains the token device to be used.</span>
+<span class="c1"># Required when token_serial_number and token_labels are not specified.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1">#slot_id = 0</span>
+
+<span class="c1"># Password (PIN) to login to PKCS11 session</span>
+<span class="na">login</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'mypassword'</span>
+
+<span class="c1"># Encryption algorithm used to encrypt secrets</span>
+<span class="na">encryption_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_CBC_GCM</span>
+
+<span class="c1"># Label to identify master KEK in the HSM (must not be the same as HMAC label)</span>
+<span class="na">mkek_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'my_mkek_label'</span>
+
+<span class="c1"># Label to identify master HMAC key in the HSM (must not be the same as MKEK label)</span>
+<span class="na">hmac_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'my_hmac_label'</span>
+
+<span class="c1"># Key Type for the master HMAC key</span>
+<span class="na">hmac_key_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKK_GENERIC_SECRET</span>
+
+<span class="c1"># HMAC Key Generation Algorithm used to create the master HMAC Key</span>
+<span class="na">hmac_keygen_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_GENERIC_SECRET_KEY_GEN</span>
+
+<span class="c1"># HMAC algorith used to sign ecnrypted data</span>
+<span class="na">hmac_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_SHA256_HMAC</span>
+
+<span class="c1"># Key Wrap algorithm used to wrap Project KEKs</span>
+<span class="na">key_wrap_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_KEY_WRAP_KWP</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The HMAC and MKEK keys can be generated as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_hmac --library-path /usr/lib/libCryptoki2_64.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label my_hmac_label</span>
+</pre></div>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_mkek --library-path /usr/lib/libCryptoki2_64.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label my_mkek_label</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="ncipher">
+<h3>nCipher<a class="headerlink" href="#ncipher" title="Link to this heading">¶</a></h3>
+<p>For a nCipher nShield Connect XC, the plugin configuration looks like:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># ================= Secret Store Plugin ===================</span>
+<span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+
+<span class="c1"># ================= Crypto plugin ===================</span>
+<span class="k">[crypto]</span>
+<span class="na">..</span>
+<span class="na">enabled_crypto_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">p11_crypto</span>
+
+<span class="k">[p11_crypto_plugin]</span>
+<span class="c1"># Path to vendor PKCS11 library</span>
+<span class="na">library_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/opt/nfast/toolkits/pkcs11/libcknfast.so'</span>
+
+<span class="c1"># Token serial number used to identify the token to be used.  Required</span>
+<span class="c1"># when the device has multiple tokens with the same label. (string</span>
+<span class="c1"># value)</span>
+<span class="na">token_serial_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">12345678</span>
+
+<span class="c1"># Token label used to identify the token to be used.  Required when</span>
+<span class="c1"># token_serial_number is not specified. (string value)</span>
+<span class="c1">#token_label = &lt;None&gt;</span>
+
+<span class="c1"># Password to login to PKCS11 session</span>
+<span class="na">login</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'XXX'</span>
+
+<span class="c1"># Label to identify master KEK in the HSM (must not be the same as HMAC label)</span>
+<span class="na">mkek_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'thales_mkek_0'</span>
+
+<span class="c1"># Length in bytes of master KEK</span>
+<span class="na">mkek_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">32</span>
+
+<span class="c1"># Label to identify HMAC key in the HSM (must not be the same as MKEK label)</span>
+<span class="na">hmac_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'thales_hmac_0'</span>
+
+<span class="c1"># (Optional) HSM Slot ID that contains the token device to be used.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># slot_id = 1</span>
+
+<span class="c1"># Enable Read/Write session with the HSM?</span>
+<span class="c1"># rw_session = True</span>
+
+<span class="c1"># Length of Project KEKs to create</span>
+<span class="c1"># pkek_length = 32</span>
+
+<span class="c1"># How long to cache unwrapped Project KEKs</span>
+<span class="c1"># pkek_cache_ttl = 900</span>
+
+<span class="c1"># Max number of items in pkek cache</span>
+<span class="c1"># pkek_cache_limit = 100</span>
+
+<span class="c1"># Secret encryption mechanism (string value)</span>
+<span class="c1"># Deprecated group/name - [p11_crypto_plugin]/algorithm</span>
+<span class="na">encryption_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_CBC</span>
+
+<span class="c1"># HMAC Key Type (string value)</span>
+<span class="na">hmac_key_type</span><span class="o">=</span><span class="s">CKK_SHA256_HMAC</span>
+
+<span class="c1"># HMAC Key Generation Mechanism (string value)</span>
+<span class="na">hmac_keygen_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_NC_SHA256_HMAC_KEY_GEN</span>
+
+<span class="c1"># Generate IVs for CKM_AES_GCM mechanism. (boolean value)</span>
+<span class="c1"># Deprecated group/name - [p11_crypto_plugin]/generate_iv</span>
+<span class="na">aes_gcm_generate_iv</span><span class="o">=</span><span class="s">True</span>
+
+<span class="c1"># Always set CKA_SENSITIVE=CK_TRUE including</span>
+<span class="c1"># CKA_EXTRACTABLE=CK_TRUE keys.</span>
+<span class="c1"># default true</span>
+<span class="na">always_set_cka_sensitive</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The HMAC and MKEK keys can be generated as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_hmac \</span>
+<span class="na">--library-path /opt/nfast/toolkits/pkcs11/libcknfast.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label thales_hmac_0 \</span>
+<span class="na">--key-type CKK_SHA256_HMAC \</span>
+<span class="na">--mechanism CKM_NC_SHA256_HMAC_KEY_GEN</span>
+</pre></div>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_mkek \</span>
+<span class="na">--library-path /opt/nfast/toolkits/pkcs11/libcknfast.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label thales_mkek_0</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="atos-bull">
+<h3>ATOS Bull<a class="headerlink" href="#atos-bull" title="Link to this heading">¶</a></h3>
+<p>For an ATOS Bull HSM, the plugin configuration looks like:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># ================= Secret Store Plugin ===================</span>
+<span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+
+<span class="c1"># ================= Crypto plugin ===================</span>
+<span class="k">[crypto]</span>
+<span class="na">..</span>
+<span class="na">enabled_crypto_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">p11_crypto</span>
+
+<span class="k">[p11_crypto_plugin]</span>
+<span class="c1"># Path to vendor PKCS11 library</span>
+<span class="na">library_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/usr/lib64/libnethsm.so'</span>
+
+<span class="c1"># Token serial number used to identify the token to be used.  Required</span>
+<span class="c1"># when the device has multiple tokens with the same label. (string</span>
+<span class="c1"># value)</span>
+<span class="na">token_serial_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">12345678</span>
+
+<span class="c1"># Token label used to identify the token to be used.  Required when</span>
+<span class="c1"># token_serial_number is not specified. (string value)</span>
+<span class="c1">#token_label = &lt;None&gt;</span>
+
+<span class="c1"># Password to login to PKCS11 session</span>
+<span class="na">login</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'XXX'</span>
+
+<span class="c1"># Label to identify master KEK in the HSM (must not be the same as HMAC label)</span>
+<span class="na">mkek_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'atos_mkek_0'</span>
+
+<span class="c1"># Length in bytes of master KEK</span>
+<span class="na">mkek_length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">32</span>
+
+<span class="c1"># Label to identify HMAC key in the HSM (must not be the same as MKEK label)</span>
+<span class="na">hmac_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'atos_hmac_0'</span>
+
+<span class="c1"># (Optional) HSM Slot ID that contains the token device to be used.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># slot_id = 1</span>
+
+<span class="c1"># Enable Read/Write session with the HSM?</span>
+<span class="c1"># rw_session = True</span>
+
+<span class="c1"># Length of Project KEKs to create</span>
+<span class="c1"># pkek_length = 32</span>
+
+<span class="c1"># How long to cache unwrapped Project KEKs</span>
+<span class="c1"># pkek_cache_ttl = 900</span>
+
+<span class="c1"># Max number of items in pkek cache</span>
+<span class="c1"># pkek_cache_limit = 100</span>
+
+<span class="c1"># Secret encryption mechanism (string value)</span>
+<span class="c1"># Deprecated group/name - [p11_crypto_plugin]/algorithm</span>
+<span class="na">encryption_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_CBC</span>
+
+<span class="c1"># HMAC Key Type (string value)</span>
+<span class="na">hmac_key_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKK_GENERIC_SECRET</span>
+
+<span class="c1"># HMAC Key Generation Mechanism (string value)</span>
+<span class="na">hmac_keygen_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_GENERIC_SECRET_KEY_GEN</span>
+
+<span class="c1"># Always set CKA_SENSITIVE=CK_TRUE including</span>
+<span class="c1"># CKA_EXTRACTABLE=CK_TRUE keys.</span>
+<span class="c1"># default true</span>
+<span class="na">always_set_cka_sensitive</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The HMAC and MKEK keys can be generated as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_hmac --library-path /usr/lib64/libnethsm.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label atos_hmac_0 \</span>
+<span class="na">--key-type  CKK_GENERIC_SECRET \</span>
+<span class="na">--mechanism  CKM_GENERIC_SECRET_KEY_GEN</span>
+</pre></div>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_mkek --library-path /usr/lib64/libnethsm.so \</span>
+<span class="na">--passphrase XXX --slot-id 1 --label atos_mkek_0</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="utimaco">
+<h3>Utimaco<a class="headerlink" href="#utimaco" title="Link to this heading">¶</a></h3>
+<p>The PKCS#11 plugin configuration looks like:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="c1"># ================= Secret Store Plugin ===================</span>
+<span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">store_crypto</span>
+
+<span class="c1"># ================= Crypto plugin ===================</span>
+<span class="k">[crypto]</span>
+<span class="na">..</span>
+<span class="na">enabled_crypto_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">p11_crypto</span>
+
+<span class="k">[p11_crypto_plugin]</span>
+<span class="c1"># Path to vendor PKCS11 library (string value)</span>
+<span class="na">library_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/opt/utimaco/lib/libcs_pkcs11_R2.so'</span>
+
+<span class="c1"># Token serial number used to identify the token to be used.  Required</span>
+<span class="c1"># when the device has multiple tokens with the same label. (string</span>
+<span class="c1"># value)</span>
+<span class="na">token_serial_number</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">12345678</span>
+
+<span class="c1"># Token label used to identify the token to be used.  Required when</span>
+<span class="c1"># token_serial_number is not specified. (string value)</span>
+<span class="c1">#token_label = &lt;None&gt;</span>
+
+<span class="c1"># Password to login to PKCS11 session (string value)</span>
+<span class="na">login</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'$up3r$e&lt;retP4ssw0rd'</span>
+
+<span class="c1"># Master KEK label (as stored in the HSM) (string value)</span>
+<span class="na">mkek_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'my_mkek'</span>
+
+<span class="c1"># Master KEK length in bytes. (integer value)</span>
+<span class="c1">#mkek_length = 32</span>
+
+<span class="c1"># Master HMAC Key label (as stored in the HSM) (string value)</span>
+<span class="na">hmac_label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'my_hmac_key'</span>
+
+<span class="c1"># (Optional) HSM Slot ID that contains the token device to be used.</span>
+<span class="c1"># (integer value)</span>
+<span class="c1"># slot_id = 1</span>
+
+<span class="c1"># Flag for Read/Write Sessions (boolean value)</span>
+<span class="c1">#rw_session = true</span>
+
+<span class="c1"># Project KEK length in bytes. (integer value)</span>
+<span class="c1">#pkek_length = 32</span>
+
+<span class="c1"># Project KEK Cache Time To Live, in seconds (integer value)</span>
+<span class="c1">#pkek_cache_ttl = 900</span>
+
+<span class="c1"># Project KEK Cache Item Limit (integer value)</span>
+<span class="c1">#pkek_cache_limit = 100</span>
+
+<span class="c1"># Secret encryption mechanism (string value)</span>
+<span class="c1"># Deprecated group/name - [p11_crypto_plugin]/algorithm</span>
+<span class="na">encryption_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_CBC</span>
+
+<span class="c1"># HMAC Key Type (string value)</span>
+<span class="c1">#hmac_key_type = CKK_AES</span>
+
+<span class="c1"># HMAC Key Generation Algorithm (string value)</span>
+<span class="c1">#hmac_keygen_mechanism = CKM_AES_KEY_GEN</span>
+
+<span class="c1"># File to pull entropy for seeding RNG (string value)</span>
+<span class="c1">#seed_file =</span>
+
+<span class="c1"># Amount of data to read from file for seed (integer value)</span>
+<span class="c1">#seed_length = 32</span>
+
+<span class="c1"># User friendly plugin name (string value)</span>
+<span class="c1">#plugin_name = PKCS11 HSM</span>
+
+<span class="c1"># Generate IVs for CKM_AES_GCM mechanism. (boolean value)</span>
+<span class="c1"># Deprecated group/name - [p11_crypto_plugin]/generate_iv</span>
+<span class="c1">#aes_gcm_generate_iv = true</span>
+
+<span class="c1"># HMAC key wrap mechanism</span>
+<span class="na">hmac_keywrap_mechanism</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">CKM_AES_MAC</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The HMAC and MKEK keys can be generated as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_mkek --library-path \</span>
+<span class="na">/opt/utimaco/lib/libcs_pkcs11_R2.so --passphrase XXX \</span>
+<span class="na">--slot-id 0 --label 'my_mkek'</span>
+</pre></div>
+</div>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">barbican-manage hsm gen_hmac --library-path \</span>
+<span class="na">/opt/utimaco/lib/libcs_pkcs11_R2.so --passphrase XXX \</span>
+<span class="na">--slot-id 0 --label 'my_hmac_key'</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="kmip-plugin">
+<h2>KMIP Plugin<a class="headerlink" href="#kmip-plugin" title="Link to this heading">¶</a></h2>
+<p>This secret store plugin is used to communicate with a KMIP device.
+The secret is securely stored in the KMIP device directly, rather than in the
+Barbican database.  The Barbican database maintains a reference to the
+secret’s location for later retrieval.</p>
+<p>The plugin can be configured to authenticate to the KMIP device using either
+a username and password, or using a client certificate.</p>
+<p>The configuration for this plugin in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code> is as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">kmip_plugin</span>
+
+<span class="k">[kmip_plugin]</span>
+<span class="na">username</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'admin'</span>
+<span class="na">password</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'password'</span>
+<span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">localhost</span>
+<span class="na">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">5696</span>
+<span class="na">keyfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/path/to/certs/cert.key'</span>
+<span class="na">certfile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/path/to/certs/cert.crt'</span>
+<span class="na">ca_certs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/path/to/certs/LocalCA.crt'</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="dogtag-plugin">
+<h2>Dogtag Plugin<a class="headerlink" href="#dogtag-plugin" title="Link to this heading">¶</a></h2>
+<p>Dogtag is the upstream project corresponding to the Red Hat Certificate System,
+a robust, full-featured PKI solution that contains a Certificate Manager (CA)
+and a Key Recovery Authority (KRA) which is used to securely store secrets.</p>
+<p>The KRA stores secrets as encrypted blobs in its internal database, with the
+master encryption keys being stored either in a software-based NSS security
+database, or in a Hardware Security Module (HSM).</p>
+<p>Note that the software-based NSS database configuration provides a secure option for
+those deployments that do not require or cannot afford an HSM.  This is the only
+current plugin to provide this option.</p>
+<p>The KRA communicates with HSMs using PKCS#11.  For a list of certified HSMs,
+see the latest <a class="reference external" href="https://access.redhat.com/documentation/en-US/Red_Hat_Certificate_System/9/html/Release_Notes/">release notes</a>.  Dogtag and the KRA meet all the relevant Common Criteria and FIPS specifications.</p>
+<p>The KRA is a component of FreeIPA.  Therefore, it is possible to configure the plugin
+with a FreeIPA server.  More detailed instructions on how to set up Barbican with FreeIPA
+are provided <a class="reference external" href="https://vakwetu.wordpress.com/2015/11/30/barbican-and-dogtagipa/">here</a>.</p>
+<p>The plugin communicates with the KRA using a client certificate for a trusted KRA agent.
+That certificate is stored in an NSS database as well as a PEM file as seen in the
+configuration below.</p>
+<p>The configuration for this plugin in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code> is as follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">dogtag_crypto</span>
+
+<span class="k">[dogtag_plugin]</span>
+<span class="na">pem_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/etc/barbican/kra_admin_cert.pem'</span>
+<span class="na">dogtag_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">localhost</span>
+<span class="na">dogtag_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">8443</span>
+<span class="na">nss_db_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'/etc/barbican/alias'</span>
+<span class="na">nss_password</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'password123'</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="vault-plugin">
+<h2>Vault Plugin<a class="headerlink" href="#vault-plugin" title="Link to this heading">¶</a></h2>
+<p>Vault is a HashiCorp tool for securely accessing secrets and other objects,
+such as API keys, passwords, or certificates. Vault provides a unified
+interface to any secret, while providing tight access control and recording
+a detailed audit log.</p>
+<p>The plugin communicates with the Vault using a Vault token.</p>
+<p>The configuration for this plugin in <code class="docutils literal notranslate"><span class="pre">/etc/barbican/barbican.conf</span></code> is as
+follows:</p>
+<blockquote>
+<div><div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[secretstore]</span>
+<span class="na">..</span>
+<span class="na">enabled_secretstore_plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">vault_plugin</span>
+
+<span class="k">[vault_plugin]</span>
+<span class="na">root_token_id</span><span class="w"> </span><span class="o">=</span>
+<span class="na">approle_role_id</span><span class="w"> </span><span class="o">=</span>
+<span class="na">approle_secret_id</span><span class="w"> </span><span class="o">=</span>
+<span class="na">kv_mountpoint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">secret</span>
+<span class="na">vault_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">https://127.0.0.1:8200</span>
+<span class="na">use_ssl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">True</span>
+<span class="na">ssl_ca_crt_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">/opt/vault/tls/tls-ca.crt</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект barbican. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/barbican/2025.1/install/barbican-backend.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

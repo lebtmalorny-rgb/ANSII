@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Libvirt - Nova Virtualisation Driver · OpenStack 2025.1</title><style>*{box-sizing:border-box}body{color:#202831;background:#fff;margin:0;font:16px/1.6 system-ui,-apple-system,sans-serif}main,footer{max-width:78rem;margin:0 auto;padding:1rem clamp(1rem,3vw,3rem)}main{max-width:76rem}footer{border-top:2px solid #d1d8e0;color:#34475a;font-size:.9rem;margin-top:2rem;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.25;color:#172c40}h1{font-size:2.25rem}h2{margin-top:2rem;border-bottom:1px solid #d7e0e7;padding-bottom:.28rem}h3{margin-top:1.45rem}a{color:#165c88;overflow-wrap:anywhere}a.headerlink{text-decoration:none;color:#75889a;font-size:.78em;padding:0 .25em}pre{max-width:100%;overflow-x:auto;background:#f0f4f7;border-left:3px solid #b1c0ce;padding:.85em 1em;line-height:1.45}code{font-size:.94em;overflow-wrap:anywhere}pre code{overflow-wrap:normal}table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto}td,th{border:1px solid #b3bfc9;vertical-align:top;text-align:left;padding:.3rem .55rem}th{background:#edf2f6}img{max-width:100%;height:auto}dt{font-weight:650}dd{margin-bottom:1rem}.admonition{border-left:3px solid #5490a2;padding:.2rem 1rem;background:#f0f6f8}.admonition-title{font-weight:bold}.warning,.important{border-color:#a9611b}section{scroll-margin:.5rem}.highlight .c1,.highlight .c{color:#48706b}.highlight .k,.highlight .kn{color:#762d7e}.highlight .s1,.highlight .s2{color:#3c6269}@media print{main,footer{max-width:none;padding:0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{display:table}h1,h2,h3{break-after:avoid}img{max-height:80vh;object-fit:contain}}</style></head><body><main lang="en"><div class="docs-body" role="main">
+
+  <section id="libvirt-nova-virtualisation-driver">
+<h1>Libvirt - Nova Virtualisation Driver<a class="headerlink" href="#libvirt-nova-virtualisation-driver" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>Libvirt is the most commonly used virtualisation driver in OpenStack. It uses
+libvirt, backed by QEMU and when available, KVM. Libvirt is executed in the
+<code class="docutils literal notranslate"><span class="pre">nova_libvirt</span></code> container, or as a daemon running on the host.</p>
+</section>
+<section id="hardware-virtualisation">
+<h2>Hardware Virtualisation<a class="headerlink" href="#hardware-virtualisation" title="Link to this heading">¶</a></h2>
+<p>Two values are supported for <code class="docutils literal notranslate"><span class="pre">nova_compute_virt_type</span></code> with libvirt -
+<code class="docutils literal notranslate"><span class="pre">kvm</span></code> and <code class="docutils literal notranslate"><span class="pre">qemu</span></code>, with <code class="docutils literal notranslate"><span class="pre">kvm</span></code> being the default.</p>
+<p>For optimal performance, <code class="docutils literal notranslate"><span class="pre">kvm</span></code> is preferable, since many aspects of
+virtualisation can be offloaded to hardware.  If it is not possible to enable
+hardware virtualisation (e.g. Virtualisation Technology (VT) BIOS configuration
+on Intel systems), <code class="docutils literal notranslate"><span class="pre">qemu</span></code> may be used to provide less performant
+software-emulated virtualisation.</p>
+</section>
+<section id="sasl-authentication">
+<h2>SASL Authentication<a class="headerlink" href="#sasl-authentication" title="Link to this heading">¶</a></h2>
+<p>The default configuration of Kolla Ansible is to run libvirt over TCP,
+authenticated with SASL. This should not be considered as providing a secure,
+encrypted channel, since the username/password SASL mechanisms available for
+TCP are no longer considered cryptographically secure. However, it does at
+least provide some authentication for the libvirt API. For a more secure
+encrypted channel, use <a class="reference internal" href="#libvirt-tls"><span class="std std-ref">libvirt TLS</span></a>.</p>
+<p>SASL is enabled according to the <code class="docutils literal notranslate"><span class="pre">libvirt_enable_sasl</span></code> flag, which defaults
+to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<p>The username is configured via <code class="docutils literal notranslate"><span class="pre">libvirt_sasl_authname</span></code>, and defaults to
+<code class="docutils literal notranslate"><span class="pre">nova</span></code>. The password is configured via <code class="docutils literal notranslate"><span class="pre">libvirt_sasl_password</span></code>, and is
+generated with other passwords using <code class="docutils literal notranslate"><span class="pre">kolla-mergepwd</span></code> and <code class="docutils literal notranslate"><span class="pre">kolla-genpwd</span></code>
+and stored in <code class="docutils literal notranslate"><span class="pre">passwords.yml</span></code>.</p>
+<p>The list of enabled authentication mechanisms is configured via
+<code class="docutils literal notranslate"><span class="pre">libvirt_sasl_mech_list</span></code>, and defaults to <code class="docutils literal notranslate"><span class="pre">["SCRAM-SHA-256"]</span></code> if libvirt
+TLS is enabled, or <code class="docutils literal notranslate"><span class="pre">["DIGEST-MD5"]</span></code> otherwise.</p>
+</section>
+<section id="host-vs-containerised-libvirt">
+<h2>Host vs containerised libvirt<a class="headerlink" href="#host-vs-containerised-libvirt" title="Link to this heading">¶</a></h2>
+<p>By default, Kolla Ansible deploys libvirt in a <code class="docutils literal notranslate"><span class="pre">nova_libvirt</span></code> container. In
+some cases it may be preferable to run libvirt as a daemon on the compute hosts
+instead.</p>
+<p>Kolla Ansible does not currently support deploying and configuring
+libvirt as a host daemon. However, since the Yoga release, if a libvirt daemon
+has already been set up, then Kolla Ansible may be configured to use it. This
+may be achieved by setting <code class="docutils literal notranslate"><span class="pre">enable_nova_libvirt_container</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<p>When the firewall driver is set to <code class="docutils literal notranslate"><span class="pre">openvswitch</span></code>, libvirt will plug VMs
+directly into the integration bridge, <code class="docutils literal notranslate"><span class="pre">br-int</span></code>. To do this it uses the
+<code class="docutils literal notranslate"><span class="pre">ovs-vsctl</span></code> utility. The search path for this binary is controlled by the
+<code class="docutils literal notranslate"><span class="pre">$PATH</span></code> environment variable (as seen by the libvirt process). There are a
+few options to ensure that this binary can be found:</p>
+<ul class="simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">openvswitch_ovs_vsctl_wrapper_enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>. This will install
+a wrapper script to the path: <code class="docutils literal notranslate"><span class="pre">/usr/bin/ovs-vsctl</span></code> that will execute
+<code class="docutils literal notranslate"><span class="pre">ovs-vsctl</span></code> in the context of the <code class="docutils literal notranslate"><span class="pre">openvswitch_vswitchd</span></code> container. This
+option is useful if you do not have openvswitch installed on the host. It
+also has the advantage that the <code class="docutils literal notranslate"><span class="pre">ovs-vsctl</span></code> utility will match the version
+of the server.</p></li>
+<li><p>Install openvswitch on the hypervisor. Kolla mounts <code class="docutils literal notranslate"><span class="pre">/run/openvswitch</span></code> from
+the host into the <code class="docutils literal notranslate"><span class="pre">openvswitch_vswitchd</span></code> container. This means that socket
+is in the location <code class="docutils literal notranslate"><span class="pre">ovs-vsctl</span></code> expects with its default options.</p></li>
+</ul>
+<section id="migration-from-container-to-host">
+<h3>Migration from container to host<a class="headerlink" href="#migration-from-container-to-host" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">kolla-ansible</span> <span class="pre">nova-libvirt-cleanup</span></code> command may be used to clean up the
+<code class="docutils literal notranslate"><span class="pre">nova_libvirt</span></code> container and related items on hosts, once it has
+been disabled. This should be run after the compute service has been disabled,
+and all active VMs have been migrated away from the host.</p>
+<p>By default, the command will fail if there are any VMs running on the host. If
+you are sure that it is safe to clean up the <code class="docutils literal notranslate"><span class="pre">nova_libvirt</span></code> container with
+running VMs, setting <code class="docutils literal notranslate"><span class="pre">nova_libvirt_cleanup_running_vms_fatal</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>
+will allow the command to proceed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">nova_libvirt</span></code> container has several associated Docker volumes:
+<code class="docutils literal notranslate"><span class="pre">libvirtd</span></code>, <code class="docutils literal notranslate"><span class="pre">nova_libvirt_qemu</span></code> and <code class="docutils literal notranslate"><span class="pre">nova_libvirt_secrets</span></code>. By default,
+these volumes are not cleaned up. If you are sure that the data in these
+volumes can be safely removed, setting <code class="docutils literal notranslate"><span class="pre">nova_libvirt_cleanup_remove_volumes</span></code>
+to <code class="docutils literal notranslate"><span class="pre">true</span></code> will cause the Docker volumes to be removed.</p>
+<p>A future extension could support migration of existing VMs, but this is
+currently out of scope.</p>
+</section>
+</section>
+<section id="libvirt-tls">
+<span id="id1"></span><h2>Libvirt TLS<a class="headerlink" href="#libvirt-tls" title="Link to this heading">¶</a></h2>
+<p>The default configuration of Kolla Ansible is to run libvirt over TCP, with
+SASL authentication. As long as one takes steps to protect who can access
+the network this works well. However, in a less trusted environment one may
+want to use encryption when accessing the libvirt API. To do this we can enable
+TLS for libvirt and make nova use it. Mutual TLS is configured, providing
+authentication of clients via certificates. SASL authentication provides a
+further level of security.</p>
+<section id="using-libvirt-tls">
+<h3>Using libvirt TLS<a class="headerlink" href="#using-libvirt-tls" title="Link to this heading">¶</a></h3>
+<p>Libvirt TLS can be enabled in Kolla Ansible by setting the following option in
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">libvirt_tls</span><span class="p">:</span><span class="w"> </span><span class="s">"yes"</span>
+</pre></div>
+</div>
+<p>Creation of production-ready TLS certificates is currently out-of-scope for
+Kolla Ansible.  You will need to either use an existing Internal CA or you will
+need to generate your own offline CA. For the TLS communication to work
+correctly you will have to supply Kolla Ansible the following pieces of
+information:</p>
+<ul class="simple">
+<li><p>cacert.pem</p>
+<ul>
+<li><p>This is the CA’s public certificate that all of the client and server
+certificates are signed with. Libvirt and nova-compute will need this so
+they can verify that all the certificates being used were signed by the CA
+and should be trusted.</p></li>
+</ul>
+</li>
+<li><p>serverkey.pem (not used when using a host libvirt daemon)</p>
+<ul>
+<li><p>This is the private key for the server, and is no different than the
+private key of a TLS certificate. It should be carefully protected, just
+like the private key of a TLS certificate.</p></li>
+</ul>
+</li>
+<li><p>servercert.pem (not used when using a host libvirt daemon)</p>
+<ul>
+<li><p>This is the public certificate for the server. Libvirt will present this
+certificate to any connection made to the TLS port. This is no different
+than the public certificate part of a standard TLS certificate/key bundle.</p></li>
+</ul>
+</li>
+<li><p>clientkey.pem</p>
+<ul>
+<li><p>This is the client private key, which nova-compute/libvirt will use
+when it is connecting to libvirt. Think of this as an SSH private key
+and protect it in a similar manner.</p></li>
+</ul>
+</li>
+<li><p>clientcert.pem</p>
+<ul>
+<li><p>This is the client certificate that nova-compute/libvirt will present when
+it is connecting to libvirt. Think of this as the public side of an SSH
+key.</p></li>
+</ul>
+</li>
+</ul>
+<p>Kolla Ansible will search for these files for each compute node in the
+following locations and order on the host where Kolla Ansible is executed:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-libvirt/&lt;hostname&gt;/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-libvirt/</span></code></p></li>
+</ul>
+<p>In most cases you will want to have a unique set of server and client
+certificates and keys per hypervisor and with a common CA certificate. In this
+case you would place each of the server/client certificate and key PEM files
+under <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-libvirt/&lt;hostname&gt;/</span></code> and the CA
+certificate under <code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-libvirt/</span></code>.</p>
+<p>However, it is possible to make use of wildcard server certificate and a single
+client certificate that is shared by all servers. This will allow you to
+generate a single client certificate and a single server certificate that is
+shared across every hypervisor. In this case you would store everything under
+<code class="docutils literal notranslate"><span class="pre">/etc/kolla/config/nova/nova-libvirt/</span></code>.</p>
+</section>
+<section id="externally-managed-certificates">
+<h3>Externally managed certificates<a class="headerlink" href="#externally-managed-certificates" title="Link to this heading">¶</a></h3>
+<p>One more option for deployers who already have automation to get TLS certs onto
+servers is to disable certificate management under <code class="docutils literal notranslate"><span class="pre">/etc/kolla/globals.yaml</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">libvirt_tls_manage_certs</span><span class="p">:</span><span class="w"> </span><span class="s">"no"</span>
+</pre></div>
+</div>
+<p>With this option disabled Kolla Ansible will simply assume that certificates
+and keys are already installed in their correct locations. Deployers will be
+responsible for making sure that the TLS certificates/keys get placed in to the
+correct container configuration directories on the servers so that they can get
+copied into the nova-compute and nova-libvirt containers. With this option
+disabled you will also be responsible for restarting the nova-compute and
+nova-libvirt containers when the certs are updated, as kolla-ansible will not
+be able to tell when the files have changed.</p>
+</section>
+<section id="generating-certificates-for-test-and-development">
+<h3>Generating certificates for test and development<a class="headerlink" href="#generating-certificates-for-test-and-development" title="Link to this heading">¶</a></h3>
+<p>Since the Yoga release, the <code class="docutils literal notranslate"><span class="pre">kolla-ansible</span> <span class="pre">certificates</span></code> command generates
+certificates for libvirt TLS. A single key and certificate is used for all
+hosts, with a Subject Alternative Name (SAN) entry for each compute host
+hostname.</p>
+</section>
+</section>
+<section id="libvirt-connection-limits">
+<h2>Libvirt Connection Limits<a class="headerlink" href="#libvirt-connection-limits" title="Link to this heading">¶</a></h2>
+<p>By default <code class="docutils literal notranslate"><span class="pre">libvirt</span></code> is configured by upstream packages with reasonable
+defaults for an environment where many users are starting and stopping virtual
+machines. This isn’t true for Kolla Hypervisor nodes, where a single
+<code class="docutils literal notranslate"><span class="pre">nova-compute</span></code> container manages all of the virtual machine instances on the
+machine.</p>
+<p>Kolla-Ansible therefore tunes the following values in <code class="docutils literal notranslate"><span class="pre">libvirtd.conf</span></code>:</p>
+<ul class="simple">
+<li><p>libvirt_max_client_requests: raised to 20 compared to the usual default of
+5.</p></li>
+<li><p>libvirt_max_workers: raised to 50 compared to the usual default of 20.</p></li>
+</ul>
+<p>Both of these values may be overridden in <code class="docutils literal notranslate"><span class="pre">globals.yml</span></code>.</p>
+<p>This means that <code class="docutils literal notranslate"><span class="pre">nova-compute</span></code> can therefore perform 20 operations via
+libvirt simultaneously instead of the usual default of 5. These values should
+be safe, but if you see libvirt error messages saying <code class="docutils literal notranslate"><span class="pre">Client</span> <span class="pre">hit</span> <span class="pre">max</span> <span class="pre">requests</span>
+<span class="pre">limit</span></code>, you may want to consider an additional increase – especially if you
+have particularly large hypervisors.</p>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru"><p>Авторы: сообщество OpenStack, проект kolla-ansible. Статья опубликована в документации OpenStack 2025.1 Epoxy. <a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/compute/libvirt-guide.html">Оригинальная страница</a>. Материал распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, если для отдельного материала не указано иное. <a href="https://www.openstack.org/legal/">Правовая информация OpenStack</a>.</p><p>Изменения в офлайн-копии: сохранён английский текст статьи, удалены навигация сайта и JavaScript, заменено оформление, ссылки на включённые статьи и изображения ведут к локальным файлам. <a href="README.md">Перечень файлов</a>.</p></footer></body></html>

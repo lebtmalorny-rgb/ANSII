@@ -1,0 +1,194 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Документация Epoxy</title><style>body{font:17px/1.55 system-ui,sans-serif;color:#17354a;background:#f2f5f6;margin:0}main{max-width:1030px;margin:0 auto;background:white;padding:40px clamp(18px,5vw,70px) 75px;min-height:100vh;box-sizing:border-box}h1,h2,h3,h4{line-height:1.23}h1{font-size:2.2rem}h2{font-size:1.65rem;border-bottom:1px solid #d4e0e1;padding-bottom:.45em;margin-top:1.9em}h3{color:#00645c;margin-top:1.8em}h4{color:#00645c;font-size:1.16rem;margin-top:2em}a{color:#00695f;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:.9rem}td,th{border:1px solid #ccd8db;padding:.5em .65em;vertical-align:top;text-align:left}th{background:#17354a;color:white}tr:nth-child(even) td{background:#f0f6f5}pre{background:#eff4f5;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere}code{font-size:.87em}nav{display:flex;flex-wrap:wrap;gap:16px;border-bottom:1px solid #ccd8db;margin-bottom:28px;padding-bottom:12px}.meta{color:#536877}</style></head><body><main><p><a href="../index.html">К комплекту</a></p><h1 id="документация-openstack-20251-epoxy-для-работы-офлайн">Документация OpenStack 2025.1 Epoxy для работы офлайн</h1>
+<p>Материалы на английском языке, на которые опираются практические проверки. Номер 2025.1 относится к ветке документации. Открывайте файлы в браузере после распаковки. Ссылки между включёнными статьями и три рисунка работают локально. Для ссылок на материалы за пределами подборки требуется интернет.</p>
+<h2 id="содержание">Содержание</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Проект</th>
+<th>Статья или руководство</th>
+<th>Оригинал</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>barbican</td>
+<td><a href="S01-barbican-access_control.html">Access Control</a></td>
+<td><a href="https://docs.openstack.org/barbican/2025.1/admin/access_control.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>barbican</td>
+<td><a href="S02-barbican-barbican-backend.html">Configure Secret Store Back-end</a></td>
+<td><a href="https://docs.openstack.org/barbican/2025.1/install/barbican-backend.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>barbican</td>
+<td><a href="E12-barbican-plugin_backends.html">Using Secret Store Plugins in Barbican</a></td>
+<td><a href="https://docs.openstack.org/barbican/2025.1/configuration/plugin_backends.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>cinder</td>
+<td><a href="S03-cinder-multi-backend.html">Configure multiple-storage back ends</a></td>
+<td><a href="https://docs.openstack.org/cinder/2025.1/admin/multi-backend.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>cinder</td>
+<td><a href="E11-cinder-volume-encryption.html">Volume encryption supported by the key manager</a></td>
+<td><a href="https://docs.openstack.org/cinder/2025.1/configuration/block-storage/volume-encryption.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>glance</td>
+<td><a href="S05-glance-multistores.html">Multi Store Support</a></td>
+<td><a href="https://docs.openstack.org/glance/2025.1/admin/multistores.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>horizon</td>
+<td><a href="S06-horizon-settings.html">Settings Reference</a></td>
+<td><a href="https://docs.openstack.org/horizon/2025.1/configuration/settings.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>keystone</td>
+<td><a href="E08-keystone-configure_federation.html">Configuring Keystone for Federation</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/admin/federation/configure_federation.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>keystone</td>
+<td><a href="S09-keystone-manage-services.html">Create and manage services and service users</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/admin/manage-services.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>keystone</td>
+<td><a href="22ep-keystone-configuration.html">Keystone Configuration</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/admin/configuration.html#integrate-identity-with-ldap">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>keystone</td>
+<td><a href="S08-keystone-event_notifications.html">Keystone Event Notifications</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/admin/event_notifications.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>keystone</td>
+<td><a href="S11-keystone-keystone-conf.html">keystone.conf</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/configuration/samples/keystone-conf.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>keystone</td>
+<td><a href="S10-keystone-multi-factor-authentication.html">Multi-Factor Authentication</a></td>
+<td><a href="https://docs.openstack.org/keystone/2025.1/admin/multi-factor-authentication.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>keystonemiddleware</td>
+<td><a href="E04-keystonemiddleware-audit.html">Audit middleware</a></td>
+<td><a href="https://docs.openstack.org/keystonemiddleware/2025.1/audit.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>kolla-ansible</td>
+<td><a href="E01-kolla-ansible-advanced-configuration.html">Advanced Configuration</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/admin/advanced-configuration.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>kolla-ansible</td>
+<td><a href="S17-kolla-ansible-central-logging-guide.html">Central Logging</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/logging-and-monitoring/central-logging-guide.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>kolla-ansible</td>
+<td><a href="S19-kolla-ansible-horizon-guide.html">Horizon - OpenStack dashboard</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/shared-services/horizon-guide.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>kolla-ansible</td>
+<td><a href="S20-kolla-ansible-keystone-guide.html">Keystone - Identity service</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/shared-services/keystone-guide.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>kolla-ansible</td>
+<td><a href="E05-kolla-ansible-doc-kolla-ansible.pdf">Kolla Ansible Documentation (полное руководство, PDF)</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/doc-kolla-ansible.pdf">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>kolla-ansible</td>
+<td><a href="E06-kolla-ansible-libvirt-guide.html">Libvirt - Nova Virtualisation Driver</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/compute/libvirt-guide.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>kolla-ansible</td>
+<td><a href="S14-kolla-ansible-proxysql.html">ProxySQL</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/admin/proxysql.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>kolla-ansible</td>
+<td><a href="E07-kolla-ansible-rabbitmq.html">RabbitMQ</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/reference/message-queues/rabbitmq.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>kolla-ansible</td>
+<td><a href="E02-kolla-ansible-tls.html">TLS</a></td>
+<td><a href="https://docs.openstack.org/kolla-ansible/2025.1/admin/tls.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>nova</td>
+<td><a href="S23-nova-config.html">Configuration Options</a></td>
+<td><a href="https://docs.openstack.org/nova/2025.1/configuration/config.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>nova</td>
+<td><a href="40ep-nova-configuring-migrations.html">Configure live migrations</a></td>
+<td><a href="https://docs.openstack.org/nova/2025.1/admin/configuring-migrations.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>nova</td>
+<td><a href="E10-nova-aggregates.html">Host aggregates</a></td>
+<td><a href="https://docs.openstack.org/nova/2025.1/admin/aggregates.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>nova</td>
+<td><a href="E03-nova-secure-live-migration-with-qemu-native-tls.html">Secure live migration with QEMU-native TLS</a></td>
+<td><a href="https://docs.openstack.org/nova/2025.1/admin/secure-live-migration-with-qemu-native-tls.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>oslo.cache</td>
+<td><a href="S24-oslo.cache-configuration.html">Configuration Options</a></td>
+<td><a href="https://docs.openstack.org/oslo.cache/2025.1/configuration/">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>python-openstackclient</td>
+<td><a href="S28-python-openstackclient-barbican.html">barbican</a></td>
+<td><a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/plugin-commands/barbican.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>python-openstackclient</td>
+<td><a href="S25-python-openstackclient-endpoint-v3.html">endpoint (Identity v3)</a></td>
+<td><a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/endpoint-v3.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>python-openstackclient</td>
+<td><a href="S26-python-openstackclient-role-assignment.html">role assignment</a></td>
+<td><a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/role-assignment.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>python-openstackclient</td>
+<td><a href="S27-python-openstackclient-volume-type.html">volume type</a></td>
+<td><a href="https://docs.openstack.org/python-openstackclient/2025.1/cli/command-objects/volume-type.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>swift</td>
+<td><a href="50ep-swift-logs.html">Logs</a></td>
+<td><a href="https://docs.openstack.org/swift/2025.1/logs.html">Страница проекта</a></td>
+</tr>
+<tr class="even">
+<td>swift</td>
+<td><a href="E09-swift-overview_encryption.html">Object Encryption</a></td>
+<td><a href="https://docs.openstack.org/swift/2025.1/overview_encryption.html">Страница проекта</a></td>
+</tr>
+<tr class="odd">
+<td>swift</td>
+<td><a href="S30-swift-overview_policies.html">Storage Policies</a></td>
+<td><a href="https://docs.openstack.org/swift/2025.1/overview_policies.html">Страница проекта</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="источники-и-условия-использования">Источники и условия использования</h2>
+<p>Авторы — участники соответствующих проектов OpenStack. Документация распространяется по <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0 Unported</a>, кроме материалов, для которых авторы указали иные условия. Названия статей, авторство и ссылки на оригиналы сохранены. Исходные примеры кода и их уведомления о лицензиях оставлены в статьях.</p>
+<p>Из статических HTML-копий удалены навигация сайта и скрипты, оформление заменено на встроенные стили. Английский текст статьи, примеры команд, параметры, таблицы и иллюстрации сохранены. PDF Kolla-Ansible приложен в исходном виде с сайта проекта.</p>
+<p>Дата получения — 12 ноября 2026 года.</p>
+</main></body></html>

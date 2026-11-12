@@ -1,0 +1,256 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Events — pycadf 4.1.1.dev13 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-47">Каталог источников</a> · [47] · <a href="https://docs.openstack.org/pycadf/latest/event_concept.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="events">
+<span id="event-concept"></span><h1>Events<a class="headerlink" href="#events" title="Link to this heading">¶</a></h1>
+<p>The principal goal of this specification is to ensure that similar auditable
+events, such as a “logon” or “critical resource update” resolve to the same
+data format with prescriptive data types, entities, and properties to
+facilitate reporting, query, federation, and aggregation.</p>
+<section id="defining-events">
+<h2>Defining Events<a class="headerlink" href="#defining-events" title="Link to this heading">¶</a></h2>
+<p>The event model is intended to describe the interactions between resources
+that compose a cloud service. Conceptually, the event is based upon the
+perspective of a single RESOURCE called the OBSERVER that is responsible for
+observing the Actual Event and creating the (initial) CADF Event Record.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="assets/47-7fb6906ebd.png"><img alt="Figure 1: Observer perspective of an Event" src="assets/47-7fb6906ebd.png">
+</a>
+</figure>
+<p>At a minimum, an Event must include the following attributes to be
+CADF-compliant: eventType, observer, initiator, target, action, and outcome.
+CADF’s event model is extensible so any additional attributes that may better
+help describe the event can be added to the event model as an additional
+attribute.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In some cases, the OBSERVER, INITIATOR, and TARGET could reference the same
+resource. The precise interpretation of these components, therefore, will
+depend somewhat on the type of event being recorded, and the specific
+activity and resources involved.</p>
+</div>
+</section>
+<section id="use-case-examples">
+<h2>Use Case Examples<a class="headerlink" href="#use-case-examples" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Auditing access to a controlled resource</p></li>
+</ol>
+<p>Scenario: A cloud provider has a software component that manages identity and
+access control that we will call an “identity management service”. This
+service is required, by the provider’s security policy, to log all user
+activities including “logon” attempts against any servers within the
+provider’s infrastructure.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="assets/47-8ae9ccfbb4.png"><img alt="Figure 2: Conceptually mapping values of an audit event" src="assets/47-8ae9ccfbb4.png">
+</a>
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Event Attribute</p></th>
+<th class="head"><p>Value</p></th>
+<th class="head"><p>Reason</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>eventType</p></td>
+<td><p>activity</p></td>
+<td><p>OBSERVER is required to report any user security activity</p></td>
+</tr>
+<tr class="row-odd"><td><p>observer.typeURI</p></td>
+<td><p>service/security/identity</p></td>
+<td><p>Value from the CADF Resource Taxonomy most closely describes an “Identity Manager Service”</p></td>
+</tr>
+<tr class="row-even"><td><p>initiator.typeURI</p></td>
+<td><p>data/security/account/user</p></td>
+<td><p>Value from the CADF Resource Taxonomy most closely describes a “user”</p></td>
+</tr>
+<tr class="row-odd"><td><p>action</p></td>
+<td><p>authenticate/logon</p></td>
+<td><p>Value from the CADF Action Taxonomy most closely describes a user “logon” action.</p></td>
+</tr>
+<tr class="row-even"><td><p>target.typeURI</p></td>
+<td><p>service/compute/node</p></td>
+<td><p>Value from the CADF Resource Taxonomy most closely describes a target “server”</p></td>
+</tr>
+<tr class="row-odd"><td><p>outcome</p></td>
+<td><p>success</p></td>
+<td><p>Any valid CADF Outcome Taxonomy value that describes result of action</p></td>
+</tr>
+<tr class="row-even"><td><p>measurement</p></td>
+<td><p>N/A</p></td>
+<td><p>A MEASUREMENT component is not required for “activity” type events.</p></td>
+</tr>
+<tr class="row-odd"><td><p>REASON</p></td>
+<td><p>N/A</p></td>
+<td><p>A REASON component is not required for “activity” type events.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Event serialisation (including some optional attributes for additional
+details):</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"http://schemas.dmtf.org/cloud/audit/1.0/event"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"eventTime"</span><span class="o">:</span><span class="w"> </span><span class="s2">"2014-02-27T19:29:30.855665+0000"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"target"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"service/compute/node"</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// optional Endpoints to describe compute node,</span>
+<span class="w">        </span><span class="s2">"addresses"</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"url"</span><span class="o">:</span><span class="w"> </span><span class="s2">"http://9.26.26.250:8774/v2/e7e2bcc9c0df4f3eabcd412ae62503f6"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"admin"</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"url"</span><span class="o">:</span><span class="w"> </span><span class="s2">"http://9.26.26.250:8774/v2/e7e2bcc9c0df4f3eabcd412ae62503f6"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"private"</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"url"</span><span class="o">:</span><span class="w"> </span><span class="s2">"http://9.26.26.250:8774/v2/e7e2bcc9c0df4f3eabcd412ae62503f6"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"public"</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"06747855d62547d4bfd707f75b8a1c54"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"nova"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="s2">"observer"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"target"</span><span class="w"> </span><span class="c1">// shortform to show Observer Resource is the same as Target,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="c1">// tags use to query events on,</span>
+<span class="w">    </span><span class="s2">"tags"</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"correlation_id?value=56cdde6f-6b4e-48a4-94e6-defb40522fb2"</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">"eventType"</span><span class="o">:</span><span class="w"> </span><span class="s2">"activity"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"initiator"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"data/security/account/user"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"admin"</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// optional Credential to describe resource,</span>
+<span class="w">        </span><span class="s2">"credential"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"token"</span><span class="o">:</span><span class="w"> </span><span class="s2">"MIIQzgYJKoZIhvcNAQcCoIIQvzCCELsC xxxxxxxx zqvD9OPWZm7VQpYNK2EvrZi-mTvb5A=="</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"identity_status"</span><span class="o">:</span><span class="w"> </span><span class="s2">"Confirmed"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="c1">// optional Host to describe resource,</span>
+<span class="w">        </span><span class="s2">"host"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"agent"</span><span class="o">:</span><span class="w"> </span><span class="s2">"python-novaclient"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"address"</span><span class="o">:</span><span class="w"> </span><span class="s2">"9.26.26.250"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="s2">"project_id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"e7e2bcc9c0df4f3eabcd412ae62503f6"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"68a3f50705a54f799ce94380fc02ed8a"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="c1">// optional Reason for activity event,</span>
+<span class="w">    </span><span class="s2">"reason"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"reasonCode"</span><span class="o">:</span><span class="w"> </span><span class="s2">"200"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"reasonType"</span><span class="o">:</span><span class="w"> </span><span class="s2">"HTTP"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="c1">// list of Resources which edited event,</span>
+<span class="w">    </span><span class="s2">"reporterchain"</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"reporterTime"</span><span class="o">:</span><span class="w"> </span><span class="s2">"2014-02-27T19:29:31.043902+0000"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"role"</span><span class="o">:</span><span class="w"> </span><span class="s2">"modifier"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"reporter"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"target"</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">"action"</span><span class="o">:</span><span class="w"> </span><span class="s2">"authenticate/logon"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"outcome"</span><span class="o">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"0a196053-95de-48f8-9890-4527b25b5007"</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">// Event model is extensible so additional attributes may be added to describe model,</span>
+<span class="w">    </span><span class="s2">"requestPath"</span><span class="o">:</span><span class="w"> </span><span class="s2">"/v2/e7e2bcc9c0df4f3eabcd412ae62503f6/os-certificates"</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Periodic monitoring resource status</p></li>
+</ol>
+<p>Scenario: A cloud provider has software monitoring agents(Ceilometer)
+installed on every server(Nova) that it makes available as an IaaS resource
+to its customers. These agents are required to provide periodic informational
+status of each server’s CPU utilisation along with metric data to their
+operations management software by using the CADF Event Record format.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="assets/47-a34e303327.png"><img alt="Figure 3: Conceptually mapping values of an monitor event" src="assets/47-a34e303327.png">
+</a>
+</figure>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Event Attribute</p></th>
+<th class="head"><p>Value</p></th>
+<th class="head"><p>Reason</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>eventType</p></td>
+<td><p>monitor</p></td>
+<td><p>OBSERVER is required to monitor a server’s CPU utilization</p></td>
+</tr>
+<tr class="row-odd"><td><p>observer.typeURI</p></td>
+<td><p>service/oss/monitoring</p></td>
+<td><p>Value from the CADF Resource Taxonomy most closely describes a “software monitoring agent”</p></td>
+</tr>
+<tr class="row-even"><td><p>initiator.typeURI</p></td>
+<td><p>service/oss/monitoring</p></td>
+<td><p>OBSERVER is also the INITIATOR of this monitoring event</p></td>
+</tr>
+<tr class="row-odd"><td><p>action</p></td>
+<td><p>monitor</p></td>
+<td><p>Value from the CADF Action Taxonomy</p></td>
+</tr>
+<tr class="row-even"><td><p>target.typeURI</p></td>
+<td><p>service/compute/cpu</p></td>
+<td><p>Value from the CADF Resource Taxonomy most closely describes a server’s “cpu”</p></td>
+</tr>
+<tr class="row-odd"><td><p>outcome</p></td>
+<td><p>success</p></td>
+<td><p>OBSERVER successfully obtained and reported a CPU utilization measurement</p></td>
+</tr>
+<tr class="row-even"><td><p>measurement</p></td>
+<td><p>80%</p></td>
+<td><p>MEASUREMENT component is required and the observed value is 80% CPU utilisation</p></td>
+</tr>
+<tr class="row-odd"><td><p>reason</p></td>
+<td><p>N/A</p></td>
+<td><p>REASON component is not required for “monitor” type events.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Event serialisation:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"http://schemas.dmtf.org/cloud/audit/1.0/event"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"eventTime"</span><span class="o">:</span><span class="w"> </span><span class="s2">"2014-02-27T19:29:30.855665+0000"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"target"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"service/compute/cpu"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"06747855d62547d4bfd707f75b8a1c54"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"instance"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="s2">"observer"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"initiator"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="s2">"eventType"</span><span class="o">:</span><span class="w"> </span><span class="s2">"monitor"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"initiator"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"typeURI"</span><span class="o">:</span><span class="w"> </span><span class="s2">"service/oss/monitoring"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"ceilometer-pollster"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"68a3f50705a54f799ce94380fc02ed8a"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="s2">"measurement"</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"result"</span><span class="o">:</span><span class="w"> </span><span class="s2">"80"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"metric"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"metricId"</span><span class="o">:</span><span class="w"> </span><span class="s2">"&lt;metric_id&gt;"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"unit"</span><span class="o">:</span><span class="w"> </span><span class="s2">"%"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"CPU utilisation metric"</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">"action"</span><span class="o">:</span><span class="w"> </span><span class="s2">"monitor"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"outcome"</span><span class="o">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"0a196053-95de-48f8-9890-4527b25b5007"</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Additional use cases can be found in the Full CADF specification.</p>
+</div>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

@@ -1,0 +1,180 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identity API v2.0 and v3 History — keystone 30.1.0.dev33 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-15">Каталог источников</a> · [15] · <a href="https://docs.openstack.org/keystone/latest/contributor/http-api.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="identity-api-v2-0-and-v3-history">
+<h1>Identity API v2.0 and v3 History<a class="headerlink" href="#identity-api-v2-0-and-v3-history" title="Link to this heading">¶</a></h1>
+<section id="specifications">
+<h2>Specifications<a class="headerlink" href="#specifications" title="Link to this heading">¶</a></h2>
+<p>As of the Queens release, Keystone solely implements the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3/">Identity API v3</a>.
+Support for Identity API v2.0 has been removed in Queens in favor of
+the <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3/">Identity API v3</a>.</p>
+<p>Identity API v3 is a superset of all the functionality available in the
+Identity API v2.0 and several of its extensions, and provides a much more
+consistent developer experience.</p>
+</section>
+<section id="history">
+<h2>History<a class="headerlink" href="#history" title="Link to this heading">¶</a></h2>
+<p>You’re probably wondering why Keystone does not implement a “v1” API. As a
+matter of fact, one exists, but it actually predates OpenStack. The v1.x API
+was an extremely small API documented and implemented by Rackspace for their
+early public cloud products.</p>
+<p>With the advent of OpenStack, Keystone served to provide a superset of the
+authentication and multi-tenant authorization models already implemented by
+Rackspace’s public cloud, Nova, and Swift. Thus, Identity API v2.0 was
+introduced.</p>
+<p>Identity API v3 was established to introduce namespacing for users and projects
+by using “domains” as a higher-level container for more flexible identity
+management and fixed a security issue in the v2.0 API (bearer tokens appearing
+in URLs).</p>
+</section>
+<section id="how-do-i-migrate-from-v2-0-to-v3">
+<h2>How do I migrate from v2.0 to v3?<a class="headerlink" href="#how-do-i-migrate-from-v2-0-to-v3" title="Link to this heading">¶</a></h2>
+<section id="i-am-a-deployer">
+<h3>I am a deployer<a class="headerlink" href="#i-am-a-deployer" title="Link to this heading">¶</a></h3>
+<p>You need to ensure that you’ve configured your service catalog in Keystone
+correctly. The simplest, and most ideal, configuration would expose one
+identity with unversioned endpoints (note the lack of <code class="docutils literal notranslate"><span class="pre">/v2.0/</span></code> or <code class="docutils literal notranslate"><span class="pre">/v3/</span></code> in
+these URLs):</p>
+<ul class="simple">
+<li><p>Service (type: <code class="docutils literal notranslate"><span class="pre">identity</span></code>)</p>
+<ul>
+<li><p>Endpoint (interface: <code class="docutils literal notranslate"><span class="pre">public</span></code>, URL: <code class="docutils literal notranslate"><span class="pre">http://identity:5000/</span></code>)</p></li>
+<li><p>Endpoint (interface: <code class="docutils literal notranslate"><span class="pre">admin</span></code>, URL: <code class="docutils literal notranslate"><span class="pre">http://identity:35357/</span></code>)</p></li>
+</ul>
+</li>
+</ul>
+<p>If you were to perform a <code class="docutils literal notranslate"><span class="pre">GET</span></code> against either of these endpoints, you would
+be greeted by an <code class="docutils literal notranslate"><span class="pre">HTTP/1.1</span> <span class="pre">300</span> <span class="pre">Multiple</span> <span class="pre">Choices</span></code> response, which newer
+Keystone clients can use to automatically detect available API versions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Deploying v3 only requires a single application since administrator and
+end-user operations are handled by the same process, and not separated into
+two different applications. Depending on how v2.0 was configured, you might
+be able to decommission one endpoint. Until users are educated about which
+endpoint to use, the former admin API (e.g.  using port 35357) and the
+public API (e.g. using port 5000) can run the v3 API simulateously and
+serve both sets of users.</p>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>curl<span class="w"> </span>-i<span class="w"> </span>http://identity:35357/
+HTTP/1.1<span class="w"> </span><span class="m">300</span><span class="w"> </span>Multiple<span class="w"> </span>Choices
+Vary:<span class="w"> </span>X-Auth-Token
+Content-Type:<span class="w"> </span>application/json
+Content-Length:<span class="w"> </span><span class="m">755</span>
+Date:<span class="w"> </span>Tue,<span class="w"> </span><span class="m">10</span><span class="w"> </span>Jun<span class="w"> </span><span class="m">2014</span><span class="w"> </span><span class="m">14</span>:22:26<span class="w"> </span>GMT
+
+<span class="o">{</span><span class="s2">"versions"</span>:<span class="w"> </span><span class="o">{</span><span class="s2">"values"</span>:<span class="w"> </span><span class="o">[</span><span class="w"> </span>...<span class="w"> </span><span class="o">]}}</span>
+</pre></div>
+</div>
+<p>With unversioned <code class="docutils literal notranslate"><span class="pre">identity</span></code> endpoints in the service catalog, you should be
+able to <a class="reference external" href="https://docs.openstack.org/python-keystoneclient/latest/using-api-v3.html#authenticating-using-sessions">authenticate with keystoneclient</a> successfully.</p>
+</section>
+<section id="i-have-a-python-client">
+<h3>I have a Python client<a class="headerlink" href="#i-have-a-python-client" title="Link to this heading">¶</a></h3>
+<p>The Keystone community provides first-class support for Python API consumers
+via our client library, <a class="reference external" href="https://pypi.org/project/python-keystoneclient/">python-keystoneclient</a>. If you’re not currently using
+this library, you should, as it is intended to expose all of our HTTP API
+functionality. If we’re missing something you’re looking for, please
+contribute!</p>
+<p>Adopting <a class="reference external" href="https://pypi.org/project/python-keystoneclient/">python-keystoneclient</a> should be the easiest way to migrate to
+Identity API v3.</p>
+</section>
+<section id="i-have-a-non-python-client">
+<h3>I have a non-Python client<a class="headerlink" href="#i-have-a-non-python-client" title="Link to this heading">¶</a></h3>
+<p>You’ll likely need to heavily reference our <a class="reference external" href="https://docs.openstack.org/api-ref/identity/v3/">API documentation</a> to port your
+application to Identity API v3.</p>
+<p>The most common operation would be password-based authentication including a
+tenant name (i.e. project name) to specify an authorization scope. In Identity
+API v2.0, this would be a request to <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/v2.0/tokens</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s2">"auth"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"passwordCredentials"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"password"</span><span class="o">:</span><span class="w"> </span><span class="s2">"my-password"</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">"username"</span><span class="o">:</span><span class="w"> </span><span class="s2">"my-username"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="s2">"tenantName"</span><span class="o">:</span><span class="w"> </span><span class="s2">"project-x"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>And you would get back a JSON blob with an <code class="docutils literal notranslate"><span class="pre">access</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">token</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">id</span></code>
+that you could pass to another web service as your <code class="docutils literal notranslate"><span class="pre">X-Auth-Token</span></code> header
+value.</p>
+<p>In Identity API v3, an equivalent request would be to <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/v3/auth/tokens</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="s2">"auth"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="s2">"identity"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"methods"</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"password"</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="s2">"password"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"user"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="s2">"domain"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                        </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"default"</span>
+<span class="w">                    </span><span class="p">},</span>
+<span class="w">                    </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"my-username"</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">"password"</span><span class="o">:</span><span class="w"> </span><span class="s2">"my-password"</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="s2">"scope"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="s2">"project"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="s2">"domain"</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="s2">"id"</span><span class="o">:</span><span class="w"> </span><span class="s2">"default"</span>
+<span class="w">                </span><span class="p">},</span>
+<span class="w">                </span><span class="s2">"name"</span><span class="o">:</span><span class="w"> </span><span class="s2">"project-x"</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Note a few key differences when compared to the v2.0 API:</p>
+<ul class="simple">
+<li><p>A “tenant” in v2.0 became a “project” in v3.</p></li>
+<li><p>The authentication method (<code class="docutils literal notranslate"><span class="pre">password</span></code>) is explicitly identified.</p></li>
+<li><p>Both the user name (<code class="docutils literal notranslate"><span class="pre">my-username</span></code>) and project name (<code class="docutils literal notranslate"><span class="pre">project-x</span></code>) are
+namespaced by an owning domain (where <code class="docutils literal notranslate"><span class="pre">id</span></code> = <code class="docutils literal notranslate"><span class="pre">default</span></code>). The “default”
+domain exists by default in Keystone, and automatically owns the namespace
+exposed by Identity API v2.0. Alternatively, you may reference users and
+projects that exist outside the namespace of the default domain, which are
+thus inaccessible to the v2.0 API.</p></li>
+<li><p>In v3, your token is returned to you in an <code class="docutils literal notranslate"><span class="pre">X-Subject-Token</span></code> header,
+instead of as part of the request body. You should still authenticate
+yourself to other services using the <code class="docutils literal notranslate"><span class="pre">X-Auth-Token</span></code> header.</p></li>
+</ul>
+</section>
+</section>
+<section id="why-do-i-see-deployments-with-keystone-running-on-two-ports">
+<h2>Why do I see deployments with Keystone running on two ports?<a class="headerlink" href="#why-do-i-see-deployments-with-keystone-running-on-two-ports" title="Link to this heading">¶</a></h2>
+<p>During development of the v2.0 API, operational functionality was isolated into
+different applications within the project. One application was dedicated to
+end-user functionality and its sole purpose was to authenticate and validate
+user identities. The second application consisted of more features and allowed
+operators the ability to manage their deployment by adding or deleting users,
+creating projects, etc. These applications were referred to as the <code class="docutils literal notranslate"><span class="pre">public</span></code>
+and <code class="docutils literal notranslate"><span class="pre">admin</span></code> APIs, respectively. This deployment model was required by the
+architecture of the v2.0 API. In a way, authorization was limited to the
+application you had access to.</p>
+<p>Once development began on the v3 API, the code paths for both applications were
+merged into one. Instead of isolating functionality into separate applications,
+all functionality was consolidated into a single application. Each v3 endpoint
+or API is protected by policy instead. This makes deployment and management of
+Keystone’s infrastructure easier for operators to deploy and for users to
+consume. As a result, Keystone deployments are not required to deploy separate
+<code class="docutils literal notranslate"><span class="pre">admin</span></code> and <code class="docutils literal notranslate"><span class="pre">public</span></code> endpoints, especially now that the v2.0 API
+implementation has been removed.</p>
+</section>
+<section id="http-1-1-chunked-encoding">
+<h2>HTTP/1.1 Chunked Encoding<a class="headerlink" href="#http-1-1-chunked-encoding" title="Link to this heading">¶</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Running Keystone under HTTPD in the recommended (and tested) configuration does not support
+the use of <code class="docutils literal notranslate"><span class="pre">Transfer-Encoding:</span> <span class="pre">chunked</span></code>. This is due to a limitation with the WSGI spec
+and the implementation used by <code class="docutils literal notranslate"><span class="pre">mod_wsgi</span></code>. It is recommended that all
+clients assume Keystone will not support <code class="docutils literal notranslate"><span class="pre">Transfer-Encoding:</span> <span class="pre">chunked</span></code>.</p>
+</div>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>

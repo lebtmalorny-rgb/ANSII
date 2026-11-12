@@ -1,0 +1,276 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Configure live migrations — nova 34.1.0.dev163 documentation</title><style>@page{margin:16mm}*{box-sizing:border-box}body{font:17px/1.58 system-ui,-apple-system,"Segoe UI",sans-serif;color:#172c3a;background:#fff;max-width:1080px;margin:0 auto;padding:30px min(5%,55px) 70px;overflow-wrap:anywhere}h1,h2,h3,h4{line-height:1.24;color:#153c51;margin:1.4em 0 .65em}h1{font-size:2em}h2{font-size:1.52em}h3{font-size:1.23em}a{color:#075e71}pre,code,tt,kbd{font-family:ui-monospace,monospace;font-size:.91em}pre{padding:14px;border:1px solid #d7e0e4;background:#f5f7f8;white-space:pre-wrap;overflow-wrap:anywhere}pre code{font-size:1em}img,svg{max-width:100%;height:auto}figure,table{margin:1em 0}table{border-collapse:collapse;display:block;overflow-x:auto}th,td{border:1px solid #c7d4dc;padding:.37em .6em;vertical-align:top}th{background:#eaf0f2}dl dt{font-weight:bold;margin-top:.7em}footer,.source-head{font-size:.86em;color:#465c68;padding:13px 0;border-top:1px solid #bbccd2}.source-head{border-top:0;border-bottom:1px solid #bbccd2}.admonition,.note,.warning{border-left:3px solid #6c929d;padding-left:1em}.admonition-title{font-weight:bold}li{margin:.17em 0}blockquote{border-left:3px solid #becdd3;padding-left:1em;margin-left:0}</style></head><body><header class="source-head" lang="ru"><a href="../sources-index.html#ref-40">Каталог источников</a> · [40] · <a href="https://docs.openstack.org/nova/latest/admin/configuring-migrations.html">Страница издателя</a></header><main><div class="docs-body" role="main">
+
+  <section id="configure-live-migrations">
+<span id="section-configuring-compute-migrations"></span><h1>Configure live migrations<a class="headerlink" href="#configure-live-migrations" title="Link to this heading">¶</a></h1>
+<p>Migration enables an administrator to move a virtual machine instance from one
+compute host to another. A typical scenario is planned maintenance on the
+source host, but migration can also be useful to redistribute the load when
+many VM instances are running on a specific physical machine.</p>
+<p>This document covers live migrations using the
+<a class="reference internal" href="#configuring-migrations-kvm-libvirt"><span class="std std-ref">Libvirt</span></a> and VMWare hypervisors</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not all Compute service hypervisor drivers support live-migration, or
+support all live-migration features. Similarly not all compute service
+features are supported.</p>
+<p>Consult <a class="reference internal" href="https://docs.openstack.org/nova/latest/user/support-matrix.html"><span class="doc">Feature Support Matrix</span></a> to determine which hypervisors
+support live-migration.</p>
+<p>See the <a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/index.html"><span class="doc">Configuration Guide</span></a> for details
+on hypervisor configuration settings.</p>
+</div>
+<p>The migration types are:</p>
+<ul>
+<li><p><strong>Non-live migration</strong>, also known as cold migration or simply migration.</p>
+<p>The instance is shut down, then moved to another hypervisor and restarted.
+The instance recognizes that it was rebooted, and the application running on
+the instance is disrupted.</p>
+<p>This section does not cover cold migration.</p>
+</li>
+<li><p><strong>Live migration</strong></p>
+<p>The instance keeps running throughout the migration.  This is useful when it
+is not possible or desirable to stop the application running on the instance.</p>
+<p>Live migrations can be classified further by the way they treat instance
+storage:</p>
+<ul class="simple">
+<li><p><strong>Shared storage-based live migration</strong>. The instance has ephemeral disks
+that are located on storage shared between the source and destination
+hosts.</p></li>
+<li><p><strong>Block live migration</strong>, or simply block migration.  The instance has
+ephemeral disks that are not shared between the source and destination
+hosts.  Block migration is incompatible with read-only devices such as
+CD-ROMs and Configuration Drive (config_drive).</p></li>
+<li><p><strong>Volume-backed live migration</strong>. Instances use volumes rather than
+ephemeral disks.</p></li>
+</ul>
+<p>Block live migration requires copying disks from the source to the
+destination host. It takes more time and puts more load on the network.
+Shared-storage and volume-backed live migration does not copy disks.</p>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In a multi-cell cloud, instances can be live migrated to a
+different host in the same cell, but not across cells. Refer to the
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/admin/cells.html#cells-v2-caveats"><span class="std std-ref">cells v2 documentation</span></a>. for more information.</p>
+</div>
+<p>The following sections describe how to configure your hosts for live migrations
+using the libvirt virt driver and KVM hypervisor.</p>
+<section id="libvirt">
+<span id="configuring-migrations-kvm-libvirt"></span><h2>Libvirt<a class="headerlink" href="#libvirt" title="Link to this heading">¶</a></h2>
+<section id="general-configuration">
+<span id="configuring-migrations-kvm-general"></span><h3>General configuration<a class="headerlink" href="#general-configuration" title="Link to this heading">¶</a></h3>
+<p>To enable any type of live migration, configure the compute hosts according to
+the instructions below:</p>
+<ol class="arabic">
+<li><p>Set the following parameters in <code class="docutils literal notranslate"><span class="pre">nova.conf</span></code> on all compute hosts:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">server_listen=0.0.0.0</span></code></p>
+<p>You must not make the VNC server listen to the IP address of its compute
+host, since that address changes when the instance is migrated.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Since this setting allows VNC clients from any IP address to connect to
+instance consoles, you must take additional measures like secure
+networks or firewalls to prevent potential attackers from gaining
+access to instances.</p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">instances_path</span></code> must have the same value for all compute hosts. In
+this guide, the value <code class="docutils literal notranslate"><span class="pre">/var/lib/nova/instances</span></code> is assumed.</p></li>
+</ul>
+</li>
+<li><p>Ensure that name resolution on all compute hosts is identical, so that they
+can connect each other through their hostnames.</p>
+<p>If you use <code class="docutils literal notranslate"><span class="pre">/etc/hosts</span></code> for name resolution and enable SELinux, ensure
+that <code class="docutils literal notranslate"><span class="pre">/etc/hosts</span></code> has the correct SELinux context:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>restorecon<span class="w"> </span>/etc/hosts
+</pre></div>
+</div>
+</li>
+<li><p>Enable password-less SSH so that root on one compute host can log on to any
+other compute host without providing a password.  The <code class="docutils literal notranslate"><span class="pre">libvirtd</span></code> daemon,
+which runs as root, uses the SSH protocol to copy the instance to the
+destination and can’t know the passwords of all compute hosts.</p>
+<p>You may, for example, compile root’s public SSH keys on all compute hosts
+into an <code class="docutils literal notranslate"><span class="pre">authorized_keys</span></code> file and deploy that file to the compute hosts.</p>
+</li>
+<li><p>Configure the firewalls to allow libvirt to communicate between compute
+hosts.</p>
+<p>By default, libvirt uses the TCP port range from 49152 to 49261 for copying
+memory and disk contents. Compute hosts must accept connections in this
+range.</p>
+<p>For information about ports used by libvirt, see the <a class="reference external" href="http://libvirt.org/remote.html#Remote_libvirtd_configuration">libvirt documentation</a>.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Be mindful of the security risks introduced by opening ports.</p>
+</div>
+</li>
+</ol>
+</section>
+<section id="securing-live-migration-streams">
+<span id="configuring-migrations-securing-live-migration-streams"></span><h3>Securing live migration streams<a class="headerlink" href="#securing-live-migration-streams" title="Link to this heading">¶</a></h3>
+<p>If your compute nodes have at least libvirt 4.4.0 and QEMU 2.11.0, it is
+strongly recommended to secure all your live migration streams by taking
+advantage of the “QEMU-native TLS” feature.  This requires a
+pre-existing PKI (Public Key Infrastructure) setup.  For further details
+on how to set this all up, refer to the
+<a class="reference internal" href="41.html"><span class="doc">Secure live migration with QEMU-native TLS</span></a> document.</p>
+</section>
+<section id="block-migration-volume-based-live-migration">
+<span id="configuring-migrations-kvm-block-and-volume-migration"></span><h3>Block migration, volume-based live migration<a class="headerlink" href="#block-migration-volume-based-live-migration" title="Link to this heading">¶</a></h3>
+<p>If your environment satisfies the requirements for “QEMU-native TLS”,
+then block migration requires some setup; refer to the above section,
+<a class="reference internal" href="#securing-live-migration-streams">Securing live migration streams</a>, for details.  Otherwise, no
+additional configuration is required for block migration and
+volume-backed live migration.</p>
+<p>Be aware that block migration adds load to the network and storage subsystems.</p>
+</section>
+<section id="shared-storage">
+<span id="configuring-migrations-kvm-shared-storage"></span><h3>Shared storage<a class="headerlink" href="#shared-storage" title="Link to this heading">¶</a></h3>
+<p>Compute hosts have many options for sharing storage, for example NFS, shared
+disk array LUNs, Ceph or GlusterFS.</p>
+<p>The next steps show how a regular Linux system might be configured as an NFS v4
+server for live migration.  For detailed information and alternative ways to
+configure NFS on Linux, see instructions for <a class="reference external" href="https://help.ubuntu.com/community/SettingUpNFSHowTo">Ubuntu</a> and <a class="reference external" href="https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html/configuring_and_using_network_file_services/deploying-an-nfs-server_configuring-and-using-network-file-services">RHEL</a>.</p>
+<ol class="arabic">
+<li><p>Ensure that UID and GID of the nova user are identical on the compute hosts
+and the NFS server.</p></li>
+<li><p>Create a directory with enough disk space for all instances in the cloud,
+owned by user nova. In this guide, we assume <code class="docutils literal notranslate"><span class="pre">/var/lib/nova/instances</span></code>.</p></li>
+<li><p>Set the execute/search bit on the <code class="docutils literal notranslate"><span class="pre">instances</span></code> directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>chmod<span class="w"> </span>o+x<span class="w"> </span>/var/lib/nova/instances
+</pre></div>
+</div>
+<p>This  allows qemu to access the <code class="docutils literal notranslate"><span class="pre">instances</span></code> directory tree.</p>
+</li>
+<li><p>Export <code class="docutils literal notranslate"><span class="pre">/var/lib/nova/instances</span></code> to the compute hosts. For example, add
+the following line to <code class="docutils literal notranslate"><span class="pre">/etc/exports</span></code>:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">/var/lib/nova/instances *(rw,sync,fsid</span><span class="o">=</span><span class="s">0,no_root_squash)</span>
+</pre></div>
+</div>
+<p>The asterisk permits access to any NFS client. The option <code class="docutils literal notranslate"><span class="pre">fsid=0</span></code> exports
+the instances directory as the NFS root.</p>
+</li>
+</ol>
+<p>After setting up the NFS server, mount the remote filesystem on all compute
+hosts.</p>
+<ol class="arabic">
+<li><p>Assuming the NFS server’s hostname is <code class="docutils literal notranslate"><span class="pre">nfs-server</span></code>, add this line to
+<code class="docutils literal notranslate"><span class="pre">/etc/fstab</span></code> to mount the NFS root:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">nfs-server:/ /var/lib/nova/instances nfs4 defaults 0 0</span>
+</pre></div>
+</div>
+</li>
+<li><p>Test NFS by mounting the instances directory and check access permissions
+for the nova user:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>mount<span class="w"> </span>-a<span class="w"> </span>-v
+<span class="gp">$ </span>ls<span class="w"> </span>-ld<span class="w"> </span>/var/lib/nova/instances/
+<span class="go">drwxr-xr-x. 2 nova nova 6 Mar 14 21:30 /var/lib/nova/instances/</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="advanced-configuration-for-kvm-and-qemu">
+<span id="configuring-migrations-kvm-advanced"></span><h3>Advanced configuration for KVM and QEMU<a class="headerlink" href="#advanced-configuration-for-kvm-and-qemu" title="Link to this heading">¶</a></h3>
+<p>Live migration copies the instance’s memory from the source to the destination
+compute host. After a memory page has been copied, the instance may write to it
+again, so that it has to be copied again.  Instances that frequently write to
+different memory pages can overwhelm the memory copy process and prevent the
+live migration from completing.</p>
+<p>This section covers configuration settings that can help live migration of
+memory-intensive instances succeed.</p>
+<ol class="arabic">
+<li><p><strong>Live migration completion timeout</strong></p>
+<p>The Compute service will either abort or force complete a migration
+when it has been running too long. This behavior is configurable
+using the <a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_timeout_action" title="live_migration_timeout_action"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_timeout_action</span></code></a>
+config option. The timeout is calculated based on the instance size, which
+is the instance’s memory size in GiB. In the case of block migration, the
+size of ephemeral storage in GiB is added.</p>
+<p>The timeout in seconds is the instance size multiplied by the configurable
+parameter <a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html#libvirt.live_migration_completion_timeout" title="live_migration_completion_timeout"><code class="xref oslo.config oslo.config-option docutils literal notranslate"><span class="pre">libvirt.live_migration_completion_timeout</span></code></a>,
+whose default is 800. For example, shared-storage live migration of an
+instance with 8GiB memory will time out after 6400 seconds.</p>
+</li>
+<li><p><strong>Instance downtime</strong></p>
+<p>Near the end of the memory copy, the instance is paused for a short time so
+that the remaining few pages can be copied without interference from
+instance memory writes. The Compute service initializes this time to a small
+value that depends on the instance size, typically around 50 milliseconds.
+When it notices that the memory copy does not make sufficient progress, it
+increases the time gradually.</p>
+<p>You can influence the instance downtime algorithm with the help of three
+configuration variables on the compute hosts:</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="na">live_migration_downtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">500</span>
+<span class="na">live_migration_downtime_steps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">10</span>
+<span class="na">live_migration_downtime_delay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">75</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">live_migration_downtime</span></code> sets the target maximum period of time Nova will
+try to keep the instance paused during the last part of the memory copy, in
+<em>milliseconds</em>. This value may be exceeded if there is any reduction on the
+transfer rate after the VM is paused. The default is 500.</p>
+<p><code class="docutils literal notranslate"><span class="pre">live_migration_downtime_steps</span></code> sets the total number of adjustment steps
+until <code class="docutils literal notranslate"><span class="pre">live_migration_downtime</span></code> is reached.  The default is 10 steps.</p>
+<p><code class="docutils literal notranslate"><span class="pre">live_migration_downtime_delay</span></code> sets the time interval between two
+adjustment steps in <em>seconds</em>. The default is 75.</p>
+</li>
+<li><p><strong>Auto-convergence</strong></p>
+<p>One strategy for a successful live migration of a memory-intensive instance
+is slowing the instance down. This is called auto-convergence.  Both libvirt
+and QEMU implement this feature by automatically throttling the instance’s
+CPU when memory copy delays are detected.</p>
+<p>Auto-convergence is disabled by default.  You can enable it by setting
+<code class="docutils literal notranslate"><span class="pre">live_migration_permit_auto_converge=true</span></code>.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Before enabling auto-convergence, make sure that the instance’s
+application tolerates a slow-down.</p>
+<p>Be aware that auto-convergence does not guarantee live migration success.</p>
+</div>
+</li>
+<li><p><strong>Post-copy</strong></p>
+<p>Live migration of a memory-intensive instance is certain to succeed when you
+enable post-copy. This feature, implemented by libvirt and QEMU, activates
+the virtual machine on the destination host before all of its memory has
+been copied.  When the virtual machine accesses a page that is missing on
+the destination host, the resulting page fault is resolved by copying the
+page from the source host.</p>
+<p>Post-copy is disabled by default. You can enable it by setting
+<code class="docutils literal notranslate"><span class="pre">live_migration_permit_post_copy=true</span></code>.</p>
+<p>When you enable both auto-convergence and post-copy, auto-convergence
+remains disabled.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The page faults introduced by post-copy can slow the instance down.</p>
+<p>When the network connection between source and destination host is
+interrupted, page faults cannot be resolved anymore and the instance is
+rebooted.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>You may need to enable <code class="docutils literal notranslate"><span class="pre">unprivileged_userfaultfd</span></code> on newer kernels in
+order for post-copy to work.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">sysctl vm.unprivileged_userfaultfd=1</span>
+</pre></div>
+</div>
+</div>
+</li>
+</ol>
+<p>The full list of live migration configuration parameters is documented in the
+<a class="reference internal" href="https://docs.openstack.org/nova/latest/configuration/config.html"><span class="doc">Nova Configuration Options</span></a></p>
+</section>
+</section>
+<section id="vmware">
+<h2>VMware<a class="headerlink" href="#vmware" title="Link to this heading">¶</a></h2>
+<section id="vsphere-configuration">
+<span id="configuring-migrations-vmware"></span><h3>vSphere configuration<a class="headerlink" href="#vsphere-configuration" title="Link to this heading">¶</a></h3>
+<p>Enable vMotion on all ESX hosts which are managed by Nova by following the
+instructions in <a class="reference external" href="https://kb.vmware.com/s/article/2054994">this</a> KB article.</p>
+</section>
+</section>
+</section>
+
+
+              </div></main><footer lang="ru">OpenStack contributors. Материал проекта OpenStack. Если в тексте не указано иное, действует <a href="https://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution 3.0</a>. Оформление адаптировано для чтения офлайн. Уведомления о правах внутри страницы сохранены.</footer></body></html>
